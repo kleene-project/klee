@@ -1,3 +1,4 @@
+import json
 import datetime
 import dateutil.parser
 
@@ -56,6 +57,7 @@ def human_duration(timestamp_iso):
     return f"{years} years"
 
 
+# pylint: disable=unused-argument
 @click.group()
 def root(name="container"):
     """Manage containers"""
@@ -80,45 +82,49 @@ def create(name, network, volume, env, jailparam, image, command):
         "env": list(env),
         "user":"", # TODO: Should it be possible to override this through cli option?
     }
+    container_config = ContainerConfig.from_dict(container_config)
     if name == "":
         name = random_name()
 
-    container_config = ContainerConfig.from_dict(container_config)
-    client = Client(base_url=BASE_URL)
-    try:
-        response = container_create(client=client, json_body=container_config, name=name)
-    except httpx.ConnectError as e:
-        click.echo(f"unable to connect to jocker engine: {e}")
-        return
 
-    if response.status_code != 201:
-        click.echo(f"Jocker engine returned unsuccesful statuscode: {response.status_code}")
-    else:
-        click.echo(response.parsed.id)
+    request_and_validate_response(
+        container_create,
+        kwargs={
+            "json_body": container_config,
+            "name":name
+        },
+        statuscode2messsage={
+            201:lambda response:response.parsed.id,
+            500:"jocker engine server error"
+        }
+    )
 
 @root.command(name="ls")
 @click.option('--all', '-a', default=False, is_flag=True, help="Show all containers (default shows only running containers)")
 def list_containers(**kwargs):
     """List containers"""
-    client = Client(base_url=BASE_URL)
-    response = container_list(client=client, all_=kwargs["all"])
+    request_and_validate_response(
+        container_list,
+        kwargs = {"all_": kwargs["all"]},
+        statuscode2messsage = {
+            200:lambda response:_print_container(response.parsed),
+            500:"jocker engine server error"
+        }
+    )
 
-    if response.status_code != 200:
-        click.echo("unknown response code received when listing container: {response.status_code}")
-    else:
-        _print_container(response.parsed)
+
+def _command_json2command_human(command_str):
+    return " ".join(json.loads(command_str))
 
 
 def _print_container(containers):
-    # containers = ContainerSummary(command='[]', created='2021-12-04T14:25:50.481283Z', id='37ba0e2a2ef3', image_id='base', image_name='', image_tag='', name='testcontainer', running=False, additional_properties={})
     from tabulate import tabulate
-    headers = ["CONTAINER ID", "IMAGE", "COMMAND", "CREATED", "STATUS", "NAME"]
+    headers = ["CONTAINER ID", "IMAGE", "TAG", "COMMAND", "CREATED", "STATUS", "NAME"]
     containers = [
-        [c.id, c.image_id, c.command, human_duration(c.created), is_running_str(c.running), c.name]
+        [c.id, c.image_id, c.image_tag, _command_json2command_human(c.command), human_duration(c.created), is_running_str(c.running), c.name]
         for c in containers
     ]
 
-    # TODO: Parse the json list from "c.command" into a single command string
     # TODO: The README.md says that 'maxcolwidths' exists but it complains here. Perhaps it is not in the newest version on pypi yet?
     # col_widths = [12, 15, 23, 18, 7]
     #lines = tabulate(containers, headers=headers,  maxcolwidths=col_widths).split("\n")
@@ -126,19 +132,23 @@ def _print_container(containers):
     for line in lines:
         click.echo(line)
 
+
 @root.command(name="rm")
 @click.argument("containers", required=True, nargs=-1)
 def remove(containers):
     """Remove one or more containers"""
-    client = Client(base_url=BASE_URL)
     for container_id in containers:
-        response = container_delete(client=client, container_id=container_id)
-
-        if response.status_code != 200:
-            click.echo(f"non-succesful response code received: {response.status_code}")
+        response = request_and_validate_response(
+                container_list,
+                kwargs = {"container_id": container_id},
+                statuscode2messsage = {
+                    200:lambda response:response.parsed.id,
+                    404:lambda response:response.parsed.message,
+                    500:"jocker engine server error"
+                }
+            )
+        if response is None or response.status_code != 200:
             break
-
-        click.echo(response.parsed.id)
 
 
 @root.command(name="start")
@@ -146,37 +156,68 @@ def remove(containers):
 @click.argument("containers", required=True, nargs=-1)
 def start(attach, containers):
     """Start one or more stopped containers. Attach only if a single container is started"""
-    click.echo("Running 'CONTAINER START' command")
-    client = Client(base_url=BASE_URL)
-
     if attach:
-        #TODO
+        # TODO: Implement this
         click.echo("Implement me!")
         return
 
     for container_id in containers:
-        response = container_start(client=client, container_id=container_id)
-
-        if response.status_code != 200:
-            click.echo(f"non-succesful response code received: {response.status_code}")
+        response = request_and_validate_response(
+                container_start,
+                kwargs = {"container_id": container_id},
+                statuscode2messsage = {
+                    200:lambda response:response.parsed.id,
+                    304:lambda response:response.parsed.message,
+                    404:lambda response:response.parsed.message,
+                    500:"jocker engine server error"
+                }
+            )
+        if response is None or response.status_code != 200:
             break
-
-        click.echo(response.parsed.id)
-
 
 
 @root.command(name="stop")
 @click.argument("containers", nargs=-1)
 def stop(containers):
     """Stop one or more running containers"""
-    click.echo("Running 'CONTAINER STOP' command")
-    client = Client(base_url=BASE_URL)
-
     for container_id in containers:
-        response = container_stop(client=client, container_id=container_id)
-
-        if response.status_code != 200:
-            click.echo(f"non-succesful response code received: {response.status_code}")
+        response = request_and_validate_response(
+                container_stop,
+                kwargs = {"container_id": container_id},
+                statuscode2messsage = {
+                    200:lambda response:response.parsed.id,
+                    304:lambda response:response.parsed.message,
+                    404:lambda response:response.parsed.message,
+                    500:"jocker engine server error"
+                }
+            )
+        if response is None or response.status_code != 200:
             break
 
-        click.echo(response.parsed.id)
+
+def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
+    client = Client(base_url=BASE_URL)
+    # Try to connect to backend
+    try:
+        response = endpoint(client=client, **kwargs)
+    except httpx.ConnectError as e:
+        click.echo(f"unable to connect to jocker engine: {e}")
+        return None
+
+
+    # Try validating the response
+    try:
+        return_message = statuscode2messsage[response.status_code]
+    except KeyError:
+        click.echo(f"unknown status-code received from jocker engine: {response.status_code}")
+        return response
+
+    if callable(return_message):
+        return_message = return_message(response)
+
+    elif not isinstance(return_message, str):
+        click.echo("internal error in jcli")
+        return response
+
+    click.echo(return_message)
+    return response
