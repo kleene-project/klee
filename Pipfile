@@ -6,6 +6,10 @@ name = "pypi"
 [packages]
 click = "*"
 jcli = {editable = true, path = "."}
+attrs = "*"
+httpx = "*"
+python-dateutil = "*"
+tabulate = "*"
 
 [dev-packages]
 
