@@ -1,6 +1,8 @@
+import asyncio
 import json
 
 import click
+import websockets
 
 from .client.api.default.container_list import sync_detailed as container_list
 from .client.api.default.container_create import sync_detailed as container_create
@@ -11,6 +13,8 @@ from .client.models.container_config import ContainerConfig
 
 from .name_generator import random_name
 from .utils import request_and_validate_response, human_duration
+
+WS_CONTAINER_ATTACH_URL = "ws://localhost:8085/containers/{container_id}/attach"
 
 
 # pylint: disable=unused-argument
@@ -119,23 +123,66 @@ def remove(containers):
 def start(attach, containers):
     """Start one or more stopped containers. Attach only if a single container is started"""
     if attach:
-        # TODO: Implement this
-        click.echo("Implement me!")
-        return
+        if len(containers) != 1:
+            click.echo("only one container can be started when setting the 'attach' flag.")
+        else:
+            _start_attached(containers[0])
 
-    for container_id in containers:
-        response = request_and_validate_response(
-            container_start,
-            kwargs = {"container_id": container_id},
-            statuscode2messsage = {
-                200:lambda response:response.parsed.id,
-                304:lambda response:response.parsed.message,
-                404:lambda response:response.parsed.message,
-                500:"jocker engine server error"
-            }
-        )
-        if response is None or response.status_code != 200:
+    else:
+        for container_id in containers:
+            response = _start_container(container_id)
+            if response is None or response.status_code != 200:
+                break
+
+
+def _start_attached(container_id):
+    asyncio.run(_attach_and_start_container(container_id))
+
+
+async def _attach_and_start_container(container_id):
+    endpoint = WS_CONTAINER_ATTACH_URL.format(container_id=container_id)
+    async with websockets.connect(endpoint) as websocket:
+        hello_msg = await websocket.recv()
+        if hello_msg[:3] == "ok:":
+            request_and_validate_response(
+                container_start,
+                kwargs = {"container_id": container_id},
+                statuscode2messsage = {
+                    200:lambda response:"",
+                    304:lambda response:response.parsed.message,
+                    404:lambda response:response.parsed.message,
+                    500:"jocker engine server error"
+                })
+            await _listen_for_messages(websocket)
+        else:
+            click.echo("error attaching to container")
+
+
+async def _listen_for_messages(websocket):
+    while True:
+        try:
+            message = await websocket.recv()
+        except websockets.exceptions.ConnectionClosed:
+            click.echo(f"{websocket.close_reason}")
             break
+
+        if message[:3] == "io:":
+            click.echo(message[3:])
+        else:
+            click.echo("unknown error while receiving container output")
+
+
+def _start_container(container_id):
+    return request_and_validate_response(
+        container_start,
+        kwargs = {"container_id": container_id},
+        statuscode2messsage = {
+            200:lambda response:response.parsed.id,
+            304:lambda response:response.parsed.message,
+            404:lambda response:response.parsed.message,
+            500:"jocker engine server error"
+        }
+    )
 
 
 @root.command(name="stop")

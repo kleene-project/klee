@@ -4,7 +4,6 @@ from .client.api.default.image_remove import sync_detailed as image_remove
 
 from .utils import request_and_validate_response, human_duration
 
-from .client.models.network_config import NetworkConfig
 
 # pylint: disable=unused-argument
 @click.group()
