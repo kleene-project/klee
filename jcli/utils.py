@@ -68,5 +68,6 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
         click.echo("internal error in jcli")
         return response
 
-    click.echo(return_message)
+    if return_message != "":
+        click.echo(return_message)
     return response

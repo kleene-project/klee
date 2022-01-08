@@ -10,8 +10,11 @@ attrs = "*"
 httpx = "*"
 python-dateutil = "*"
 tabulate = "*"
+websockets = "*"
+pytest = "*"
 
 [dev-packages]
+pytest = "*"
 
 [requires]
 python_version = "3.8"
