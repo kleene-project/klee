@@ -1,23 +1,12 @@
 import subprocess
 
-from click.testing import CliRunner
-
-from jcli.main import cli
+from testutils import run, remove_all_containers
 
 
 class TestContainers:
     @classmethod
     def setup_class(cls):
-        _header, _lines, *containers = run('container ls -a')
-        container_ids = []
-        for container_line in containers:
-            container_id, *_rest = container_line.split(" ")
-            if container_id == "":
-                continue
-            container_ids.append(container_id)
-
-        if len(container_ids) != 0:
-            run('container rm ' + ' '.join(container_ids))
+        remove_all_containers()
 
     # pylint: disable=no-self-use
     def test_empty_container_listing_of_containers(self):
@@ -84,18 +73,6 @@ class TestContainers:
 
 
 
-HEADER = "CONTAINER ID    IMAGE    TAG    COMMAND    CREATED    STATUS    NAME"
-LINE = "--------------  -------  -----  ---------  ---------  --------  ------"
-
-
-def run(command, exit_code=0):
-    runner = CliRunner()
-    command = command.split(" ")
-    result = runner.invoke(cli, command)
-    print(f"ran '{command}':{result.exit_code}: {result.output}")
-    assert result.exit_code == exit_code
-    return result.output.split('\n')
-
 
 def create_container(image="base", name=None, command="/bin/ls"):
     if name is None:
@@ -118,6 +95,9 @@ def container_is_running(container_id):
 
 
 def empty_container_list(all_=True):
+    HEADER = "CONTAINER ID    IMAGE    TAG    COMMAND    CREATED    STATUS    NAME"
+    LINE = "--------------  -------  -----  ---------  ---------  --------  ------"
+
     if all_:
         output = tuple(run('container ls -a'))
     else:

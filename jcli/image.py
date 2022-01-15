@@ -1,8 +1,12 @@
+import asyncio
+import urllib.parse
+
+import websockets
 import click
 from .client.api.default.image_list import sync_detailed as image_list
 from .client.api.default.image_remove import sync_detailed as image_remove
 
-from .utils import request_and_validate_response, human_duration
+from .utils import request_and_validate_response, human_duration, listen_for_messages, WS_IMAGE_BUILD_URL
 
 
 # pylint: disable=unused-argument
@@ -14,12 +18,24 @@ def root(name="image"):
 @root.command()
 @click.option('--file', '-f', default="Dockerfile", help="Name of the Dockerfile (default: 'Dockerfile')")
 @click.option('--tag', '-t', default="", help="Name and optionally a tag in the 'name:tag' format")
-@click.option('--quiet', '-q', multiple=True, default=None, help="Suppress the build output and print image ID on success (default: false)")
+@click.option('--quiet', '-q', is_flag=True, default=False, help="Suppress the build output and print image ID on success")
 @click.argument("path", nargs=1)
-def build(file_, tag, quiet, path):
+def build(file, tag, quiet, path):
     """Build an image from a context + Dockerfile located in PATH"""
-    # TODO: implement this with websockets
-    click.echo("Running 'image CREATE' command")
+    asyncio.run(_build_image_and_listen_for_messages(file, tag, quiet, path))
+
+
+async def _build_image_and_listen_for_messages(file_, tag, quiet, path):
+    quiet = "true" if quiet else "false"
+    endpoint = WS_IMAGE_BUILD_URL.format(
+            options=urllib.parse.urlencode({'context': path, 'file': file_, 'tag': tag, 'quiet': quiet})
+    )
+    async with websockets.connect(endpoint) as websocket:
+        hello_msg = await websocket.recv()
+        if hello_msg[:3] == "ok:":
+            await listen_for_messages(websocket)
+        else:
+            click.echo("error attaching to container")
 
 
 @root.command(name="ls")
@@ -33,20 +49,6 @@ def list_images():
             500:"jocker engine server error"
         }
     )
-
-
-def _print_images(images):
-    from tabulate import tabulate
-
-    headers = ["NAME", "TAG", "ID", "CREATED"]
-    containers = [
-        [img.name, img.tag, img.id, human_duration(img.created)]
-        for img in images
-    ]
-
-    lines = tabulate(containers, headers=headers).split("\n")
-    for line in lines:
-        click.echo(line)
 
 
 @root.command(name="rm")
@@ -65,3 +67,17 @@ def remove(images):
         )
         if response is None or response.status_code != 200:
             break
+
+
+def _print_images(images):
+    from tabulate import tabulate
+
+    headers = ["ID", "NAME", "TAG", "CREATED"]
+    containers = [
+        [img.id, img.name, img.tag, human_duration(img.created)]
+        for img in images
+    ]
+
+    lines = tabulate(containers, headers=headers).split("\n")
+    for line in lines:
+        click.echo(line)

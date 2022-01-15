@@ -12,9 +12,7 @@ from .client.api.default.container_stop import sync_detailed as container_stop
 from .client.models.container_config import ContainerConfig
 
 from .name_generator import random_name
-from .utils import request_and_validate_response, human_duration
-
-WS_CONTAINER_ATTACH_URL = "ws://localhost:8085/containers/{container_id}/attach"
+from .utils import request_and_validate_response, human_duration, WS_CONTAINER_ATTACH_URL, listen_for_messages
 
 
 # pylint: disable=unused-argument
@@ -153,23 +151,9 @@ async def _attach_and_start_container(container_id):
                     404:lambda response:response.parsed.message,
                     500:"jocker engine server error"
                 })
-            await _listen_for_messages(websocket)
+            await listen_for_messages(websocket)
         else:
             click.echo("error attaching to container")
-
-
-async def _listen_for_messages(websocket):
-    while True:
-        try:
-            message = await websocket.recv()
-        except websockets.exceptions.ConnectionClosed:
-            click.echo(f"{websocket.close_reason}")
-            break
-
-        if message[:3] == "io:":
-            click.echo(message[3:])
-        else:
-            click.echo("unknown error while receiving container output")
 
 
 def _start_container(container_id):

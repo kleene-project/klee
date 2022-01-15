@@ -1,4 +1,6 @@
 import datetime
+
+import websockets
 import dateutil.parser
 
 import httpx
@@ -6,9 +8,23 @@ import click
 
 from .client.client import Client
 
-IMAGE_BUILD_URL = "ws://localhost:8085/images/build"
-CONTAINER_ATTACH_URL = "ws://localhost:8085/containers/%s/attach"
 BASE_URL = "http://localhost:8085"
+WS_IMAGE_BUILD_URL = "ws://localhost:8085/images/build?{options}"
+WS_CONTAINER_ATTACH_URL = "ws://localhost:8085/containers/{container_id}/attach"
+
+
+async def listen_for_messages(websocket):
+    while True:
+        try:
+            message = await websocket.recv()
+        except websockets.exceptions.ConnectionClosed:
+            click.echo(f"{websocket.close_reason}")
+            break
+
+        if message[:3] == "io:":
+            click.echo(message[3:])
+        else:
+            click.echo("unknown error while receiving container output")
 
 
 def human_duration(timestamp_iso):
