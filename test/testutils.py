@@ -3,15 +3,6 @@ from click.testing import CliRunner
 from jcli.main import cli
 
 
-def run(command, exit_code=0):
-    runner = CliRunner()
-    command = command.split(" ")
-    result = runner.invoke(cli, command)
-    print(f"ran '{command}':{result.exit_code}: {result.output}")
-    assert result.exit_code == exit_code
-    return result.output.split('\n')
-
-
 def remove_all_containers():
     _header, _lines, *containers = run('container ls -a')
     container_ids = []
@@ -36,3 +27,12 @@ def remove_all_images():
 
     if len(image_ids) != 0:
         run('image rm ' + ' '.join(image_ids))
+
+
+def run(command, exit_code=0):
+    runner = CliRunner()
+    command = command.split(" ")
+    result = runner.invoke(cli, command)
+    print(f"ran '{command}':{result.exit_code}: {result.output}")
+    assert result.exit_code == exit_code
+    return result.output.split('\n')

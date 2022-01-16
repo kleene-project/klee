@@ -34,7 +34,7 @@ def create(driver, ifname, subnet, network_name):
 
     request_and_validate_response(
         network_create,
-        kwargs={"json_body": network_create},
+        kwargs={"json_body": network_config},
         statuscode2messsage={
             201:lambda response:response.parsed.id,
             409:lambda response:response.parsed.message,
@@ -44,9 +44,9 @@ def create(driver, ifname, subnet, network_name):
 
 
 @root.command(name="rm")
-@click.argument("network", required=True, nargs=-1)
+@click.argument("networks", required=True, nargs=-1)
 def remove(networks):
-    """Remove one or more networks"""
+    """Remove one or more networks."""
     for network_id in networks:
         response = request_and_validate_response(
             network_remove,
@@ -77,9 +77,9 @@ def list_networks():
 def _print_networks(networks):
     from tabulate import tabulate
 
-    headers = ["NAME", "DRIVER", "SUBNET", "NETWORK ID"]
+    headers = ["ID", "NAME", "DRIVER", "SUBNET"]
     containers = [
-        [nw.name, nw.driver, nw.subnet, nw.id]
+        [nw.id, nw.name, nw.driver, nw.subnet]
         for nw in networks
     ]
 
