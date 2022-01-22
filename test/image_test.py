@@ -1,14 +1,14 @@
 import os
 
-from testutils import run, remove_all_containers, remove_all_images
+from testutils import remove_all_containers, remove_all_images, run
 
 
-class TestImages:
+class TestImageSubcommand:
     # pylint: disable=no-self-use
     instructions = [
-        'FROM scratch',
+        "FROM scratch",
         'RUN echo "lol" > /root/test.txt',
-        'CMD /usr/bin/uname',
+        "CMD /usr/bin/uname",
     ]
 
     @classmethod
@@ -34,7 +34,14 @@ class TestImages:
         create_dockerfile(self.instructions)
         result = create_image(quiet=False)
         build_output = result[:-2]
-        expected_build_output = ['Step 1/3 : FROM scratch', '', 'Step 2/3 : RUN echo "lol" > /root/test.txt', '', 'Step 3/3 : CMD /usr/bin/uname', '']
+        expected_build_output = [
+            "Step 1/3 : FROM scratch",
+            "",
+            'Step 2/3 : RUN echo "lol" > /root/test.txt',
+            "",
+            "Step 3/3 : CMD /usr/bin/uname",
+            "",
+        ]
         assert build_output == expected_build_output
         _, image_id_created = result[-2].split(" id ")
         images = list_images()
@@ -51,7 +58,9 @@ class TestImages:
         image_id_listed = images[0][:12]
         assert image_id_created == image_id_listed
 
-        expected_image_entry = f"{image_id_created}  testlol  testest  Less than a second"
+        expected_image_entry = (
+            f"{image_id_created}  testlol  testest  Less than a second"
+        )
         assert list_images()[0] == expected_image_entry
         assert succesfully_remove_image(image_id_created)
         assert empty_image_list()
@@ -59,7 +68,7 @@ class TestImages:
 
 def create_dockerfile(instructions, name="Dockerfile"):
     dockerfile = os.path.join(os.getcwd(), name)
-    with open(dockerfile, 'w', encoding='utf8') as f:
+    with open(dockerfile, "w", encoding="utf8") as f:
         f.write("\n".join(instructions))
 
 
@@ -81,16 +90,16 @@ def succesfully_remove_image(image_id):
 
 
 def remove_image(image_id):
-    return run(f'image rm {image_id}')
+    return run(f"image rm {image_id}")
 
 
 def list_images():
-    _,_, *images = run('image ls')
+    _, _, *images = run("image ls")
     return images
 
 
 def empty_image_list():
     HEADER = "ID    NAME    TAG    CREATED"
     LINE = "----  ------  -----  ---------"
-    output = tuple(run('image ls'))
+    output = tuple(run("image ls"))
     return output == (HEADER, LINE, "", "")

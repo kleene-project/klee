@@ -19,6 +19,7 @@ FROM JOCKER ELIXIR CLI:
 """
 
 import click
+
 from .container import root as container_root
 from .image import root as image_root
 from .network import root as network_root
@@ -27,13 +28,17 @@ from .volume import root as volume_root
 
 @click.group()
 @click.version_option(version="0.0.1")
-@click.option('--debug', is_flag=True, help='Enable debug mode')
-@click.option('--host', default="tcp://localhost:8085", show_default=True, help='Engine socket to connect to: tcp://[host]:[port] or unix://[/path/to/socket]')
+@click.option("--debug", is_flag=True, help="Enable debug mode")
+@click.option(
+    "--host",
+    default="tcp://localhost:8085",
+    show_default=True,
+    help="Engine socket to connect to: tcp://[host]:[port] or unix://[/path/to/socket]",
+)
 def cli(debug, host):
     """
     cli for the jocker engine
     """
-    pass
 
 
 cli.add_command(container_root, name="container")

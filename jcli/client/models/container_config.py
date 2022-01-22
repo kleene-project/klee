@@ -20,8 +20,8 @@ class ContainerConfig:
         jail_param (Union[Unset, List[str]]): List of jail parameters (see jail(8) for details) Example:
             ['allow.raw_sockets=true', 'osrelease=jockerjail'].
         networks (Union[Unset, List[str]]): List of networks that the container should be connected to.
-        user (Union[Unset, Any]): User that executes the command (cmd). If no user is set the user from the image will
-            be used (which in turn is 'root' if no user is specified there).
+        user (Union[Unset, str]): User that executes the command (cmd). If no user is set the user from the image will
+            be used (which in turn is 'root' if no user is specified there). Default: ''.
         volumes (Union[Unset, List[str]]): List of volumes that should be mounted into the container
     """
 
@@ -30,7 +30,7 @@ class ContainerConfig:
     image: Union[Unset, str] = UNSET
     jail_param: Union[Unset, List[str]] = UNSET
     networks: Union[Unset, List[str]] = UNSET
-    user: Union[Unset, Any] = UNSET
+    user: Union[Unset, str] = ""
     volumes: Union[Unset, List[str]] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
@@ -53,7 +53,6 @@ class ContainerConfig:
             networks = self.networks
 
         user = self.user
-
         volumes: Union[Unset, List[str]] = UNSET
         if not isinstance(self.volumes, Unset):
             volumes = self.volumes

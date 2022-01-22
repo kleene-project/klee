@@ -12,56 +12,54 @@ class NetworkConfig:
     """Network configuration
 
     Attributes:
+        ifname (str): Name of the interface that is being used for the network. Example: jocker0.
         name (str): Name of the network. Example: westnet.
+        subnet (str): The subnet (in CIDR-format) that is used for the network. Example: 10.13.37.0/24.
         driver (Union[Unset, str]): Network type. Only 'loopback' type of network is supported. Example: loopback.
-        ifname (Union[Unset, str]): Name of the interface that is being used for the network. Example: jocker0.
-        subnet (Union[Unset, str]): The subnet (in CIDR-format) that is used for the network. Example: 10.13.37.0/24.
     """
 
+    ifname: str
     name: str
+    subnet: str
     driver: Union[Unset, str] = UNSET
-    ifname: Union[Unset, str] = UNSET
-    subnet: Union[Unset, str] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        name = self.name
-        driver = self.driver
         ifname = self.ifname
+        name = self.name
         subnet = self.subnet
+        driver = self.driver
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
+                "ifname": ifname,
                 "name": name,
+                "subnet": subnet,
             }
         )
         if driver is not UNSET:
             field_dict["driver"] = driver
-        if ifname is not UNSET:
-            field_dict["ifname"] = ifname
-        if subnet is not UNSET:
-            field_dict["subnet"] = subnet
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
+        ifname = d.pop("ifname")
+
         name = d.pop("name")
+
+        subnet = d.pop("subnet")
 
         driver = d.pop("driver", UNSET)
 
-        ifname = d.pop("ifname", UNSET)
-
-        subnet = d.pop("subnet", UNSET)
-
         network_config = cls(
-            name=name,
-            driver=driver,
             ifname=ifname,
+            name=name,
             subnet=subnet,
+            driver=driver,
         )
 
         network_config.additional_properties = d
