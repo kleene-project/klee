@@ -33,10 +33,10 @@ def _get_kwargs(
 def _parse_response(
     *, response: httpx.Response
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    if response.status_code == 204:
-        response_204 = IdResponse.from_dict(response.json())
+    if response.status_code == 201:
+        response_201 = IdResponse.from_dict(response.json())
 
-        return response_204
+        return response_201
     if response.status_code == 500:
         response_500 = ErrorResponse.from_dict(response.json())
 

@@ -25,14 +25,14 @@ def create(volume_name):
         volume_create,
         kwargs={"json_body": config},
         statuscode2messsage={
-            204: lambda response: response.parsed.id,
+            201: lambda response: response.parsed.id,
             500: "jocker engine server error",
         },
     )
 
 
 @root.command(name="ls")
-def list_volumes(all_):
+def list_volumes():
     """List volumes"""
     request_and_validate_response(
         volume_list,
@@ -59,10 +59,10 @@ def _print_volumes(volumes):
 @click.argument("volumes", required=True, nargs=-1)
 def remove(volumes):
     """Remove one or more volumes"""
-    for volume_id in volumes:
+    for volume_name in volumes:
         response = request_and_validate_response(
             volume_remove,
-            kwargs={"volume_id": volume_id},
+            kwargs={"volume_name": volume_name},
             statuscode2messsage={
                 200: lambda response: response.parsed.id,
                 404: lambda response: response.parsed.message,

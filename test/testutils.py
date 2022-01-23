@@ -1,6 +1,30 @@
+import os
+
 from click.testing import CliRunner
 
 from jcli.main import cli
+
+
+def create_image(tag=None, dockerfile="Dockerfile", path=None, quiet=True):
+    if path is None:
+        path = os.getcwd()
+
+    dockerfile = f"--file {dockerfile} "
+    tag = "" if tag is None else f"--tag {tag} "
+    quiet = "--quiet " if quiet else ""
+
+    output = run(f"image build {tag}{quiet}{dockerfile}{path}")
+    return output
+
+
+def create_dockerfile(instructions, name="Dockerfile"):
+    dockerfile = os.path.join(os.getcwd(), name)
+    with open(dockerfile, "w", encoding="utf8") as f:
+        f.write("\n".join(instructions))
+
+
+def remove_image(image_id):
+    return run(f"image rm {image_id}")
 
 
 def remove_all_containers():
@@ -29,7 +53,11 @@ def remove_all_images():
         run("image rm " + " ".join(image_ids))
 
 
-def create_container(image="base", name=None, command="/bin/ls", network=None):
+def create_container(image="base", name=None, command="/bin/ls", volumes=None, network=None):
+    if volumes is None:
+        volumes = ""
+    else:
+        volumes = "".join([f"--volume {vol} " for vol in volumes])
     if network is None:
         network = ""
     else:
@@ -39,7 +67,8 @@ def create_container(image="base", name=None, command="/bin/ls", network=None):
         name = ""
     else:
         name = f"--name {name} "
-    container_id, _ = run(f"container create {network}{name}{image} {command}")
+
+    container_id, _ = run(f"container create {volumes}{network}{name}{image} {command}")
     return container_id
 
 

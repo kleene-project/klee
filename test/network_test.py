@@ -51,7 +51,7 @@ class TestNetworkSubcommand:
 
     def test_connection_and_disconnecting_container_to_custom_network(self):
         container_name = "test_disconn_network"
-        network_name ="test_nw_disconn"
+        network_name = "test_nw_disconn"
         network_id = create_network(
             network_name, ifname="testif", subnet="10.13.37.0/24"
         )
@@ -61,7 +61,7 @@ class TestNetworkSubcommand:
             network=network_name,
         )
         assert container_is_connected(container_id)
-        assert ['OK', ''] == run(f"network disconnect {network_name} {container_id}")
+        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
         assert container_is_disconnected(container_id)
         remove_container(container_id)
         remove_network(network_id)
@@ -75,20 +75,39 @@ class TestNetworkSubcommand:
             network=network_name,
         )
         assert container_is_connected(container_id)
-        assert ['OK', ''] == run(f"network disconnect {network_name} {container_id}")
+        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
         assert container_is_disconnected(container_id)
-        assert ['OK', ''] == run(f"network connect {network_name} {container_id}")
+        assert ["OK", ""] == run(f"network connect {network_name} {container_id}")
         assert container_is_connected(container_id)
         remove_container(container_id)
 
 
 def container_is_connected(container_id):
-    connected_output = ['Using domain server:', 'Name: 1.1.1.1', 'Address: 1.1.1.1#53', 'Aliases: ', '', 'freebsd.org has address 96.47.72.84', '', f'exit:container {container_id} stopped', '']
+    connected_output = [
+        "Using domain server:",
+        "Name: 1.1.1.1",
+        "Address: 1.1.1.1#53",
+        "Aliases: ",
+        "",
+        "freebsd.org has address 96.47.72.84",
+        "",
+        f"exit:container {container_id} stopped",
+        "",
+    ]
     return connected_output == run(f"container start --attach {container_id}")
 
 
 def container_is_disconnected(container_id):
-    disconnected_output = [';; connection timed out; no servers could be reached', '', 'jail: ', '/usr/bin/env -i /usr/bin/host -t A freebsd.org 1.1.1.1: failed', '', '', f'exit:container {container_id} stopped', '']
+    disconnected_output = [
+        ";; connection timed out; no servers could be reached",
+        "",
+        "jail: ",
+        "/usr/bin/env -i /usr/bin/host -t A freebsd.org 1.1.1.1: failed",
+        "",
+        "",
+        f"exit:container {container_id} stopped",
+        "",
+    ]
     return disconnected_output == run(f"container start --attach {container_id}")
 
 

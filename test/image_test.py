@@ -1,6 +1,4 @@
-import os
-
-from testutils import remove_all_containers, remove_all_images, run
+from testutils import run, remove_all_containers, remove_all_images, create_dockerfile, create_image, remove_image
 
 
 class TestImageSubcommand:
@@ -66,31 +64,9 @@ class TestImageSubcommand:
         assert empty_image_list()
 
 
-def create_dockerfile(instructions, name="Dockerfile"):
-    dockerfile = os.path.join(os.getcwd(), name)
-    with open(dockerfile, "w", encoding="utf8") as f:
-        f.write("\n".join(instructions))
-
-
-def create_image(tag=None, dockerfile="Dockerfile", path=None, quiet=True):
-    if path is None:
-        path = os.getcwd()
-
-    dockerfile = f"--file {dockerfile} "
-    tag = "" if tag is None else f"--tag {tag} "
-    quiet = "--quiet " if quiet else ""
-
-    output = run(f"image build {tag}{quiet}{dockerfile}{path}")
-    return output
-
-
 def succesfully_remove_image(image_id):
     output = remove_image(image_id)
     return output[0] == image_id
-
-
-def remove_image(image_id):
-    return run(f"image rm {image_id}")
 
 
 def list_images():
