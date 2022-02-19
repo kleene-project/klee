@@ -1,5 +1,12 @@
-from testutils import create_container, remove_all_containers, remove_container, run, create_dockerfile, create_image, remove_image
-
+from testutils import (
+    create_container,
+    create_dockerfile,
+    create_image,
+    remove_all_containers,
+    remove_container,
+    remove_image,
+    run,
+)
 
 
 class TestVolumeSubcommand:
@@ -8,7 +15,6 @@ class TestVolumeSubcommand:
         "RUN mkdir /testdir1",
         "RUN mkdir /testdir2",
     ]
-
 
     # pylint: disable=no-self-use
     @classmethod
@@ -37,7 +43,7 @@ class TestVolumeSubcommand:
             image=image_name,
             command="/usr/bin/touch /testdir1/testfile",
         )
-        expected_output = [f'exit:container {container_id} stopped', '']
+        expected_output = [f"exit:container {container_id} stopped", ""]
         assert run(f"container start --attach {container_id}") == expected_output
         assert len(list_volumes()) == 2
         remove_image(image_id)
@@ -58,11 +64,15 @@ class TestVolumeSubcommand:
             command="/usr/bin/touch /testdir1/testfile",
         )
         expected_output = [
-            'touch: ', '/testdir1/testfile', ': ',
-            'Read-only file system', '', 'jail: ',
-            '/usr/bin/env -i /usr/bin/touch /testdir1/testfile: failed'
+            "touch: ",
+            "/testdir1/testfile",
+            ": ",
+            "Read-only file system",
+            "",
+            "jail: ",
+            "/usr/bin/env -i /usr/bin/touch /testdir1/testfile: failed",
         ]
-        *output, _,_,_,_ = run(f"container start --attach {container_id}")
+        *output, _, _, _, _ = run(f"container start --attach {container_id}")
         assert output == expected_output
         assert len(list_volumes()) == 2
         remove_image(image_id)
@@ -76,7 +86,7 @@ def create_volume(name):
 
 
 def empty_volume_list():
-    expected_output = ['VOLUME NAME    CREATED', '-------------  ---------', '', '']
+    expected_output = ["VOLUME NAME    CREATED", "-------------  ---------", "", ""]
     output = run("volume ls")
     return expected_output == output
 
@@ -88,7 +98,7 @@ def remove_volume(volume_name):
 
 def list_volumes():
     output = run("volume ls")
-    _header,_headerline, *volumes, _, _ = output
+    _header, _headerline, *volumes, _, _ = output
     return [volume.split(" ")[0] for volume in volumes]
 
 
@@ -96,4 +106,4 @@ def remove_all_volumes():
     volumes = list_volumes()
     if len(volumes) > 0:
         volumes = " ".join(volumes)
-        output = run(f"volume rm {volumes}")
+        run(f"volume rm {volumes}")

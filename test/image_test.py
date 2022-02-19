@@ -1,4 +1,11 @@
-from testutils import run, remove_all_containers, remove_all_images, create_dockerfile, create_image, remove_image
+from testutils import (
+    create_dockerfile,
+    create_image,
+    remove_all_containers,
+    remove_all_images,
+    remove_image,
+    run,
+)
 
 
 class TestImageSubcommand:

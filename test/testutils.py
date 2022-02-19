@@ -53,7 +53,9 @@ def remove_all_images():
         run("image rm " + " ".join(image_ids))
 
 
-def create_container(image="base", name=None, command="/bin/ls", volumes=None, network=None):
+def create_container(
+    image="base", name=None, command="/bin/ls", volumes=None, network=None
+):
     if volumes is None:
         volumes = ""
     else:
