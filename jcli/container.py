@@ -27,7 +27,12 @@ def root(name="container"):
 
 @root.command(name="create", context_settings={"ignore_unknown_options": True})
 @click.option("--name", default="", help="Assign a name to the container")
-@click.option("--user", "-u", default="", help="Alternate user that should be used for starting the container")
+@click.option(
+    "--user",
+    "-u",
+    default="",
+    help="Alternate user that should be used for starting the container",
+)
 @click.option(
     "--network",
     "-n",

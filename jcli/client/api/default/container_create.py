@@ -76,7 +76,8 @@ def sync_detailed(
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container that is portable between hosts
+        json_body (ContainerConfig): Configuration for a container. Some of the configuration
+            parameters will overwrite the corresponding parameters in the specified image.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
@@ -106,7 +107,8 @@ def sync(
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container that is portable between hosts
+        json_body (ContainerConfig): Configuration for a container. Some of the configuration
+            parameters will overwrite the corresponding parameters in the specified image.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
@@ -129,7 +131,8 @@ async def asyncio_detailed(
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container that is portable between hosts
+        json_body (ContainerConfig): Configuration for a container. Some of the configuration
+            parameters will overwrite the corresponding parameters in the specified image.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
@@ -157,7 +160,8 @@ async def asyncio(
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container that is portable between hosts
+        json_body (ContainerConfig): Configuration for a container. Some of the configuration
+            parameters will overwrite the corresponding parameters in the specified image.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]

@@ -9,20 +9,22 @@ T = TypeVar("T", bound="ContainerConfig")
 
 @attr.s(auto_attribs=True)
 class ContainerConfig:
-    """Configuration for a container that is portable between hosts
+    """Configuration for a container. Some of the configuration parameters will overwrite the corresponding parameters in
+    the specified image.
 
-    Attributes:
-        cmd (Union[Unset, List[str]]): Command to execute when the container is started. If no command is specified the
-            command from the image is used. Example: ['/bin/sh', '-c', 'ls /'].
-        env (Union[Unset, List[str]]): List of environment variables set when the command is executed. Example:
-            ['DEBUG=0', 'LANG=da_DK.UTF-8'].
-        image (Union[Unset, str]): The name of the image to use when creating the container
-        jail_param (Union[Unset, List[str]]): List of jail parameters (see jail(8) for details) Example:
-            ['allow.raw_sockets=true', 'osrelease=jockerjail'].
-        networks (Union[Unset, List[str]]): List of networks that the container should be connected to.
-        user (Union[Unset, str]): User that executes the command (cmd). If no user is set the user from the image will
-            be used (which in turn is 'root' if no user is specified there). Default: ''.
-        volumes (Union[Unset, List[str]]): List of volumes that should be mounted into the container
+        Attributes:
+            cmd (Union[Unset, List[str]]): Command to execute when the container is started. If no command is specified the
+                command from the image is used. Example: ['/bin/sh', '-c', 'ls /'].
+            env (Union[Unset, List[str]]): List of environment variables used when the container is used. This list will be
+                merged with environment variables defined by the image. The values in this list takes precedence if the variable
+                is defined in both places. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
+            image (Union[Unset, str]): The name of the image to use when creating the container
+            jail_param (Union[Unset, List[str]]): List of jail parameters (see jail(8) for details) Example:
+                ['allow.raw_sockets=true', 'osrelease=jockerjail'].
+            networks (Union[Unset, List[str]]): List of networks that the container should be connected to.
+            user (Union[Unset, str]): User that executes the command (cmd). If no user is set the user from the image will
+                be used (which in turn is 'root' if no user is specified there). Default: ''.
+            volumes (Union[Unset, List[str]]): List of volumes that should be mounted into the container
     """
 
     cmd: Union[Unset, List[str]] = UNSET

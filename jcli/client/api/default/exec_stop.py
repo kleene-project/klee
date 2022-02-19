@@ -5,26 +5,33 @@ import httpx
 from ...client import Client
 from ...models.error_response import ErrorResponse
 from ...models.id_response import IdResponse
-from ...types import Response
+from ...types import UNSET, Response
 
 
 def _get_kwargs(
-    container_id: str,
+    exec_id: str,
     *,
     client: Client,
+    force_stop: bool,
+    stop_container: bool,
 ) -> Dict[str, Any]:
-    url = "{}/containers/{container_id}/start".format(
-        client.base_url, container_id=container_id
-    )
+    url = "{}/exec/{exec_id}/stop".format(client.base_url, exec_id=exec_id)
 
     headers: Dict[str, Any] = client.get_headers()
     cookies: Dict[str, Any] = client.get_cookies()
+
+    params: Dict[str, Any] = {
+        "force_stop": force_stop,
+        "stop_container": stop_container,
+    }
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
     return {
         "url": url,
         "headers": headers,
         "cookies": cookies,
         "timeout": client.get_timeout(),
+        "params": params,
     }
 
 
@@ -35,10 +42,6 @@ def _parse_response(
         response_200 = IdResponse.from_dict(response.json())
 
         return response_200
-    if response.status_code == 304:
-        response_304 = ErrorResponse.from_dict(response.json())
-
-        return response_304
     if response.status_code == 404:
         response_404 = ErrorResponse.from_dict(response.json())
 
@@ -62,22 +65,28 @@ def _build_response(
 
 
 def sync_detailed(
-    container_id: str,
+    exec_id: str,
     *,
     client: Client,
+    force_stop: bool,
+    stop_container: bool,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Start a container
+    """Stop and/or destroy a execution instance.
 
     Args:
-        container_id (str):
+        exec_id (str):
+        force_stop (bool):
+        stop_container (bool):
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
     """
 
     kwargs = _get_kwargs(
-        container_id=container_id,
+        exec_id=exec_id,
         client=client,
+        force_stop=force_stop,
+        stop_container=stop_container,
     )
 
     response = httpx.post(
@@ -89,42 +98,54 @@ def sync_detailed(
 
 
 def sync(
-    container_id: str,
+    exec_id: str,
     *,
     client: Client,
+    force_stop: bool,
+    stop_container: bool,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Start a container
+    """Stop and/or destroy a execution instance.
 
     Args:
-        container_id (str):
+        exec_id (str):
+        force_stop (bool):
+        stop_container (bool):
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
     """
 
     return sync_detailed(
-        container_id=container_id,
+        exec_id=exec_id,
         client=client,
+        force_stop=force_stop,
+        stop_container=stop_container,
     ).parsed
 
 
 async def asyncio_detailed(
-    container_id: str,
+    exec_id: str,
     *,
     client: Client,
+    force_stop: bool,
+    stop_container: bool,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Start a container
+    """Stop and/or destroy a execution instance.
 
     Args:
-        container_id (str):
+        exec_id (str):
+        force_stop (bool):
+        stop_container (bool):
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
     """
 
     kwargs = _get_kwargs(
-        container_id=container_id,
+        exec_id=exec_id,
         client=client,
+        force_stop=force_stop,
+        stop_container=stop_container,
     )
 
     async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
@@ -134,14 +155,18 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    container_id: str,
+    exec_id: str,
     *,
     client: Client,
+    force_stop: bool,
+    stop_container: bool,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Start a container
+    """Stop and/or destroy a execution instance.
 
     Args:
-        container_id (str):
+        exec_id (str):
+        force_stop (bool):
+        stop_container (bool):
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
@@ -149,7 +174,9 @@ async def asyncio(
 
     return (
         await asyncio_detailed(
-            container_id=container_id,
+            exec_id=exec_id,
             client=client,
+            force_stop=force_stop,
+            stop_container=stop_container,
         )
     ).parsed

@@ -3,6 +3,7 @@
 from .container_config import ContainerConfig
 from .container_summary import ContainerSummary
 from .error_response import ErrorResponse
+from .exec_config import ExecConfig
 from .id_response import IdResponse
 from .image import Image
 from .network_config import NetworkConfig

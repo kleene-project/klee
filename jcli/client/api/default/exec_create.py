@@ -4,41 +4,39 @@ import httpx
 
 from ...client import Client
 from ...models.error_response import ErrorResponse
+from ...models.exec_config import ExecConfig
 from ...models.id_response import IdResponse
 from ...types import Response
 
 
 def _get_kwargs(
-    container_id: str,
     *,
     client: Client,
+    json_body: ExecConfig,
 ) -> Dict[str, Any]:
-    url = "{}/containers/{container_id}/stop".format(
-        client.base_url, container_id=container_id
-    )
+    url = "{}/exec/create".format(client.base_url)
 
     headers: Dict[str, Any] = client.get_headers()
     cookies: Dict[str, Any] = client.get_cookies()
+
+    json_json_body = json_body.to_dict()
 
     return {
         "url": url,
         "headers": headers,
         "cookies": cookies,
         "timeout": client.get_timeout(),
+        "json": json_json_body,
     }
 
 
 def _parse_response(
     *, response: httpx.Response
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    if response.status_code == 200:
-        response_200 = IdResponse.from_dict(response.json())
+    if response.status_code == 201:
+        response_201 = IdResponse.from_dict(response.json())
 
-        return response_200
-    if response.status_code == 304:
-        response_304 = ErrorResponse.from_dict(response.json())
-
-        return response_304
+        return response_201
     if response.status_code == 404:
         response_404 = ErrorResponse.from_dict(response.json())
 
@@ -62,22 +60,23 @@ def _build_response(
 
 
 def sync_detailed(
-    container_id: str,
     *,
     client: Client,
+    json_body: ExecConfig,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Stop a container
+    """Create an execution instance
 
     Args:
-        container_id (str):
+        json_body (ExecConfig): Configuration of an executable to run within a container. Some of
+            the configuration parameters will overwrite the corresponding parameters in the container.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
     """
 
     kwargs = _get_kwargs(
-        container_id=container_id,
         client=client,
+        json_body=json_body,
     )
 
     response = httpx.post(
@@ -89,42 +88,44 @@ def sync_detailed(
 
 
 def sync(
-    container_id: str,
     *,
     client: Client,
+    json_body: ExecConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Stop a container
+    """Create an execution instance
 
     Args:
-        container_id (str):
+        json_body (ExecConfig): Configuration of an executable to run within a container. Some of
+            the configuration parameters will overwrite the corresponding parameters in the container.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
     """
 
     return sync_detailed(
-        container_id=container_id,
         client=client,
+        json_body=json_body,
     ).parsed
 
 
 async def asyncio_detailed(
-    container_id: str,
     *,
     client: Client,
+    json_body: ExecConfig,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Stop a container
+    """Create an execution instance
 
     Args:
-        container_id (str):
+        json_body (ExecConfig): Configuration of an executable to run within a container. Some of
+            the configuration parameters will overwrite the corresponding parameters in the container.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
     """
 
     kwargs = _get_kwargs(
-        container_id=container_id,
         client=client,
+        json_body=json_body,
     )
 
     async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
@@ -134,14 +135,15 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    container_id: str,
     *,
     client: Client,
+    json_body: ExecConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Stop a container
+    """Create an execution instance
 
     Args:
-        container_id (str):
+        json_body (ExecConfig): Configuration of an executable to run within a container. Some of
+            the configuration parameters will overwrite the corresponding parameters in the container.
 
     Returns:
         Response[Union[ErrorResponse, IdResponse]]
@@ -149,7 +151,7 @@ async def asyncio(
 
     return (
         await asyncio_detailed(
-            container_id=container_id,
             client=client,
+            json_body=json_body,
         )
     ).parsed
