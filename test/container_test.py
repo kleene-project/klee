@@ -1,6 +1,12 @@
 import subprocess
 
-from testutils import create_container, remove_all_containers, remove_container, run
+from testutils import (
+    create_container,
+    remove_all_containers,
+    remove_container,
+    extract_exec_id,
+    run,
+)
 
 
 class TestContainerSubcommand:
@@ -38,8 +44,8 @@ class TestContainerSubcommand:
 
     def test_starting_and_stopping_a_container_and_list_containers(self):
         container_id = create_container(name="test_start_stop", command="/bin/sleep 10")
-        container_id_again, _ = run(f"container start {container_id}")
-        assert container_id == container_id_again
+        succes_msg, _newline = run(f"container start {container_id}")
+        assert "created execution instance " == succes_msg[:27]
         assert container_is_running(container_id)
         assert (container_id,) == container_list(all_=False)
         container_id_again, _ = run(f"container stop {container_id}")
@@ -52,8 +58,8 @@ class TestContainerSubcommand:
     def test_container_referencing(self):
         name = "test_container_referencing"
         container_id = create_container(name=name, command="/bin/sleep 10")
-        container_id_again, _ = run(f"container start {container_id[:8]}")
-        assert container_id == container_id_again
+        succes_msg, _newline = run(f"container start {container_id[:8]}")
+        assert "created execution instance " == succes_msg[:27]
         assert container_is_running(container_id)
         container_id_again, _ = run(f"container stop {container_id[:8]}")
         assert container_id == container_id_again
@@ -63,8 +69,15 @@ class TestContainerSubcommand:
         name = "test_attached_container"
         container_id = create_container(name=name, command="/usr/bin/uname")
         container_output = run(f"container start --attach {container_id}")
-        exit_msg = f"exit:container {container_id} stopped"
-        assert container_output == ["FreeBSD", "", exit_msg, ""]
+        exec_id = extract_exec_id(container_output)
+        expected_output = [
+            f"created execution instance {exec_id}",
+            "FreeBSD",
+            "",
+            f"executable {exec_id} stopped",
+            "",
+        ]
+        assert container_output == expected_output
         remove_container(container_id)
 
 

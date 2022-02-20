@@ -5,16 +5,13 @@ from testutils import (
     remove_all_containers,
     remove_container,
     remove_image,
+    extract_exec_id,
     run,
 )
 
 
 class TestVolumeSubcommand:
-    instructions = [
-        "FROM scratch",
-        "RUN mkdir /testdir1",
-        "RUN mkdir /testdir2",
-    ]
+    instructions = ["FROM scratch", "RUN mkdir /testdir1", "RUN mkdir /testdir2"]
 
     # pylint: disable=no-self-use
     @classmethod
@@ -43,8 +40,14 @@ class TestVolumeSubcommand:
             image=image_name,
             command="/usr/bin/touch /testdir1/testfile",
         )
-        expected_output = [f"exit:container {container_id} stopped", ""]
-        assert run(f"container start --attach {container_id}") == expected_output
+        output = run(f"container start --attach {container_id}")
+        exec_id = extract_exec_id(output)
+        expected_output = [
+            f"created execution instance {exec_id}",
+            f"executable {exec_id} stopped",
+            "",
+        ]
+        assert output == expected_output
         assert len(list_volumes()) == 2
         remove_image(image_id)
         remove_all_volumes()
@@ -63,7 +66,10 @@ class TestVolumeSubcommand:
             image=image_name,
             command="/usr/bin/touch /testdir1/testfile",
         )
+        *output, _, _, _, _ = run(f"container start --attach {container_id}")
+        exec_id = extract_exec_id(output)
         expected_output = [
+            f"created execution instance {exec_id}",
             "touch: ",
             "/testdir1/testfile",
             ": ",
@@ -72,7 +78,6 @@ class TestVolumeSubcommand:
             "jail: ",
             "/usr/bin/env -i /usr/bin/touch /testdir1/testfile: failed",
         ]
-        *output, _, _, _, _ = run(f"container start --attach {container_id}")
         assert output == expected_output
         assert len(list_volumes()) == 2
         remove_image(image_id)

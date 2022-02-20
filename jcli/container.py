@@ -1,5 +1,6 @@
 import asyncio
 import json
+import urllib
 
 import click
 import websockets
@@ -7,12 +8,13 @@ import websockets
 from .client.api.default.container_create import sync_detailed as container_create
 from .client.api.default.container_delete import sync_detailed as container_delete
 from .client.api.default.container_list import sync_detailed as container_list
-from .client.api.default.container_start import sync_detailed as container_start
 from .client.api.default.container_stop import sync_detailed as container_stop
+from .client.api.default.exec_create import sync_detailed as exec_create
 from .client.models.container_config import ContainerConfig
+from .client.models.exec_config import ExecConfig
 from .name_generator import random_name
 from .utils import (
-    WS_CONTAINER_ATTACH_URL,
+    WS_EXEC_START_URL,
     human_duration,
     listen_for_messages,
     request_and_validate_response,
@@ -135,9 +137,9 @@ def _print_container(containers):
         for c in containers
     ]
 
-    # TODO: The README.md says that 'maxcolwidths' exists but it complains here. Perhaps it is not in the newest version on pypi yet?
-    # col_widths = [12, 15, 23, 18, 7]
-    # lines = tabulate(containers, headers=headers,  maxcolwidths=col_widths).split("\n")
+    # NOTE: The README.md says that 'maxcolwidths' exists but it complains here.
+    # Perhaps it is not in the newest version on pypi yet? col_widths = [12,15,23,18,7]
+    # lines = tabulate(containers, headers=headers, maxcolwidths=col_widths).split("\n")
     lines = tabulate(containers, headers=headers).split("\n")
     for line in lines:
         click.echo(line)
@@ -167,7 +169,9 @@ def remove(containers):
 )
 @click.argument("containers", required=True, nargs=-1)
 def start(attach, containers):
-    """Start one or more stopped containers. Attach only if a single container is started"""
+    """Start one or more stopped containers.
+    Attach only if a single container is started
+    """
     if attach:
         if len(containers) != 1:
             click.echo(
@@ -178,46 +182,78 @@ def start(attach, containers):
 
     else:
         for container_id in containers:
-            response = _start_container(container_id)
-            if response is None or response.status_code != 200:
-                break
+            _start(container_id)
 
 
 def _start_attached(container_id):
     asyncio.run(_attach_and_start_container(container_id))
 
 
+def _start(container_id):
+    asyncio.run(_start_container(container_id))
+
+
 async def _attach_and_start_container(container_id):
-    endpoint = WS_CONTAINER_ATTACH_URL.format(container_id=container_id)
-    async with websockets.connect(endpoint) as websocket:
-        hello_msg = await websocket.recv()
-        if hello_msg[:3] == "ok:":
-            request_and_validate_response(
-                container_start,
-                kwargs={"container_id": container_id},
-                statuscode2messsage={
-                    200: lambda response: "",
-                    304: lambda response: response.parsed.message,
-                    404: lambda response: response.parsed.message,
-                    500: "jocker engine server error",
-                },
-            )
-            await listen_for_messages(websocket)
-        else:
-            click.echo("error attaching to container")
+    response = _create_exec_instance(container_id)
+
+    if response.status_code == 201:
+        click.echo(f"created execution instance {response.parsed.id}")
+        exec_id = response.parsed.id
+        endpoint = WS_EXEC_START_URL.format(
+            exec_id=exec_id,
+            options=urllib.parse.urlencode(
+                {"attach": "true", "start_container": "true"}
+            ),
+        )
+
+        async with websockets.connect(endpoint) as websocket:
+            hello_msg = await websocket.recv()
+            if hello_msg == "OK":
+                await listen_for_messages(websocket)
+            else:
+                click.echo("error starting container #{container_id}")
+    else:
+        click.echo(
+            f"{container_id}: error creating execution instance: {response.parsed}"
+        )
 
 
-def _start_container(container_id):
-    return request_and_validate_response(
-        container_start,
-        kwargs={"container_id": container_id},
+async def _start_container(container_id):
+    response = _create_exec_instance(container_id)
+    if response.status_code == 201:
+        click.echo(f"created execution instance {response.parsed.id}")
+        exec_id = response.parsed.id
+        endpoint = WS_EXEC_START_URL.format(
+            exec_id=exec_id,
+            options=urllib.parse.urlencode(
+                {"attach": "false", "start_container": "true"}
+            ),
+        )
+
+        async with websockets.connect(endpoint) as websocket:
+            await websocket.wait_closed()
+            if websocket.close_code != 1001:
+                click.echo("error starting container #{container_id}")
+    else:
+        click.echo(
+            f"{container_id}: error creating execution instance: {response.parsed}"
+        )
+
+
+def _create_exec_instance(container_id):
+    exec_config = ExecConfig.from_dict(
+        {"container_id": container_id, "cmd": [], "env": [], "user": ""}
+    )
+    response = request_and_validate_response(
+        exec_create,
+        kwargs={"json_body": exec_config},
         statuscode2messsage={
-            200: lambda response: response.parsed.id,
-            304: lambda response: response.parsed.message,
+            201: lambda response: "",
             404: lambda response: response.parsed.message,
-            500: "jocker engine server error",
+            500: lambda response: response.parsed,
         },
     )
+    return response
 
 
 @root.command(name="stop")

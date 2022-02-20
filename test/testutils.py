@@ -5,6 +5,10 @@ from click.testing import CliRunner
 from jcli.main import cli
 
 
+def extract_exec_id(container_output):
+    return container_output[0].split(" ")[-1]
+
+
 def create_image(tag=None, dockerfile="Dockerfile", path=None, quiet=True):
     if path is None:
         path = os.getcwd()

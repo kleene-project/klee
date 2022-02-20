@@ -9,7 +9,7 @@ from .client.client import Client
 
 BASE_URL = "http://localhost:8085"
 WS_IMAGE_BUILD_URL = "ws://localhost:8085/images/build?{options}"
-WS_CONTAINER_ATTACH_URL = "ws://localhost:8085/containers/{container_id}/attach"
+WS_EXEC_START_URL = "ws://localhost:8085/exec/{exec_id}/start?{options}"
 
 
 async def listen_for_messages(websocket):
@@ -20,10 +20,7 @@ async def listen_for_messages(websocket):
             click.echo(f"{websocket.close_reason}")
             break
 
-        if message[:3] == "io:":
-            click.echo(message[3:])
-        else:
-            click.echo("unknown error while receiving container output")
+        click.echo(message)
 
 
 def human_duration(timestamp_iso):

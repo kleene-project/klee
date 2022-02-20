@@ -52,10 +52,10 @@ async def _build_image_and_listen_for_messages(file_, tag, quiet, path):
     )
     async with websockets.connect(endpoint) as websocket:
         hello_msg = await websocket.recv()
-        if hello_msg[:3] == "ok:":
+        if hello_msg == "OK":
             await listen_for_messages(websocket)
         else:
-            click.echo("error attaching to container")
+            click.echo("error building image")
 
 
 @root.command(name="ls")

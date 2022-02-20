@@ -1,4 +1,10 @@
-from testutils import create_container, remove_all_containers, remove_container, run
+from testutils import (
+    create_container,
+    remove_all_containers,
+    remove_container,
+    extract_exec_id,
+    run,
+)
 
 
 class TestNetworkSubcommand:
@@ -60,9 +66,9 @@ class TestNetworkSubcommand:
             command="/usr/bin/host -t A freebsd.org 1.1.1.1",
             network=network_name,
         )
-        assert container_is_connected(container_id)
+        container_is_connected(container_id)
         assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
-        assert container_is_disconnected(container_id)
+        container_is_disconnected(container_id)
         remove_container(container_id)
         remove_network(network_id)
 
@@ -74,16 +80,19 @@ class TestNetworkSubcommand:
             command="/usr/bin/host -t A freebsd.org 1.1.1.1",
             network=network_name,
         )
-        assert container_is_connected(container_id)
+        container_is_connected(container_id)
         assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
-        assert container_is_disconnected(container_id)
+        container_is_disconnected(container_id)
         assert ["OK", ""] == run(f"network connect {network_name} {container_id}")
-        assert container_is_connected(container_id)
+        container_is_connected(container_id)
         remove_container(container_id)
 
 
 def container_is_connected(container_id):
+    output = run(f"container start --attach {container_id}")
+    exec_id = extract_exec_id(output)
     connected_output = [
+        f"created execution instance {exec_id}",
         "Using domain server:",
         "Name: 1.1.1.1",
         "Address: 1.1.1.1#53",
@@ -91,24 +100,27 @@ def container_is_connected(container_id):
         "",
         "freebsd.org has address 96.47.72.84",
         "",
-        f"exit:container {container_id} stopped",
+        f"executable {exec_id} stopped",
         "",
     ]
-    return connected_output == run(f"container start --attach {container_id}")
+    assert connected_output == output
 
 
 def container_is_disconnected(container_id):
+    output = run(f"container start --attach {container_id}")
+    exec_id = extract_exec_id(output)
     disconnected_output = [
+        f"created execution instance {exec_id}",
         ";; connection timed out; no servers could be reached",
         "",
         "jail: ",
         "/usr/bin/env -i /usr/bin/host -t A freebsd.org 1.1.1.1: failed",
         "",
         "",
-        f"exit:container {container_id} stopped",
+        f"executable {exec_id} stopped",
         "",
     ]
-    return disconnected_output == run(f"container start --attach {container_id}")
+    assert disconnected_output == output
 
 
 def remove_all_networks():
