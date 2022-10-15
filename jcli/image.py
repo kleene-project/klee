@@ -1,5 +1,6 @@
 import asyncio
 import urllib.parse
+import os
 
 import click
 import websockets
@@ -45,6 +46,7 @@ def build(file, tag, quiet, path):
 
 async def _build_image_and_listen_for_messages(file_, tag, quiet, path):
     quiet = "true" if quiet else "false"
+    path = os.path.abspath(path)
     endpoint = WS_IMAGE_BUILD_URL.format(
         options=urllib.parse.urlencode(
             {"context": path, "file": file_, "tag": tag, "quiet": quiet}
@@ -53,6 +55,9 @@ async def _build_image_and_listen_for_messages(file_, tag, quiet, path):
     async with websockets.connect(endpoint) as websocket:
         hello_msg = await websocket.recv()
         if hello_msg == "OK":
+            await listen_for_messages(websocket)
+        elif hello_msg[:6] == "ERROR:":
+            click.echo(hello_msg[6:])
             await listen_for_messages(websocket)
         else:
             click.echo("error building image")

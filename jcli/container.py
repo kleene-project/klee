@@ -178,18 +178,18 @@ def start(attach, containers):
                 "only one container can be started when setting the 'attach' flag."
             )
         else:
-            _start_attached(containers[0])
+            start_attached_container(containers[0])
 
     else:
         for container_id in containers:
-            _start(container_id)
+            start_container(container_id)
 
 
-def _start_attached(container_id):
+def start_attached_container(container_id):
     asyncio.run(_attach_and_start_container(container_id))
 
 
-def _start(container_id):
+def start_container(container_id):
     asyncio.run(_start_container(container_id))
 
 
@@ -209,6 +209,9 @@ async def _attach_and_start_container(container_id):
         async with websockets.connect(endpoint) as websocket:
             hello_msg = await websocket.recv()
             if hello_msg == "OK":
+                await listen_for_messages(websocket)
+            elif hello_msg[:6] == "ERROR:":
+                click.echo(hello_msg[6:])
                 await listen_for_messages(websocket)
             else:
                 click.echo("error starting container #{container_id}")
