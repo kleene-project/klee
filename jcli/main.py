@@ -24,6 +24,7 @@ from .container import root as container_root
 from .image import root as image_root
 from .network import root as network_root
 from .volume import root as volume_root
+from .run import run
 
 
 @click.group()
@@ -45,6 +46,7 @@ cli.add_command(container_root, name="container")
 cli.add_command(image_root, name="image")
 cli.add_command(network_root, name="network")
 cli.add_command(volume_root, name="volume")
+cli.add_command(run, name="run")
 
 if __name__ == "__main__":
     cli()

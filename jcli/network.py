@@ -21,7 +21,7 @@ def root(name="network"):
     "-d",
     default="loopback",
     show_default=True,
-    help="Which driver to use for the network. Only 'loopback' is possible atm.",
+    help="Which driver to use for the network. 'vnet' or 'loopback' is possible. See the networking documentation for details.",
 )
 @click.option(
     "--ifname",

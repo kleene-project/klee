@@ -45,7 +45,6 @@ class TestVolumeSubcommand:
         expected_output = [
             f"created execution instance {exec_id}",
             f"executable {exec_id} stopped",
-            "",
         ]
         assert output == expected_output
         assert len(list_volumes()) == 2
@@ -66,19 +65,15 @@ class TestVolumeSubcommand:
             image=image_name,
             command="/usr/bin/touch /testdir1/testfile",
         )
-        *output, _, _, _, _ = run(f"container start --attach {container_id}")
+        output = run(f"container start --attach {container_id}")
+
         exec_id = extract_exec_id(output)
         expected_output = [
             f"created execution instance {exec_id}",
-            "touch: ",
-            "/testdir1/testfile",
-            ": ",
+            "touch: /testdir1/testfile: ",
             "Read-only file system",
-            "",
-            "jail: ",
-            "/usr/bin/env -i /usr/bin/touch /testdir1/testfile: failed",
         ]
-        assert output == expected_output
+        assert output[:3] == expected_output
         assert len(list_volumes()) == 2
         remove_image(image_id)
         remove_all_volumes()

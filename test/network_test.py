@@ -42,7 +42,7 @@ class TestNetworkSubcommand:
         assert network_id2 == network_id2_again
         assert empty_network_list()
 
-    def test_create_container_connected_to_custom_loopback_network(self):
+    def test_create_container_connected_to_custom_network_with_default_driver(self):
         network_id = create_network(
             "test_create_conn", ifname="testif", subnet="10.13.37.0/24"
         )
@@ -55,11 +55,24 @@ class TestNetworkSubcommand:
         remove_container(container_id)
         remove_network(network_id)
 
-    def test_connection_and_disconnecting_container_to_custom_network(self):
+    def test_create_container_connected_to_custom_vnet_network(self):
+        network_id = create_network(
+            "test_vnet", ifname="testif", subnet="10.13.37.0/24", driver="vnet"
+        )
+        container_id = create_container(
+            name="test_disconn_network",
+            command="/usr/bin/host -t A freebsd.org 1.1.1.1",
+            network="test_vnet",
+        )
+        container_is_connected(container_id, driver="vnet")
+        remove_container(container_id)
+        remove_network(network_id)
+
+    def test_connection_and_disconnecting_container_to_loopback_network(self):
         container_name = "test_disconn_network"
         network_name = "test_nw_disconn"
         network_id = create_network(
-            network_name, ifname="testif", subnet="10.13.37.0/24"
+            network_name, ifname="testif", subnet="10.13.37.0/24", driver="loopback"
         )
         container_id = create_container(
             name=container_name,
@@ -72,37 +85,56 @@ class TestNetworkSubcommand:
         remove_container(container_id)
         remove_network(network_id)
 
-    def test_disconnecting_and_reconnecting_default_network(self):
-        container_name = "test_reconn_network"
-        network_name = "default"
+    def test_connection_and_disconnecting_container_to_vnet_network(self):
+        container_name = "test_disconn_network"
+        network_name = "test_nw_disconn"
+        network_id = create_network(
+            network_name, ifname="testif", subnet="10.13.37.0/24", driver="vnet"
+        )
         container_id = create_container(
             name=container_name,
             command="/usr/bin/host -t A freebsd.org 1.1.1.1",
             network=network_name,
         )
-        container_is_connected(container_id)
+        container_is_connected(container_id, driver="vnet")
         assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
         container_is_disconnected(container_id)
-        assert ["OK", ""] == run(f"network connect {network_name} {container_id}")
-        container_is_connected(container_id)
         remove_container(container_id)
+        remove_network(network_id)
 
 
-def container_is_connected(container_id):
+def container_is_connected(container_id, driver="loopback"):
     output = run(f"container start --attach {container_id}")
     exec_id = extract_exec_id(output)
-    connected_output = [
-        f"created execution instance {exec_id}",
-        "Using domain server:",
-        "Name: 1.1.1.1",
-        "Address: 1.1.1.1#53",
-        "Aliases: ",
-        "",
-        "freebsd.org has address 96.47.72.84",
-        "",
-        f"executable {exec_id} stopped",
-        "",
-    ]
+    if driver == "loopback":
+        connected_output = [
+            f"created execution instance {exec_id}",
+            "Using domain server:",
+            "Name: 1.1.1.1",
+            "Address: 1.1.1.1#53",
+            "Aliases: ",
+            "",
+            "freebsd.org has address 96.47.72.84",
+            "",
+            f"executable {exec_id} stopped",
+        ]
+    elif driver == "vnet":
+        connected_output = [
+            f"created execution instance {exec_id}",
+            "add net default: gateway 10.13.37.0",
+            "",
+            "Using domain server:",
+            "Name: 1.1.1.1",
+            "Address: 1.1.1.1#53",
+            "Aliases: ",
+            "",
+            "freebsd.org has address 96.47.72.84",
+            "",
+            f"executable {exec_id} stopped",
+        ]
+    else:
+        connected_output = ["unknown driver used"]
+
     assert connected_output == output
 
 
@@ -113,12 +145,9 @@ def container_is_disconnected(container_id):
         f"created execution instance {exec_id}",
         ";; connection timed out; no servers could be reached",
         "",
-        "jail: ",
-        "/usr/bin/env -i /usr/bin/host -t A freebsd.org 1.1.1.1: failed",
-        "",
+        "jail: /usr/bin/env -i /usr/bin/host -t A freebsd.org 1.1.1.1: failed",
         "",
         f"executable {exec_id} stopped",
-        "",
     ]
     assert disconnected_output == output
 
@@ -130,21 +159,20 @@ def remove_all_networks():
 
 
 def list_non_default_networks():
-    _header, _header_line, _default_network, _host_network, *networks, _, _ = run(
-        "network ls"
-    )
+    tmp = run("network ls")
+    _header, _header_line, _host_network, *networks, _, _ = tmp
     return networks
 
 
 def empty_network_list():
-    HEADER = "ID            NAME     DRIVER    SUBNET"
-    HEADER_LINE = "------------  -------  --------  -------------"
-    DEFAULT_NETWORK = "  default  loopback  172.17.0.0/16"
-    HOST_NETWORK = "host          host     host"
-    header, header_line, default_network, host_network, _, _ = run("network ls")
+    HEADER = "ID    NAME    DRIVER    SUBNET"
+    HEADER_LINE = "----  ------  --------  --------"
+    HOST_NETWORK = "host  host    host"
+    tmp = run("network ls")
+    header, header_line, host_network, _, _ = tmp
     assert header == HEADER
     assert header_line == HEADER_LINE
-    assert default_network[12:] == DEFAULT_NETWORK
+    # assert default_network[12:] == DEFAULT_NETWORK
     assert host_network == HOST_NETWORK
     return True
 

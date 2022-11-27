@@ -45,10 +45,9 @@ class TestImageSubcommand:
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
             "",
             "Step 3/3 : CMD /usr/bin/uname",
-            "",
         ]
         assert build_output == expected_build_output
-        _, image_id_created = result[-2].split(" id ")
+        _, image_id_created = result[-1].split(" id ")
         images = list_images()
         image_id_listed = images[0][:12]
         assert image_id_created == image_id_listed
