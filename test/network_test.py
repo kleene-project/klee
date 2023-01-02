@@ -167,7 +167,7 @@ def list_non_default_networks():
 def empty_network_list():
     HEADER = "ID    NAME    DRIVER    SUBNET"
     HEADER_LINE = "----  ------  --------  --------"
-    HOST_NETWORK = "host  host    host"
+    HOST_NETWORK = "host  host    host      n/a"
     tmp = run("network ls")
     header, header_line, host_network, _, _ = tmp
     assert header == HEADER

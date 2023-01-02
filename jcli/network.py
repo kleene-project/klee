@@ -25,8 +25,8 @@ def root(name="network"):
 )
 @click.option(
     "--ifname",
-    required=True,
-    help="Name of the loopback interface used for the network",
+    default="",
+    help="Name of the loopback interface used for the loopback network",
 )
 @click.option("--subnet", required=True, help="Subnet in CIDR format for the network")
 @click.argument("network_name", nargs=1)
@@ -38,18 +38,23 @@ def create(driver, ifname, subnet, network_name):
         "subnet": subnet,
         "driver": driver,
     }
+    if driver == "loopback" and ifname is None:
+        click.echo(
+            "Option 'ifname' is needed when the network driver 'loopback' is used"
+        )
 
-    network_config = NetworkConfig.from_dict(network_config)
+    else:
+        network_config = NetworkConfig.from_dict(network_config)
 
-    request_and_validate_response(
-        network_create,
-        kwargs={"json_body": network_config},
-        statuscode2messsage={
-            201: lambda response: response.parsed.id,
-            409: lambda response: response.parsed.message,
-            500: "jocker engine server error",
-        },
-    )
+        request_and_validate_response(
+            network_create,
+            kwargs={"json_body": network_config},
+            statuscode2messsage={
+                201: lambda response: response.parsed.id,
+                409: lambda response: response.parsed.message,
+                500: "jocker engine server error",
+            },
+        )
 
 
 @root.command(name="rm")
