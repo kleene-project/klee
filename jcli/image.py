@@ -1,6 +1,6 @@
 import asyncio
-import urllib.parse
 import os
+import urllib.parse
 
 import click
 import websockets

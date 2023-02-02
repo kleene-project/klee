@@ -2,9 +2,8 @@ import click
 
 from .client.api.default.container_create import sync_detailed as container_create
 from .client.models.container_config import ContainerConfig
-from .container import start_container, start_attached_container
+from .container import start_attached_container, start_container
 from .name_generator import random_name
-
 from .utils import request_and_validate_response
 
 

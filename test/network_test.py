@@ -1,8 +1,8 @@
 from testutils import (
     create_container,
+    extract_exec_id,
     remove_all_containers,
     remove_container,
-    extract_exec_id,
     run,
 )
 

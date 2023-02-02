@@ -23,8 +23,8 @@ import click
 from .container import root as container_root
 from .image import root as image_root
 from .network import root as network_root
-from .volume import root as volume_root
 from .run import run
+from .volume import root as volume_root
 
 
 @click.group()

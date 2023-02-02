@@ -2,10 +2,10 @@ from testutils import (
     create_container,
     create_dockerfile,
     create_image,
+    extract_exec_id,
     remove_all_containers,
     remove_container,
     remove_image,
-    extract_exec_id,
     run,
 )
 
