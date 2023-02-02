@@ -14,15 +14,16 @@ def _get_kwargs(
 ) -> Dict[str, Any]:
     url = "{}/containers/list".format(client.base_url)
 
-    headers: Dict[str, Any] = client.get_headers()
+    headers: Dict[str, str] = client.get_headers()
     cookies: Dict[str, Any] = client.get_cookies()
 
-    params: Dict[str, Any] = {
-        "all": all_,
-    }
+    params: Dict[str, Any] = {}
+    params["all"] = all_
+
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
     return {
+        "method": "get",
         "url": url,
         "headers": headers,
         "cookies": cookies,
@@ -35,10 +36,12 @@ def _parse_response(*, response: httpx.Response) -> Optional[List[ContainerSumma
     if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
-        for response_200_item_data in _response_200:
-            response_200_item = ContainerSummary.from_dict(response_200_item_data)
+        for componentsschemas_container_summary_list_item_data in _response_200:
+            componentsschemas_container_summary_list_item = ContainerSummary.from_dict(
+                componentsschemas_container_summary_list_item_data
+            )
 
-            response_200.append(response_200_item)
+            response_200.append(componentsschemas_container_summary_list_item)
 
         return response_200
     return None
@@ -74,7 +77,7 @@ def sync_detailed(
         all_=all_,
     )
 
-    response = httpx.get(
+    response = httpx.request(
         verify=client.verify_ssl,
         **kwargs,
     )
@@ -126,7 +129,7 @@ async def asyncio_detailed(
     )
 
     async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
-        response = await _client.get(**kwargs)
+        response = await _client.request(**kwargs)
 
     return _build_response(response=response)
 

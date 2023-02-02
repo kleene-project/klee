@@ -4,17 +4,18 @@ import attr
 
 from ..types import UNSET, Unset
 
-T = TypeVar("T", bound="VolumeSummary")
+T = TypeVar("T", bound="Volume")
 
 
 @attr.s(auto_attribs=True)
-class VolumeSummary:
-    """summary description of a volume
+class Volume:
+    """Volume object used for persistent storage in containers.
 
     Attributes:
         created (Union[Unset, str]): when the volume was created
         dataset (Union[Unset, str]): underlying zfs dataset of the volume
-        mountpoint (Union[Unset, str]): main mountpoint of the volume (the mountpoint shown with 'zfs list')
+        mountpoint (Union[Unset, str]): mountpoint of the volume's underlying zfs-dataset (the mountpoint shown with
+            'zfs list')
         name (Union[Unset, str]): Name of the volume
     """
 
@@ -55,15 +56,15 @@ class VolumeSummary:
 
         name = d.pop("name", UNSET)
 
-        volume_summary = cls(
+        volume = cls(
             created=created,
             dataset=dataset,
             mountpoint=mountpoint,
             name=name,
         )
 
-        volume_summary.additional_properties = d
-        return volume_summary
+        volume.additional_properties = d
+        return volume
 
     @property
     def additional_keys(self) -> List[str]:

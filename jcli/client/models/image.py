@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Type, TypeVar, Union, cast
 
 import attr
 
+from ..models.image_buildargs import ImageBuildargs
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="Image")
@@ -12,11 +13,15 @@ class Image:
     """the image metadata
 
     Attributes:
+        buildargs (Union[Unset, ImageBuildargs]): Object of string pairs for build-time variables. Users pass these
+            values at build-time. Jocker uses the buildargs as the environment context for commands run via the Dockerfile
+            RUN instruction, or for variable expansion in other Dockerfile instructions. This is not meant for passing
+            secret values. Example: {'JAIL_MGMT_ENGINE': 'jocker', 'USERNAME': 'Stephen'}.
         command (Union[Unset, List[str]]): Default command used when creating a container from this image Example:
             ['/bin/sh', '-c', '/bin/ls'].
         created (Union[Unset, str]): When the image was created
-        env_vars (Union[Unset, List[str]]): List of environment variables and their values to set before running
-            command. Example: ['PWD=/roo/', 'JAIL_MGMT_ENGINE=jocker'].
+        env (Union[Unset, List[str]]): Environment variables and their values to set before running command. Example:
+            ['PWD=/roo/', 'JAIL_MGMT_ENGINE=jocker'].
         id (Union[Unset, str]): The id of the image
         layer_id (Union[Unset, str]): Id of the layer containing the image
         name (Union[Unset, str]): Name of the image
@@ -24,9 +29,10 @@ class Image:
         user (Union[Unset, str]): user used when executing the command
     """
 
+    buildargs: Union[Unset, ImageBuildargs] = UNSET
     command: Union[Unset, List[str]] = UNSET
     created: Union[Unset, str] = UNSET
-    env_vars: Union[Unset, List[str]] = UNSET
+    env: Union[Unset, List[str]] = UNSET
     id: Union[Unset, str] = UNSET
     layer_id: Union[Unset, str] = UNSET
     name: Union[Unset, str] = UNSET
@@ -35,14 +41,18 @@ class Image:
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        buildargs: Union[Unset, Dict[str, Any]] = UNSET
+        if not isinstance(self.buildargs, Unset):
+            buildargs = self.buildargs.to_dict()
+
         command: Union[Unset, List[str]] = UNSET
         if not isinstance(self.command, Unset):
             command = self.command
 
         created = self.created
-        env_vars: Union[Unset, List[str]] = UNSET
-        if not isinstance(self.env_vars, Unset):
-            env_vars = self.env_vars
+        env: Union[Unset, List[str]] = UNSET
+        if not isinstance(self.env, Unset):
+            env = self.env
 
         id = self.id
         layer_id = self.layer_id
@@ -53,12 +63,14 @@ class Image:
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
+        if buildargs is not UNSET:
+            field_dict["buildargs"] = buildargs
         if command is not UNSET:
             field_dict["command"] = command
         if created is not UNSET:
             field_dict["created"] = created
-        if env_vars is not UNSET:
-            field_dict["env_vars"] = env_vars
+        if env is not UNSET:
+            field_dict["env"] = env
         if id is not UNSET:
             field_dict["id"] = id
         if layer_id is not UNSET:
@@ -75,11 +87,18 @@ class Image:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
+        _buildargs = d.pop("buildargs", UNSET)
+        buildargs: Union[Unset, ImageBuildargs]
+        if isinstance(_buildargs, Unset):
+            buildargs = UNSET
+        else:
+            buildargs = ImageBuildargs.from_dict(_buildargs)
+
         command = cast(List[str], d.pop("command", UNSET))
 
         created = d.pop("created", UNSET)
 
-        env_vars = cast(List[str], d.pop("env_vars", UNSET))
+        env = cast(List[str], d.pop("env", UNSET))
 
         id = d.pop("id", UNSET)
 
@@ -92,9 +111,10 @@ class Image:
         user = d.pop("user", UNSET)
 
         image = cls(
+            buildargs=buildargs,
             command=command,
             created=created,
-            env_vars=env_vars,
+            env=env,
             id=id,
             layer_id=layer_id,
             name=name,

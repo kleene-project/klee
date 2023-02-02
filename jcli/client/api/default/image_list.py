@@ -13,10 +13,11 @@ def _get_kwargs(
 ) -> Dict[str, Any]:
     url = "{}/images/list".format(client.base_url)
 
-    headers: Dict[str, Any] = client.get_headers()
+    headers: Dict[str, str] = client.get_headers()
     cookies: Dict[str, Any] = client.get_cookies()
 
     return {
+        "method": "get",
         "url": url,
         "headers": headers,
         "cookies": cookies,
@@ -28,10 +29,12 @@ def _parse_response(*, response: httpx.Response) -> Optional[List[Image]]:
     if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
-        for response_200_item_data in _response_200:
-            response_200_item = Image.from_dict(response_200_item_data)
+        for componentsschemas_image_list_item_data in _response_200:
+            componentsschemas_image_list_item = Image.from_dict(
+                componentsschemas_image_list_item_data
+            )
 
-            response_200.append(response_200_item)
+            response_200.append(componentsschemas_image_list_item)
 
         return response_200
     return None
@@ -62,7 +65,7 @@ def sync_detailed(
         client=client,
     )
 
-    response = httpx.get(
+    response = httpx.request(
         verify=client.verify_ssl,
         **kwargs,
     )
@@ -104,7 +107,7 @@ async def asyncio_detailed(
     )
 
     async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
-        response = await _client.get(**kwargs)
+        response = await _client.request(**kwargs)
 
     return _build_response(response=response)
 

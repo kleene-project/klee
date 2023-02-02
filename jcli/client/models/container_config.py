@@ -2,6 +2,7 @@ from typing import Any, Dict, List, Type, TypeVar, Union, cast
 
 import attr
 
+from ..models.container_config_networks import ContainerConfigNetworks
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="ContainerConfig")
@@ -21,7 +22,9 @@ class ContainerConfig:
             image (Union[Unset, str]): The name of the image to use when creating the container
             jail_param (Union[Unset, List[str]]): List of jail parameters (see jail(8) for details) Example:
                 ['allow.raw_sockets=true', 'osrelease=jockerjail'].
-            networks (Union[Unset, List[str]]): List of networks that the container should be connected to.
+            networks (Union[Unset, ContainerConfigNetworks]): A mapping of network name to endpoint configuration for that
+                network. The 'container' property is ignored in each endpoint config and the created container's id is used
+                instead. Use a dummy-string like 'unused_name' for the 'container' property since it is mandatory.
             user (Union[Unset, str]): User that executes the command (cmd). If no user is set the user from the image will
                 be used (which in turn is 'root' if no user is specified there). Default: ''.
             volumes (Union[Unset, List[str]]): List of volumes that should be mounted into the container
@@ -31,7 +34,7 @@ class ContainerConfig:
     env: Union[Unset, List[str]] = UNSET
     image: Union[Unset, str] = UNSET
     jail_param: Union[Unset, List[str]] = UNSET
-    networks: Union[Unset, List[str]] = UNSET
+    networks: Union[Unset, ContainerConfigNetworks] = UNSET
     user: Union[Unset, str] = ""
     volumes: Union[Unset, List[str]] = UNSET
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
@@ -50,9 +53,9 @@ class ContainerConfig:
         if not isinstance(self.jail_param, Unset):
             jail_param = self.jail_param
 
-        networks: Union[Unset, List[str]] = UNSET
+        networks: Union[Unset, Dict[str, Any]] = UNSET
         if not isinstance(self.networks, Unset):
-            networks = self.networks
+            networks = self.networks.to_dict()
 
         user = self.user
         volumes: Union[Unset, List[str]] = UNSET
@@ -90,7 +93,12 @@ class ContainerConfig:
 
         jail_param = cast(List[str], d.pop("jail_param", UNSET))
 
-        networks = cast(List[str], d.pop("networks", UNSET))
+        _networks = d.pop("networks", UNSET)
+        networks: Union[Unset, ContainerConfigNetworks]
+        if isinstance(_networks, Unset):
+            networks = UNSET
+        else:
+            networks = ContainerConfigNetworks.from_dict(_networks)
 
         user = d.pop("user", UNSET)
 

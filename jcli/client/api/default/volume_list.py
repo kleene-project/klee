@@ -3,7 +3,7 @@ from typing import Any, Dict, List, Optional
 import httpx
 
 from ...client import Client
-from ...models.volume_summary import VolumeSummary
+from ...models.volume import Volume
 from ...types import Response
 
 
@@ -13,10 +13,11 @@ def _get_kwargs(
 ) -> Dict[str, Any]:
     url = "{}/volumes/list".format(client.base_url)
 
-    headers: Dict[str, Any] = client.get_headers()
+    headers: Dict[str, str] = client.get_headers()
     cookies: Dict[str, Any] = client.get_cookies()
 
     return {
+        "method": "get",
         "url": url,
         "headers": headers,
         "cookies": cookies,
@@ -24,12 +25,19 @@ def _get_kwargs(
     }
 
 
-def _parse_response(*, response: httpx.Response) -> Optional[List[VolumeSummary]]:
+def _parse_response(*, response: httpx.Response) -> Optional[List[List[Volume]]]:
     if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
-            response_200_item = VolumeSummary.from_dict(response_200_item_data)
+            response_200_item = []
+            _response_200_item = response_200_item_data
+            for componentsschemas_volume_list_item_data in _response_200_item:
+                componentsschemas_volume_list_item = Volume.from_dict(
+                    componentsschemas_volume_list_item_data
+                )
+
+                response_200_item.append(componentsschemas_volume_list_item)
 
             response_200.append(response_200_item)
 
@@ -37,7 +45,7 @@ def _parse_response(*, response: httpx.Response) -> Optional[List[VolumeSummary]
     return None
 
 
-def _build_response(*, response: httpx.Response) -> Response[List[VolumeSummary]]:
+def _build_response(*, response: httpx.Response) -> Response[List[List[Volume]]]:
     return Response(
         status_code=response.status_code,
         content=response.content,
@@ -49,20 +57,20 @@ def _build_response(*, response: httpx.Response) -> Response[List[VolumeSummary]
 def sync_detailed(
     *,
     client: Client,
-) -> Response[List[VolumeSummary]]:
+) -> Response[List[List[Volume]]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[VolumeSummary]]
+        Response[List[List[Volume]]]
     """
 
     kwargs = _get_kwargs(
         client=client,
     )
 
-    response = httpx.get(
+    response = httpx.request(
         verify=client.verify_ssl,
         **kwargs,
     )
@@ -73,13 +81,13 @@ def sync_detailed(
 def sync(
     *,
     client: Client,
-) -> Optional[List[VolumeSummary]]:
+) -> Optional[List[List[Volume]]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[VolumeSummary]]
+        Response[List[List[Volume]]]
     """
 
     return sync_detailed(
@@ -90,13 +98,13 @@ def sync(
 async def asyncio_detailed(
     *,
     client: Client,
-) -> Response[List[VolumeSummary]]:
+) -> Response[List[List[Volume]]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[VolumeSummary]]
+        Response[List[List[Volume]]]
     """
 
     kwargs = _get_kwargs(
@@ -104,7 +112,7 @@ async def asyncio_detailed(
     )
 
     async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
-        response = await _client.get(**kwargs)
+        response = await _client.request(**kwargs)
 
     return _build_response(response=response)
 
@@ -112,13 +120,13 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Client,
-) -> Optional[List[VolumeSummary]]:
+) -> Optional[List[List[Volume]]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[VolumeSummary]]
+        Response[List[List[Volume]]]
     """
 
     return (
