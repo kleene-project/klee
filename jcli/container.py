@@ -6,8 +6,8 @@ import click
 import websockets
 
 from .client.api.default.container_create import sync_detailed as container_create
-from .client.api.default.container_delete import sync_detailed as container_delete
 from .client.api.default.container_list import sync_detailed as container_list
+from .client.api.default.container_remove import sync_detailed as container_remove
 from .client.api.default.container_stop import sync_detailed as container_stop
 from .client.api.default.exec_create import sync_detailed as exec_create
 from .client.models.container_config import ContainerConfig
@@ -35,13 +35,7 @@ def root(name="container"):
     default="",
     help="Alternate user that should be used for starting the container",
 )
-@click.option(
-    "--network",
-    "-n",
-    multiple=True,
-    default=None,
-    help="Connect a container to a network",
-)
+@click.option("--network", "-n", default=None, help="Connect a container to a network")
 @click.option(
     "--volume",
     "-v",
@@ -57,6 +51,11 @@ def root(name="container"):
     help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
 )
 @click.option(
+    "--ip",
+    default=None,
+    help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
+)
+@click.option(
     "--jailparam",
     "-J",
     multiple=True,
@@ -66,11 +65,19 @@ def root(name="container"):
 )
 @click.argument("image", nargs=1)
 @click.argument("command", nargs=-1)
-def create(name, user, network, volume, env, jailparam, image, command):
+def create(name, user, network, volume, env, ip, jailparam, image, command):
     """Create a new container"""
+    if network is not None:
+        if ip is not None:
+            network = {network: {"container": "dummy", "ip_address": ip}}
+        else:
+            network = {network: {"container": "dummy"}}
+    else:
+        network = {}
+
     container_config = {
         "cmd": list(command),
-        "networks": list(network),
+        "networks": network,
         "volumes": list(volume),
         "image": image,
         "jail_param": list(jailparam),
@@ -151,7 +158,7 @@ def remove(containers):
     """Remove one or more containers"""
     for container_id in containers:
         response = request_and_validate_response(
-            container_delete,
+            container_remove,
             kwargs={"container_id": container_id},
             statuscode2messsage={
                 200: lambda response: response.parsed.id,

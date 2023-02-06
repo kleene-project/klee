@@ -1,4 +1,5 @@
 from testutils import (
+    container_get_netstat_info,
     create_container,
     extract_exec_id,
     remove_all_containers,
@@ -102,6 +103,74 @@ class TestNetworkSubcommand:
         remove_container(container_id)
         remove_network(network_id)
 
+    def test_create_container_with_user_defined_ip_loopback(self):
+        container_name = "custom_ip1"
+        network_name = "custom_ip1"
+        network_id = create_network(
+            network_name, ifname="testif", subnet="10.13.37.0/24", driver="loopback"
+        )
+        container_id = create_container(
+            name=container_name,
+            command="/usr/bin/netstat --libxo json -i -4",
+            network=network_name,
+            ip="10.13.37.13",
+        )
+        netstat_info = container_get_netstat_info(container_id, driver="loopback")
+        assert netstat_info[0]["address"] == "10.13.37.13"
+        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        remove_container(container_id)
+        remove_network(network_id)
+
+    def test_create_container_with_user_defined_ip_vnet(self):
+        container_name = "custom_ip2"
+        network_name = "custom_ip2"
+        network_id = create_network(
+            network_name, ifname="testif", subnet="10.13.38.0/24", driver="vnet"
+        )
+        container_id = create_container(
+            name=container_name,
+            command="/usr/bin/netstat --libxo json -i -4",
+            network=network_name,
+            ip="10.13.38.13",
+        )
+        netstat_info = container_get_netstat_info(container_id, driver="vnet")
+        assert netstat_info[0]["address"] == "10.13.38.13"
+        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        remove_container(container_id)
+        remove_network(network_id)
+
+    def test_connect_container_with_user_defined_ip_loopback(self):
+        container_name = "custom_ip3"
+        network_name = "custom_ip3"
+        network_id = create_network(
+            network_name, ifname="testif", subnet="10.13.37.0/24", driver="loopback"
+        )
+        container_id = create_container(
+            name=container_name, command="/usr/bin/netstat --libxo json -i -4"
+        )
+        run(f"network connect --ip 10.13.37.13 {network_name} {container_name}")
+        netstat_info = container_get_netstat_info(container_id, driver="loopback")
+        assert netstat_info[0]["address"] == "10.13.37.13"
+        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        remove_container(container_id)
+        remove_network(network_id)
+
+    def test_connect_container_with_user_defined_ip_vnet(self):
+        container_name = "custom_ip3"
+        network_name = "custom_ip3"
+        network_id = create_network(
+            network_name, ifname="testif", subnet="10.13.38.0/24", driver="vnet"
+        )
+        container_id = create_container(
+            name=container_name, command="/usr/bin/netstat --libxo json -i -4"
+        )
+        run(f"network connect --ip 10.13.38.13 {network_name} {container_name}")
+        netstat_info = container_get_netstat_info(container_id, driver="vnet")
+        assert netstat_info[0]["address"] == "10.13.38.13"
+        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        remove_container(container_id)
+        remove_network(network_id)
+
 
 def container_is_connected(container_id, driver="loopback"):
     output = run(f"container start --attach {container_id}")
@@ -155,6 +224,8 @@ def container_is_disconnected(container_id):
 def remove_all_networks():
     networks = list_non_default_networks()
     for network in networks:
+        if network[:4] == "host":
+            continue
         remove_network(network[:12])
 
 

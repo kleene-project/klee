@@ -5,6 +5,7 @@ from .client.api.default.network_create import sync_detailed as network_create
 from .client.api.default.network_disconnect import sync_detailed as network_disconnect
 from .client.api.default.network_list import sync_detailed as network_list
 from .client.api.default.network_remove import sync_detailed as network_remove
+from .client.models.end_point_config import EndPointConfig
 from .client.models.network_config import NetworkConfig
 from .utils import request_and_validate_response
 
@@ -100,13 +101,25 @@ def _print_networks(networks):
 
 
 @root.command(name="connect")
+@click.option(
+    "--ip",
+    default=None,
+    help="IPv4 address (e.g., 172.30.100.104) used for the container.",
+)
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
-def connect(network, container):
+def connect(ip, network, container):
     """Connect a container to a network"""
+    if ip is not None:
+        endpoint_config = EndPointConfig.from_dict(
+            {"container": container, "ip_address": ip}
+        )
+    else:
+        endpoint_config = EndPointConfig.from_dict({"container": container})
+
     request_and_validate_response(
         network_connect,
-        kwargs={"network_id": network, "container_id": container},
+        kwargs={"network_id": network, "json_body": endpoint_config},
         statuscode2messsage={
             204: "OK",
             404: lambda response: response.parsed.message,

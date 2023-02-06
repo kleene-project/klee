@@ -1,3 +1,4 @@
+import json
 import os
 
 from click.testing import CliRunner
@@ -58,8 +59,9 @@ def remove_all_images():
 
 
 def create_container(
-    image="base", name=None, command="/bin/ls", volumes=None, network=None
+    image="base", name=None, command="/bin/ls", volumes=None, network=None, ip=None
 ):
+
     if volumes is None:
         volumes = ""
     else:
@@ -74,8 +76,28 @@ def create_container(
     else:
         name = f"--name {name} "
 
-    container_id, _ = run(f"container create {volumes}{network}{name}{image} {command}")
+    if ip is None:
+        ip = ""
+    else:
+        ip = f"--ip {ip} "
+
+    container_id, _ = run(
+        f"container create {volumes}{network}{ip}{name}{image} {command}"
+    )
     return container_id
+
+
+def container_get_netstat_info(container_id, driver):
+    output = run(f"container start --attach {container_id}")
+    if driver == "vnet":
+        _, _, _, netstat_info, *_ = output
+
+    elif driver == "loopback":
+        _, netstat_info, *_ = output
+
+    netstat_info = json.loads(netstat_info)
+    interface_info = netstat_info["statistics"]["interface"]
+    return interface_info
 
 
 def remove_container(name_or_id):
