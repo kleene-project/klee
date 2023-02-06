@@ -25,27 +25,22 @@ def _get_kwargs(
     }
 
 
-def _parse_response(*, response: httpx.Response) -> Optional[List[List[Volume]]]:
+def _parse_response(*, response: httpx.Response) -> Optional[List[Volume]]:
     if response.status_code == 200:
         response_200 = []
         _response_200 = response.json()
-        for response_200_item_data in _response_200:
-            response_200_item = []
-            _response_200_item = response_200_item_data
-            for componentsschemas_volume_list_item_data in _response_200_item:
-                componentsschemas_volume_list_item = Volume.from_dict(
-                    componentsschemas_volume_list_item_data
-                )
+        for componentsschemas_volume_list_item_data in _response_200:
+            componentsschemas_volume_list_item = Volume.from_dict(
+                componentsschemas_volume_list_item_data
+            )
 
-                response_200_item.append(componentsschemas_volume_list_item)
-
-            response_200.append(response_200_item)
+            response_200.append(componentsschemas_volume_list_item)
 
         return response_200
     return None
 
 
-def _build_response(*, response: httpx.Response) -> Response[List[List[Volume]]]:
+def _build_response(*, response: httpx.Response) -> Response[List[Volume]]:
     return Response(
         status_code=response.status_code,
         content=response.content,
@@ -57,13 +52,13 @@ def _build_response(*, response: httpx.Response) -> Response[List[List[Volume]]]
 def sync_detailed(
     *,
     client: Client,
-) -> Response[List[List[Volume]]]:
+) -> Response[List[Volume]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[List[Volume]]]
+        Response[List[Volume]]
     """
 
     kwargs = _get_kwargs(
@@ -81,13 +76,13 @@ def sync_detailed(
 def sync(
     *,
     client: Client,
-) -> Optional[List[List[Volume]]]:
+) -> Optional[List[Volume]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[List[Volume]]]
+        Response[List[Volume]]
     """
 
     return sync_detailed(
@@ -98,13 +93,13 @@ def sync(
 async def asyncio_detailed(
     *,
     client: Client,
-) -> Response[List[List[Volume]]]:
+) -> Response[List[Volume]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[List[Volume]]]
+        Response[List[Volume]]
     """
 
     kwargs = _get_kwargs(
@@ -120,13 +115,13 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Client,
-) -> Optional[List[List[Volume]]]:
+) -> Optional[List[Volume]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
 
     Returns:
-        Response[List[List[Volume]]]
+        Response[List[Volume]]
     """
 
     return (
