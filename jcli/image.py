@@ -52,15 +52,19 @@ async def _build_image_and_listen_for_messages(file_, tag, quiet, path):
             {"context": path, "file": file_, "tag": tag, "quiet": quiet}
         )
     )
-    async with websockets.connect(endpoint) as websocket:
-        hello_msg = await websocket.recv()
-        if hello_msg == "OK":
-            await listen_for_messages(websocket)
-        elif hello_msg[:6] == "ERROR:":
-            click.echo(hello_msg[6:])
-            await listen_for_messages(websocket)
-        else:
-            click.echo("error building image")
+    try:
+        async with websockets.connect(endpoint) as websocket:
+            hello_msg = await websocket.recv()
+            if hello_msg == "OK":
+                await listen_for_messages(websocket)
+            elif hello_msg[:6] == "ERROR:":
+                click.echo(hello_msg[6:])
+                await listen_for_messages(websocket)
+            else:
+                click.echo("error building image")
+
+    except websockets.exceptions.ConnectionClosedError:
+        click.echo("ERROR: build failed unexpectantly. Failed to build image.")
 
 
 @root.command(name="ls")
