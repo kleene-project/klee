@@ -6,6 +6,10 @@ from click.testing import CliRunner
 from jcli.main import cli
 
 
+def container_stopped_msg(exec_id, exit_code=0):
+    return f"executable {exec_id} and its container exited with exit-code {exit_code}"
+
+
 def extract_exec_id(container_output):
     return container_output[0].split(" ")[-1]
 

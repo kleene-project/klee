@@ -7,6 +7,7 @@ from testutils import (
     remove_container,
     remove_image,
     run,
+    container_stopped_msg,
 )
 
 
@@ -44,7 +45,7 @@ class TestVolumeSubcommand:
         exec_id = extract_exec_id(output)
         expected_output = [
             f"created execution instance {exec_id}",
-            f"executable {exec_id} stopped",
+            container_stopped_msg(exec_id),
         ]
         assert output == expected_output
         assert len(list_volumes()) == 2

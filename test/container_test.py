@@ -4,6 +4,7 @@ from testutils import (
     create_container,
     extract_exec_id,
     remove_all_containers,
+    container_stopped_msg,
     remove_container,
     run,
 )
@@ -74,7 +75,7 @@ class TestContainerSubcommand:
             f"created execution instance {exec_id}",
             "FreeBSD",
             "",
-            f"executable {exec_id} stopped",
+            container_stopped_msg(exec_id),
         ]
         assert container_output == expected_output
         remove_container(container_id)
