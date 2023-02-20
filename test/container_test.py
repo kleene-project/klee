@@ -76,6 +76,7 @@ class TestContainerSubcommand:
             "FreeBSD",
             "",
             container_stopped_msg(exec_id),
+            "",
         ]
         assert container_output == expected_output
         remove_container(container_id)

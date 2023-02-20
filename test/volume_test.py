@@ -46,6 +46,7 @@ class TestVolumeSubcommand:
         expected_output = [
             f"created execution instance {exec_id}",
             container_stopped_msg(exec_id),
+            "",
         ]
         assert output == expected_output
         assert len(list_volumes()) == 2

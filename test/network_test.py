@@ -187,6 +187,7 @@ def container_is_connected(container_id, driver="loopback"):
             "freebsd.org has address 96.47.72.84",
             "",
             container_stopped_msg(exec_id),
+            "",
         ]
     elif driver == "vnet":
         connected_output = [
@@ -201,6 +202,7 @@ def container_is_connected(container_id, driver="loopback"):
             "freebsd.org has address 96.47.72.84",
             "",
             container_stopped_msg(exec_id),
+            "",
         ]
     else:
         connected_output = ["unknown driver used"]
@@ -218,6 +220,7 @@ def container_is_disconnected(container_id):
         "jail: /usr/bin/env -i /usr/bin/host -t A freebsd.org 1.1.1.1: failed",
         "",
         container_stopped_msg(exec_id, 1),
+        "",
     ]
     assert disconnected_output == output
 
