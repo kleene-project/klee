@@ -57,7 +57,8 @@ def human_duration(timestamp_iso):
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
-    client = Client(base_url=BASE_URL)
+    client = Client(base_url=BASE_URL, timeout=10.0)
+
     # Try to connect to backend
     try:
         response = endpoint(client=client, **kwargs)
