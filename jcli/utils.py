@@ -17,7 +17,7 @@ async def listen_for_messages(websocket):
         try:
             message = await websocket.recv()
         except websockets.exceptions.ConnectionClosed:
-            click.echo(f"{websocket.close_reason}", nl=False)
+            click.echo(f"{websocket.close_reason}")
             break
 
         click.echo(message)
