@@ -3,7 +3,7 @@ import os
 
 from click.testing import CliRunner
 
-from jcli.main import cli
+from klee.main import cli
 
 
 def container_stopped_msg(exec_id, exit_code=0):
