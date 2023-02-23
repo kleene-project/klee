@@ -20,7 +20,7 @@ async def listen_for_messages(websocket):
             click.echo(f"{websocket.close_reason}")
             break
 
-        click.echo(message)
+        click.echo(message, nl=False)
 
 
 def human_duration(timestamp_iso):

@@ -59,7 +59,7 @@ def root(name="container"):
     "--jailparam",
     "-J",
     multiple=True,
-    default=["mount.devfs"],
+    default=["mount.devfs", 'exec.stop="/bin/sh /etc/rc.shutdown jail"'],
     show_default=True,
     help="Specify a jail parameters, see jail(8) for details",
 )
