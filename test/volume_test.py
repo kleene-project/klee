@@ -72,9 +72,10 @@ class TestVolumeSubcommand:
         exec_id = extract_exec_id(output)
         expected_output = [
             f"created execution instance {exec_id}",
-            "touch: /testdir1/testfile: ",
-            "Read-only file system",
+            "touch: /testdir1/testfile: Read-only file system",
+            "jail: /usr/bin/env -i /usr/bin/touch /testdir1/testfile: failed",
         ]
+
         assert output[:3] == expected_output
         assert len(list_volumes()) == 2
         remove_image(image_id)

@@ -94,7 +94,7 @@ def create_container(
 def container_get_netstat_info(container_id, driver):
     output = run(f"container start --attach {container_id}")
     if driver == "vnet":
-        _, _, _, netstat_info, *_ = output
+        _, _, netstat_info, *_ = output
 
     elif driver == "loopback":
         _, netstat_info, *_ = output

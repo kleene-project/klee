@@ -41,11 +41,8 @@ class TestImageSubcommand:
         build_output = result[:-2]
         expected_build_output = [
             "Step 1/3 : FROM scratch",
-            "",
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
-            "",
             "Step 3/3 : CMD /usr/bin/uname",
-            "",
         ]
         assert build_output == expected_build_output
         _, image_id_created = result[-2].split(" id ")

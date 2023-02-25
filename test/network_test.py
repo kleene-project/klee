@@ -185,7 +185,6 @@ def container_is_connected(container_id, driver="loopback"):
             "Aliases: ",
             "",
             "freebsd.org has address 96.47.72.84",
-            "",
             container_stopped_msg(exec_id),
             "",
         ]
@@ -193,21 +192,19 @@ def container_is_connected(container_id, driver="loopback"):
         connected_output = [
             f"created execution instance {exec_id}",
             "add net default: gateway 10.13.37.0",
-            "",
             "Using domain server:",
             "Name: 1.1.1.1",
             "Address: 1.1.1.1#53",
             "Aliases: ",
             "",
             "freebsd.org has address 96.47.72.84",
-            "",
             container_stopped_msg(exec_id),
             "",
         ]
     else:
         connected_output = ["unknown driver used"]
 
-    assert connected_output == output
+    assert output == connected_output
 
 
 def container_is_disconnected(container_id):
@@ -216,9 +213,7 @@ def container_is_disconnected(container_id):
     disconnected_output = [
         f"created execution instance {exec_id}",
         ";; connection timed out; no servers could be reached",
-        "",
         "jail: /usr/bin/env -i /usr/bin/host -t A freebsd.org 1.1.1.1: failed",
-        "",
         container_stopped_msg(exec_id, 1),
         "",
     ]
