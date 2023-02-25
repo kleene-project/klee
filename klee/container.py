@@ -35,7 +35,12 @@ def root(name="container"):
     default="",
     help="Alternate user that should be used for starting the container",
 )
-@click.option("--network", "-n", default=None, help="Connect a container to a network")
+@click.option("--network", "-n", default=None, help="Connect a container to a network.")
+@click.option(
+    "--ip",
+    default=None,
+    help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
+)
 @click.option(
     "--volume",
     "-v",
@@ -51,11 +56,6 @@ def root(name="container"):
     help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
 )
 @click.option(
-    "--ip",
-    default=None,
-    help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
-)
-@click.option(
     "--jailparam",
     "-J",
     multiple=True,
@@ -65,8 +65,12 @@ def root(name="container"):
 )
 @click.argument("image", nargs=1)
 @click.argument("command", nargs=-1)
-def create(name, user, network, volume, env, ip, jailparam, image, command):
+def create(name, user, network, ip, volume, env, jailparam, image, command):
     """Create a new container"""
+    create_(name, user, network, ip, volume, env, jailparam, image, command)
+
+
+def create_(name, user, network, ip, volume, env, jailparam, image, command):
     if network is not None:
         if ip is not None:
             network = {network: {"container": "dummy", "ip_address": ip}}
@@ -75,10 +79,15 @@ def create(name, user, network, volume, env, ip, jailparam, image, command):
     else:
         network = {}
 
+    if volume is None:
+        volumes = []
+    else:
+        volumes = list(volume)
+
     container_config = {
         "cmd": list(command),
         "networks": network,
-        "volumes": list(volume),
+        "volumes": volumes,
         "image": image,
         "jail_param": list(jailparam),
         "env": list(env),
@@ -174,8 +183,9 @@ def remove(containers):
 @click.option(
     "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
 )
+@click.option("--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY")
 @click.argument("containers", required=True, nargs=-1)
-def start(attach, containers):
+def start(attach, tty, containers):
     """Start one or more stopped containers.
     Attach only if a single container is started
     """
@@ -185,23 +195,26 @@ def start(attach, containers):
                 "only one container can be started when setting the 'attach' flag."
             )
         else:
-            start_attached_container(containers[0])
+            start_attached_container(containers[0], tty)
 
     else:
-        for container_id in containers:
-            start_container(container_id)
+        if len(containers) == 0:
+            start_container(containers[0], tty)
+        else:
+            for container_id in containers:
+                start_container(container_id)
 
 
-def start_attached_container(container_id):
-    asyncio.run(_attach_and_start_container(container_id))
+def start_attached_container(container_id, tty):
+    asyncio.run(_attach_and_start_container(container_id, tty))
 
 
-def start_container(container_id):
-    asyncio.run(_start_container(container_id))
+def start_container(container_id, tty=False):
+    asyncio.run(_start_container(container_id, tty))
 
 
-async def _attach_and_start_container(container_id):
-    response = _create_exec_instance(container_id)
+async def _attach_and_start_container(container_id, tty):
+    response = _create_exec_instance(container_id, tty)
 
     if response.status_code == 201:
         click.echo(f"created execution instance {response.parsed.id}")
@@ -228,8 +241,8 @@ async def _attach_and_start_container(container_id):
         )
 
 
-async def _start_container(container_id):
-    response = _create_exec_instance(container_id)
+async def _start_container(container_id, tty):
+    response = _create_exec_instance(container_id, tty)
     if response.status_code == 201:
         click.echo(f"created execution instance {response.parsed.id}")
         exec_id = response.parsed.id
@@ -250,9 +263,9 @@ async def _start_container(container_id):
         )
 
 
-def _create_exec_instance(container_id):
+def _create_exec_instance(container_id, tty):
     exec_config = ExecConfig.from_dict(
-        {"container_id": container_id, "cmd": [], "env": [], "user": ""}
+        {"container_id": container_id, "cmd": [], "env": [], "user": "", "tty": tty}
     )
     response = request_and_validate_response(
         exec_create,

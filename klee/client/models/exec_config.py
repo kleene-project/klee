@@ -19,6 +19,7 @@ class ExecConfig:
             env (Union[Unset, List[str]]): List of environment variables that is set when the command is executed. This list
                 will be merged with environment variables defined by the container. The values in this list takes precedence iif
                 the variable is defined in both places. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
+            tty (Union[Unset, bool]): Allocate a pseudo-TTY
             user (Union[Unset, str]): User that executes the command. If no user is set the user from the container will be
                 used. Default: ''.
     """
@@ -26,6 +27,7 @@ class ExecConfig:
     cmd: Union[Unset, List[str]] = UNSET
     container_id: Union[Unset, str] = UNSET
     env: Union[Unset, List[str]] = UNSET
+    tty: Union[Unset, bool] = False
     user: Union[Unset, str] = ""
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
@@ -39,6 +41,7 @@ class ExecConfig:
         if not isinstance(self.env, Unset):
             env = self.env
 
+        tty = self.tty
         user = self.user
 
         field_dict: Dict[str, Any] = {}
@@ -50,6 +53,8 @@ class ExecConfig:
             field_dict["container_id"] = container_id
         if env is not UNSET:
             field_dict["env"] = env
+        if tty is not UNSET:
+            field_dict["tty"] = tty
         if user is not UNSET:
             field_dict["user"] = user
 
@@ -64,12 +69,15 @@ class ExecConfig:
 
         env = cast(List[str], d.pop("env", UNSET))
 
+        tty = d.pop("tty", UNSET)
+
         user = d.pop("user", UNSET)
 
         exec_config = cls(
             cmd=cmd,
             container_id=container_id,
             env=env,
+            tty=tty,
             user=user,
         )
 
