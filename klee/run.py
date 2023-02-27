@@ -1,6 +1,6 @@
 import click
 
-from .container import start_attached_container, start_container, create_
+from .container import create_, start_
 
 
 @click.command(name="run", context_settings={"ignore_unknown_options": True})
@@ -42,18 +42,35 @@ from .container import start_attached_container, start_container, create_
 @click.option(
     "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
 )
+@click.option(
+    "--interactive",
+    "-i",
+    default=False,
+    is_flag=True,
+    help="Send terminal input to container's STDIN. Ignored if '--attach' is not used.",
+)
 @click.option("--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY")
 @click.argument("image", nargs=1)
 @click.argument("command", nargs=-1)
-def run(name, user, network, ip, volume, env, jailparam, attach, tty, image, command):
+def run(
+    name,
+    user,
+    network,
+    ip,
+    volume,
+    env,
+    jailparam,
+    attach,
+    interactive,
+    tty,
+    image,
+    command,
+):
     """Create and start a new container"""
     response = create_(name, user, network, ip, volume, env, jailparam, image, command)
 
     if response is None or response.status_code != 201:
         return
 
-    if attach:
-        start_attached_container(response.parsed.id, tty)
-
-    else:
-        start_container(response.parsed.id, tty)
+    container = response.parsed.id
+    start_(attach, interactive, tty, [container])
