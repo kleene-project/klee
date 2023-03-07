@@ -2,6 +2,9 @@ import sys
 import asyncio
 import json
 import urllib
+import functools
+import signal
+
 
 import click
 import websockets
@@ -209,9 +212,9 @@ def start_(attach, interactive, tty, containers):
         else:
             container = containers[0]
             if interactive:
-                start_interactive_container(container, tty)
+                _start_interactive_container(container, tty)
             else:
-                start_attached_container(container, tty)
+                _start_attached_container(container, tty)
 
     else:
         if len(containers) == 1:
@@ -221,17 +224,14 @@ def start_(attach, interactive, tty, containers):
                 start_container(container_id)
 
 
-def start_attached_container(container_id, tty):
+def _start_attached_container(container_id, tty):
     exec_id = _create_exec_instance(container_id, tty)
-    endpoint = WS_EXEC_START_URL.format(
-        exec_id=exec_id,
-        options=urllib.parse.urlencode({"attach": "true", "start_container": "true"}),
-    )
+    endpoint = _build_endpoint(exec_id)
     if exec_id is not None:
-        asyncio.run(_start_attached_container(endpoint))
+        asyncio.run(_async_start_attached_container(endpoint))
 
 
-async def _start_attached_container(endpoint):
+async def _async_start_attached_container(endpoint):
     async with websockets.connect(endpoint) as websocket:
         hello_msg = await websocket.recv()
         if hello_msg == "OK":
@@ -243,22 +243,26 @@ async def _start_attached_container(endpoint):
             click.echo("error starting container #{container_id}")
 
 
-def start_interactive_container(container_id, tty):
+def _start_interactive_container(container_id, tty):
     exec_id = _create_exec_instance(container_id, tty)
-    endpoint = WS_EXEC_START_URL.format(
-        exec_id=exec_id,
-        options=urllib.parse.urlencode({"attach": "true", "start_container": "true"}),
-    )
+    endpoint = _build_endpoint(exec_id)
     if exec_id is not None:
-        asyncio.run(_start_interactive_container(endpoint))
+        asyncio.run(_async_start_interactive_container(endpoint))
 
 
-async def _start_interactive_container(endpoint):
+async def _async_start_interactive_container(endpoint):
+    loop = asyncio.get_running_loop()
     async with websockets.connect(endpoint) as websocket:
+        for signame in ["SIGINT", "SIGTERM"]:
+            loop.add_signal_handler(
+                getattr(signal, signame),
+                functools.partial(close_websocket, websocket, loop),
+            )
+
         hello_msg = await websocket.recv()
         if hello_msg == "OK":
             loop = asyncio.get_event_loop()
-            loop.add_reader(sys.stdin, send_user_input, websocket, loop)
+            loop.add_reader(sys.stdin, send_user_input, websocket)
             await listen_for_messages(websocket)
         elif hello_msg[:6] == "ERROR:":
             click.echo(hello_msg[6:])
@@ -267,7 +271,14 @@ async def _start_interactive_container(endpoint):
             click.echo("error starting container #{container_id}")
 
 
-def send_user_input(websocket, loop):
+def _build_endpoint(exec_id):
+    return WS_EXEC_START_URL.format(
+        exec_id=exec_id,
+        options=urllib.parse.urlencode({"attach": "true", "start_container": "true"}),
+    )
+
+
+def send_user_input(websocket):
     tasks = []
     input_line = sys.stdin.readline()
     task = asyncio.ensure_future(websocket.send(input_line))
@@ -290,6 +301,15 @@ async def _start_container(container_id, exec_id, tty):
         await websocket.wait_closed()
         if websocket.close_code != 1001:
             click.echo("error starting container #{container_id}")
+
+
+def close_websocket(websocket, loop):
+    task = asyncio.create_task(_close_websocket(websocket))
+    asyncio.ensure_future(task)
+
+
+async def _close_websocket(websocket):
+    await websocket.close(code=1000, reason="interrupted by user")
 
 
 def _create_exec_instance(container_id, tty):
