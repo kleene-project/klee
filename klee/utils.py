@@ -1,4 +1,5 @@
 import datetime
+import ssl
 
 import click
 import dateutil.parser
@@ -7,7 +8,21 @@ import websockets
 
 from .client.client import Client
 
-BASE_URL = "http://localhost:8085"
+
+class MainConfig:
+    host = None
+    tlsverify = None
+    tlscert = None
+    tlskey = None
+    tlscacert = None
+
+    def httpx_tls_kwargs(self):
+        return {"verify": self.tlsverify, "cert": (self.tlscert, self.tlskey)}
+
+
+main_config = MainConfig()
+
+
 WS_IMAGE_BUILD_URL = "ws://localhost:8085/images/build?{options}"
 WS_EXEC_START_URL = "ws://localhost:8085/exec/{exec_id}/start?{options}"
 
@@ -57,9 +72,22 @@ def human_duration(timestamp_iso):
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
-    client = Client(base_url=BASE_URL, timeout=10.0)
+    # Configuring TLS if it is used
+    if main_config.host.scheme == "https":
+        if main_config.tlscacert is not None:
+            verify = main_config.tlscacert
+        else:
+            verify = main_config.tlsverify
+
+        if main_config.tlscert is not None:
+            cert = (main_config.tlscert, main_config.tlskey)
+        else:
+            cert = None
+
+        kwargs.update({"verify": verify, "cert": cert})
 
     # Try to connect to backend
+    client = Client(base_url=main_config.host.geturl(), timeout=10.0)
     try:
         response = endpoint(client=client, **kwargs)
     except httpx.ConnectError as e:

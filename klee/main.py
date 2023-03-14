@@ -1,25 +1,8 @@
-# """
-# FROM KLEE CLI:
-#  Usage:  klee [OPTIONS] COMMAND
-#
-#  A self-sufficient runtime for containers
-#
-#  Options:
-#  -v, --version            Print version information and quit
-#  -D, --debug              Enable debug mode
-#  -H, --host string        Daemon socket to connect to: tcp://[host]:[port][path] or unix://[/path/to/socket]
-#
-#  Management Commands:
-#  container   Manage containers
-#  image       Manage images
-#  network     Manage networks
-#  volume      Manage volumes
-#
-#  Run 'klee COMMAND --help' for more information on a command.
-# """
+from urllib.parse import urlparse
 
 import click
 
+from .utils import main_config
 from .container import root as container_root
 from .image import root as image_root
 from .network import root as network_root
@@ -29,17 +12,48 @@ from .volume import root as volume_root
 
 @click.group()
 @click.version_option(version="0.0.1")
-@click.option("--debug", is_flag=True, help="Enable debug mode")
 @click.option(
     "--host",
-    default="tcp://localhost:8085",
+    default="http://localhost:8085",
     show_default=True,
-    help="Engine socket to connect to: tcp://[host]:[port] or unix://[/path/to/socket]",
+    help="Host address and protocol to use. See the docs for details.",
 )
-def cli(debug, host):
+@click.option(
+    "--tlsverify/--no-tlsverify",
+    default=True,
+    show_default=True,
+    help="Verify the server cert. Uses the CA bundle provided by Certifi unless the '--cacert' is set.",
+)
+@click.option(
+    "--tlscert",
+    default=None,
+    show_default=True,
+    help="Path to TLS certificate file used for client authentication (PEM encoded)",
+)
+@click.option(
+    "--tlskey",
+    default=None,
+    show_default=True,
+    help="Path to TLS key file used for the '--tlscert' certificate (PEM encoded)",
+)
+@click.option(
+    "--tlscacert",
+    default=None,
+    show_default=True,
+    help="Trust certs signed only by this CA (PEM encoded). Implies '--tlsverify'.",
+)
+@click.pass_context
+def cli(ctx, host, tlsverify, tlscert, tlskey, tlscacert):
     """
-    cli for the kleened backend
+    Command line interface for kleened.
     """
+    host = urlparse(host)
+    main_config.host = host
+    if host.query != "" or host.params != "" or host.fragment != "":
+        ctx.fail("Could not parse the '--host' parameter")
+
+    if tlscert is not None and tlskey is None:
+        ctx.fail("When '--tlscert' is set you must also provide the '--tlskey'")
 
 
 cli.add_command(container_root, name="container")
