@@ -71,10 +71,7 @@ def _build_response(
 
 
 def sync_detailed(
-    network_id: str,
-    *,
-    client: Client,
-    json_body: EndPointConfig,
+    network_id: str, *, client: Client, json_body: EndPointConfig, **kwargs
 ) -> Response[Union[Any, ErrorResponse]]:
     """Connect a container to a network
 
@@ -91,10 +88,12 @@ def sync_detailed(
         Response[Union[Any, ErrorResponse]]
     """
 
-    kwargs = _get_kwargs(
-        network_id=network_id,
-        client=client,
-        json_body=json_body,
+    kwargs.update(
+        _get_kwargs(
+            network_id=network_id,
+            client=client,
+            json_body=json_body,
+        )
     )
 
     response = httpx.request(

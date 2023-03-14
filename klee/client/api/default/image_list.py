@@ -58,10 +58,7 @@ def _build_response(
     )
 
 
-def sync_detailed(
-    *,
-    client: Client,
-) -> Response[List["Image"]]:
+def sync_detailed(*, client: Client, **kwargs) -> Response[List["Image"]]:
     """List images
 
      Returns a list of images.
@@ -74,8 +71,10 @@ def sync_detailed(
         Response[List['Image']]
     """
 
-    kwargs = _get_kwargs(
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            client=client,
+        )
     )
 
     response = httpx.request(

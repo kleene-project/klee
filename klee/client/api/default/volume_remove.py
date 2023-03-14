@@ -62,9 +62,7 @@ def _build_response(
 
 
 def sync_detailed(
-    volume_name: str,
-    *,
-    client: Client,
+    volume_name: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Remove a volume
 
@@ -79,9 +77,11 @@ def sync_detailed(
         Response[Union[ErrorResponse, IdResponse]]
     """
 
-    kwargs = _get_kwargs(
-        volume_name=volume_name,
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            volume_name=volume_name,
+            client=client,
+        )
     )
 
     response = httpx.request(

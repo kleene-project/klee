@@ -58,9 +58,7 @@ def _build_response(
 
 
 def sync_detailed(
-    image_id: str,
-    *,
-    client: Client,
+    image_id: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Remove image
 
@@ -77,9 +75,11 @@ def sync_detailed(
         Response[Union[ErrorResponse, IdResponse]]
     """
 
-    kwargs = _get_kwargs(
-        image_id=image_id,
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            image_id=image_id,
+            client=client,
+        )
     )
 
     response = httpx.request(

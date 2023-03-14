@@ -63,10 +63,7 @@ def _build_response(
 
 
 def sync_detailed(
-    network_id: str,
-    container_id: str,
-    *,
-    client: Client,
+    network_id: str, container_id: str, *, client: Client, **kwargs
 ) -> Response[Union[Any, ErrorResponse]]:
     """Disconnect a container from a network
 
@@ -82,10 +79,12 @@ def sync_detailed(
         Response[Union[Any, ErrorResponse]]
     """
 
-    kwargs = _get_kwargs(
-        network_id=network_id,
-        container_id=container_id,
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            network_id=network_id,
+            container_id=container_id,
+            client=client,
+        )
     )
 
     response = httpx.request(

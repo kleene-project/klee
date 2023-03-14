@@ -58,10 +58,7 @@ def _build_response(
     )
 
 
-def sync_detailed(
-    *,
-    client: Client,
-) -> Response[List["Volume"]]:
+def sync_detailed(*, client: Client, **kwargs) -> Response[List["Volume"]]:
     """List volumes
 
      Returns a compact listing of existing volumes.
@@ -74,8 +71,10 @@ def sync_detailed(
         Response[List['Volume']]
     """
 
-    kwargs = _get_kwargs(
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            client=client,
+        )
     )
 
     response = httpx.request(

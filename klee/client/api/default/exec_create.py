@@ -66,9 +66,7 @@ def _build_response(
 
 
 def sync_detailed(
-    *,
-    client: Client,
-    json_body: ExecConfig,
+    *, client: Client, json_body: ExecConfig, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Create an execution instance
 
@@ -84,9 +82,11 @@ def sync_detailed(
         Response[Union[ErrorResponse, IdResponse]]
     """
 
-    kwargs = _get_kwargs(
-        client=client,
-        json_body=json_body,
+    kwargs.update(
+        _get_kwargs(
+            client=client,
+            json_body=json_body,
+        )
     )
 
     response = httpx.request(

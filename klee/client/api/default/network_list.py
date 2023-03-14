@@ -64,8 +64,7 @@ def _build_response(
 
 
 def sync_detailed(
-    *,
-    client: Client,
+    *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, List["Network"]]]:
     """List networks
 
@@ -79,8 +78,10 @@ def sync_detailed(
         Response[Union[ErrorResponse, List['Network']]]
     """
 
-    kwargs = _get_kwargs(
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            client=client,
+        )
     )
 
     response = httpx.request(

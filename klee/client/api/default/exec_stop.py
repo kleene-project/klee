@@ -72,11 +72,7 @@ def _build_response(
 
 
 def sync_detailed(
-    exec_id: str,
-    *,
-    client: Client,
-    force_stop: bool,
-    stop_container: bool,
+    exec_id: str, *, client: Client, force_stop: bool, stop_container: bool, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Stop and/or destroy a execution instance.
 
@@ -93,11 +89,13 @@ def sync_detailed(
         Response[Union[ErrorResponse, IdResponse]]
     """
 
-    kwargs = _get_kwargs(
-        exec_id=exec_id,
-        client=client,
-        force_stop=force_stop,
-        stop_container=stop_container,
+    kwargs.update(
+        _get_kwargs(
+            exec_id=exec_id,
+            client=client,
+            force_stop=force_stop,
+            stop_container=stop_container,
+        )
     )
 
     response = httpx.request(

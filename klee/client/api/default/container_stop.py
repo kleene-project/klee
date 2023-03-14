@@ -68,9 +68,7 @@ def _build_response(
 
 
 def sync_detailed(
-    container_id: str,
-    *,
-    client: Client,
+    container_id: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Stop a container. Alle execution instances running in the container will be shut down.
 
@@ -85,9 +83,11 @@ def sync_detailed(
         Response[Union[ErrorResponse, IdResponse]]
     """
 
-    kwargs = _get_kwargs(
-        container_id=container_id,
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            container_id=container_id,
+            client=client,
+        )
     )
 
     response = httpx.request(

@@ -66,9 +66,7 @@ def _build_response(
 
 
 def sync_detailed(
-    *,
-    client: Client,
-    all_: Union[Unset, None, bool] = UNSET,
+    *, client: Client, all_: Union[Unset, None, bool] = UNSET, **kwargs
 ) -> Response[List["ContainerSummary"]]:
     """List containers
 
@@ -85,9 +83,11 @@ def sync_detailed(
         Response[List['ContainerSummary']]
     """
 
-    kwargs = _get_kwargs(
-        client=client,
-        all_=all_,
+    kwargs.update(
+        _get_kwargs(
+            client=client,
+            all_=all_,
+        )
     )
 
     response = httpx.request(

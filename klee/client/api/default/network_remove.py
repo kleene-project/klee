@@ -62,9 +62,7 @@ def _build_response(
 
 
 def sync_detailed(
-    network_id: str,
-    *,
-    client: Client,
+    network_id: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Remove a network
 
@@ -79,9 +77,11 @@ def sync_detailed(
         Response[Union[ErrorResponse, IdResponse]]
     """
 
-    kwargs = _get_kwargs(
-        network_id=network_id,
-        client=client,
+    kwargs.update(
+        _get_kwargs(
+            network_id=network_id,
+            client=client,
+        )
     )
 
     response = httpx.request(
