@@ -73,7 +73,7 @@ def _build_response(
 
 
 def sync_detailed(
-    *, client: Client, json_body: ContainerConfig, name: str, **kwargs
+    transport, *, client: Client, json_body: ContainerConfig, name: str, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Create a container
 
@@ -98,10 +98,9 @@ def sync_detailed(
         )
     )
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

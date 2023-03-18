@@ -66,7 +66,7 @@ def _build_response(
 
 
 def sync_detailed(
-    *, client: Client, all_: Union[Unset, None, bool] = UNSET, **kwargs
+    transport, *, client: Client, all_: Union[Unset, None, bool] = UNSET, **kwargs
 ) -> Response[List["ContainerSummary"]]:
     """List containers
 
@@ -90,10 +90,9 @@ def sync_detailed(
         )
     )
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

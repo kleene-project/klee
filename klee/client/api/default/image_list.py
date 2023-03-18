@@ -58,7 +58,7 @@ def _build_response(
     )
 
 
-def sync_detailed(*, client: Client, **kwargs) -> Response[List["Image"]]:
+def sync_detailed(transport, *, client: Client, **kwargs) -> Response[List["Image"]]:
     """List images
 
      Returns a list of images.
@@ -77,10 +77,9 @@ def sync_detailed(*, client: Client, **kwargs) -> Response[List["Image"]]:
         )
     )
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

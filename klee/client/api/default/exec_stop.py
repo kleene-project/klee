@@ -72,7 +72,13 @@ def _build_response(
 
 
 def sync_detailed(
-    exec_id: str, *, client: Client, force_stop: bool, stop_container: bool, **kwargs
+    transport,
+    exec_id: str,
+    *,
+    client: Client,
+    force_stop: bool,
+    stop_container: bool,
+    **kwargs,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Stop and/or destroy a execution instance.
 
@@ -98,10 +104,9 @@ def sync_detailed(
         )
     )
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

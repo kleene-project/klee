@@ -71,7 +71,7 @@ def _build_response(
 
 
 def sync_detailed(
-    network_id: str, *, client: Client, json_body: EndPointConfig, **kwargs
+    transport, network_id: str, *, client: Client, json_body: EndPointConfig, **kwargs
 ) -> Response[Union[Any, ErrorResponse]]:
     """Connect a container to a network
 
@@ -96,10 +96,9 @@ def sync_detailed(
         )
     )
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

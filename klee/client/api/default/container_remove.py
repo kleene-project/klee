@@ -64,7 +64,7 @@ def _build_response(
 
 
 def sync_detailed(
-    container_id: str, *, client: Client, **kwargs
+    transport, container_id: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Delete a container from the file system and kleene.
 
@@ -86,10 +86,9 @@ def sync_detailed(
         )
     )
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

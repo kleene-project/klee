@@ -62,7 +62,7 @@ def _build_response(
 
 
 def sync_detailed(
-    volume_name: str, *, client: Client, **kwargs
+    transport, volume_name: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """Remove a volume
 
@@ -84,10 +84,9 @@ def sync_detailed(
         )
     )
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 
