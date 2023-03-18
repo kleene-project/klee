@@ -89,6 +89,7 @@ def _build_response(*, client: Client, response: httpx.Response) -> Response[{{ 
 
 
 def sync_detailed(
+    transport,
     {{ arguments(endpoint) | indent(4) }}
     **kwargs
 ) -> Response[{{ return_string }}]:
@@ -98,10 +99,9 @@ def sync_detailed(
         {{ kwargs(endpoint) }}
     ))
 
-    response = httpx.request(
-        verify=client.verify_ssl,
-        **kwargs,
-    )
+    cookies = kwargs.pop("cookies")
+    client = httpx.Client(transport=transport, cookies=cookies)
+    response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 
