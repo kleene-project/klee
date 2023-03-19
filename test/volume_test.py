@@ -34,7 +34,8 @@ class TestVolumeSubcommand:
 
         create_volume(volume_name)
         create_dockerfile(self.instructions)
-        image_id = create_image(tag=image_name)
+        result = create_image(tag=image_name)
+        _, image_id = result[0].split(" id ")
         container_id = create_container(
             name="test_cont_rw_vol",
             volumes=["cont_rw_vol1:/testdir1", "/testdir2"],
@@ -50,9 +51,9 @@ class TestVolumeSubcommand:
         ]
         assert output == expected_output
         assert len(list_volumes()) == 2
-        remove_image(image_id)
         remove_all_volumes()
         remove_container(container_id)
+        remove_image(image_id)
 
     def test_creating_a_container_with_readonly_volume(self):
         volume_name = "cont_ro_vol1"
@@ -60,7 +61,8 @@ class TestVolumeSubcommand:
 
         create_volume(volume_name)
         create_dockerfile(self.instructions)
-        image_id = create_image(tag=image_name)
+        result = create_image(tag=image_name)
+        _, image_id = result[0].split(" id ")
         container_id = create_container(
             name="test_cont_ro_vol",
             volumes=[f"{volume_name}:/testdir1:ro", "/testdir2:ro"],
@@ -78,9 +80,9 @@ class TestVolumeSubcommand:
 
         assert output[:3] == expected_output
         assert len(list_volumes()) == 2
-        remove_image(image_id)
         remove_all_volumes()
         remove_container(container_id)
+        remove_image(image_id)
 
 
 def create_volume(name):

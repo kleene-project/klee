@@ -2,7 +2,7 @@ from urllib.parse import urlparse
 
 import click
 
-from .utils import main_config
+from .connection import config as connection_config
 from .container import root as container_root
 from .image import root as image_root
 from .network import root as network_root
@@ -14,7 +14,7 @@ from .volume import root as volume_root
 @click.version_option(version="0.0.1")
 @click.option(
     "--host",
-    default="http://localhost:8085",
+    default="http:///var/run/kleened.sock",
     show_default=True,
     help="Host address and protocol to use. See the docs for details.",
 )
@@ -48,12 +48,17 @@ def cli(ctx, host, tlsverify, tlscert, tlskey, tlscacert):
     Command line interface for kleened.
     """
     host = urlparse(host)
-    main_config.host = host
     if host.query != "" or host.params != "" or host.fragment != "":
         ctx.fail("Could not parse the '--host' parameter")
 
     if tlscert is not None and tlskey is None:
         ctx.fail("When '--tlscert' is set you must also provide the '--tlskey'")
+
+    connection_config.host = host
+    connection_config.tlsverify = tlsverify
+    connection_config.tlscert = tlscert
+    connection_config.tlskey = tlskey
+    connection_config.tlscacert = tlscacert
 
 
 cli.add_command(container_root, name="container")

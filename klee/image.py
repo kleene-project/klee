@@ -7,12 +7,11 @@ import websockets
 
 from .client.api.default.image_list import sync_detailed as image_list
 from .client.api.default.image_remove import sync_detailed as image_remove
-from .utils import (
-    WS_IMAGE_BUILD_URL,
-    human_duration,
-    listen_for_messages,
-    request_and_validate_response,
-)
+from .connection import create_websocket
+from .utils import human_duration, listen_for_messages, request_and_validate_response
+
+
+WS_IMAGE_ENDPOINT = "/images/build?{options}"
 
 
 # pylint: disable=unused-argument
@@ -47,13 +46,13 @@ def build(file, tag, quiet, path):
 async def _build_image_and_listen_for_messages(file_, tag, quiet, path):
     quiet = "true" if quiet else "false"
     path = os.path.abspath(path)
-    endpoint = WS_IMAGE_BUILD_URL.format(
+    endpoint = WS_IMAGE_ENDPOINT.format(
         options=urllib.parse.urlencode(
             {"context": path, "file": file_, "tag": tag, "quiet": quiet}
         )
     )
     try:
-        async with websockets.connect(endpoint) as websocket:
+        async with create_websocket(endpoint) as websocket:
             hello_msg = await websocket.recv()
             if hello_msg == "OK":
                 await listen_for_messages(websocket)

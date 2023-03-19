@@ -5,9 +5,7 @@ import urllib
 import functools
 import signal
 
-
 import click
-import websockets
 
 from .client.api.default.container_create import sync_detailed as container_create
 from .client.api.default.container_list import sync_detailed as container_list
@@ -17,12 +15,11 @@ from .client.api.default.exec_create import sync_detailed as exec_create
 from .client.models.container_config import ContainerConfig
 from .client.models.exec_config import ExecConfig
 from .name_generator import random_name
-from .utils import (
-    WS_EXEC_START_URL,
-    human_duration,
-    listen_for_messages,
-    request_and_validate_response,
-)
+from .utils import human_duration, listen_for_messages, request_and_validate_response
+from .connection import create_websocket
+
+
+WS_EXEC_START_ENDPOINT = "/exec/{exec_id}/start?{options}"
 
 
 # pylint: disable=unused-argument
@@ -232,7 +229,7 @@ def _start_attached_container(container_id, tty):
 
 
 async def _async_start_attached_container(endpoint):
-    async with websockets.connect(endpoint) as websocket:
+    async with create_websocket(endpoint) as websocket:
         hello_msg = await websocket.recv()
         if hello_msg == "OK":
             await listen_for_messages(websocket)
@@ -252,7 +249,7 @@ def _start_interactive_container(container_id, tty):
 
 async def _async_start_interactive_container(endpoint):
     loop = asyncio.get_running_loop()
-    async with websockets.connect(endpoint) as websocket:
+    async with create_websocket(endpoint) as websocket:
         for signame in ["SIGINT", "SIGTERM"]:
             loop.add_signal_handler(
                 getattr(signal, signame),
@@ -271,10 +268,10 @@ async def _async_start_interactive_container(endpoint):
             click.echo("error starting container #{container_id}")
 
 
-def _build_endpoint(exec_id):
-    return WS_EXEC_START_URL.format(
+def _build_endpoint(exec_id, attach="true"):
+    return WS_EXEC_START_ENDPOINT.format(
         exec_id=exec_id,
-        options=urllib.parse.urlencode({"attach": "true", "start_container": "true"}),
+        options=urllib.parse.urlencode({"attach": attach, "start_container": "true"}),
     )
 
 
@@ -292,12 +289,9 @@ def start_container(container_id, tty=False):
 
 
 async def _start_container(container_id, exec_id, tty):
-    endpoint = WS_EXEC_START_URL.format(
-        exec_id=exec_id,
-        options=urllib.parse.urlencode({"attach": "false", "start_container": "true"}),
-    )
+    endpoint = _build_endpoint(exec_id, attach="false")
 
-    async with websockets.connect(endpoint) as websocket:
+    async with create_websocket(endpoint) as websocket:
         await websocket.wait_closed()
         if websocket.close_code != 1001:
             click.echo("error starting container #{container_id}")
