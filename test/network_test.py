@@ -82,7 +82,7 @@ class TestNetworkSubcommand:
             network=network_name,
         )
         container_is_connected(container_id)
-        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
         container_is_disconnected(container_id)
         remove_container(container_id)
         remove_network(network_id)
@@ -99,7 +99,7 @@ class TestNetworkSubcommand:
             network=network_name,
         )
         container_is_connected(container_id, driver="vnet")
-        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
         container_is_disconnected(container_id)
         remove_container(container_id)
         remove_network(network_id)
@@ -118,7 +118,7 @@ class TestNetworkSubcommand:
         )
         netstat_info = container_get_netstat_info(container_id, driver="loopback")
         assert netstat_info[0]["address"] == "10.13.37.13"
-        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
         remove_container(container_id)
         remove_network(network_id)
 
@@ -136,7 +136,7 @@ class TestNetworkSubcommand:
         )
         netstat_info = container_get_netstat_info(container_id, driver="vnet")
         assert netstat_info[0]["address"] == "10.13.38.13"
-        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
         remove_container(container_id)
         remove_network(network_id)
 
@@ -152,7 +152,7 @@ class TestNetworkSubcommand:
         run(f"network connect --ip 10.13.37.13 {network_name} {container_name}")
         netstat_info = container_get_netstat_info(container_id, driver="loopback")
         assert netstat_info[0]["address"] == "10.13.37.13"
-        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
         remove_container(container_id)
         remove_network(network_id)
 
@@ -168,9 +168,15 @@ class TestNetworkSubcommand:
         run(f"network connect --ip 10.13.38.13 {network_name} {container_name}")
         netstat_info = container_get_netstat_info(container_id, driver="vnet")
         assert netstat_info[0]["address"] == "10.13.38.13"
-        assert ["OK", ""] == run(f"network disconnect {network_name} {container_id}")
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
         remove_container(container_id)
         remove_network(network_id)
+
+    def test_create_container_using_nonexisting_network(self):
+        output = run(
+            "container create --name invalid_network --network nonexisting base /bin/ls"
+        )
+        assert ["network not found", ""] == output[1:]
 
 
 def container_is_connected(container_id, driver="loopback"):

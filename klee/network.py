@@ -110,6 +110,10 @@ def _print_networks(networks):
 @click.argument("container", required=True, nargs=1)
 def connect(ip, network, container):
     """Connect a container to a network"""
+    connect_(ip, network, container)
+
+
+def connect_(ip, network, container):
     if ip is not None:
         endpoint_config = EndPointConfig.from_dict(
             {"container": container, "ip_address": ip}
@@ -117,7 +121,7 @@ def connect(ip, network, container):
     else:
         endpoint_config = EndPointConfig.from_dict({"container": container})
 
-    request_and_validate_response(
+    return request_and_validate_response(
         network_connect,
         kwargs={"network_id": network, "json_body": endpoint_config},
         statuscode2messsage={

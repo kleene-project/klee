@@ -1,6 +1,7 @@
 import click
 
 from .container import create_, start_
+from .container import connect_
 
 
 @click.command(name="run", context_settings={"ignore_unknown_options": True})
@@ -68,9 +69,14 @@ def run(
 ):
     """Create and start a new container"""
     response = create_(name, user, network, ip, volume, env, jailparam, image, command)
-
     if response is None or response.status_code != 201:
         return
 
-    container = response.parsed.id
-    start_(attach, interactive, tty, [container])
+    container_id = response.parsed.id
+    if network is not None:
+        response = connect_(ip, network, container_id)
+        if response is None or response.status_code != 204:
+            click.echo("could not start container")
+            return
+
+    start_(attach, interactive, tty, [container_id])

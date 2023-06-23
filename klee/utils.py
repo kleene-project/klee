@@ -38,13 +38,13 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
 
     if callable(return_message):
         return_message = return_message(response)
-
-    elif not isinstance(return_message, str):
-        click.echo("internal error in klee")
+        if return_message != "":
+            click.echo(return_message)
         return response
 
-    if return_message != "":
-        click.echo(return_message)
+    if not isinstance(return_message, str):
+        click.echo("internal error in klee")
+
     return response
 
 

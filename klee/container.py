@@ -11,12 +11,15 @@ from .client.api.default.container_create import sync_detailed as container_crea
 from .client.api.default.container_list import sync_detailed as container_list
 from .client.api.default.container_remove import sync_detailed as container_remove
 from .client.api.default.container_stop import sync_detailed as container_stop
+from .client.api.default.network_connect import sync_detailed as network_connect
 from .client.api.default.exec_create import sync_detailed as exec_create
 from .client.models.container_config import ContainerConfig
 from .client.models.exec_config import ExecConfig
+from .client.models.end_point_config import EndPointConfig
 from .name_generator import random_name
 from .utils import human_duration, listen_for_messages, request_and_validate_response
 from .connection import create_websocket
+from .network import connect_
 
 
 WS_EXEC_START_ENDPOINT = "/exec/{exec_id}/start?{options}"
@@ -68,18 +71,26 @@ def root(name="container"):
 @click.argument("command", nargs=-1)
 def create(name, user, network, ip, volume, env, jailparam, image, command):
     """Create a new container"""
-    create_(name, user, network, ip, volume, env, jailparam, image, command)
+    create_container_and_connect_to_network(
+        name, user, network, ip, volume, env, jailparam, image, command
+    )
+
+
+def create_container_and_connect_to_network(
+    name, user, network, ip, volume, env, jailparam, image, command
+):
+    response = create_(name, user, network, ip, volume, env, jailparam, image, command)
+
+    if response is None or response.status_code != 201:
+        return
+
+    if network is None:
+        return
+
+    return connect_(ip, network, response.parsed.id)
 
 
 def create_(name, user, network, ip, volume, env, jailparam, image, command):
-    if network is not None:
-        if ip is not None:
-            network = {network: {"container": "dummy", "ip_address": ip}}
-        else:
-            network = {network: {"container": "dummy"}}
-    else:
-        network = {}
-
     if volume is None:
         volumes = []
     else:
@@ -87,7 +98,6 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
 
     container_config = {
         "cmd": list(command),
-        "networks": network,
         "volumes": volumes,
         "image": image,
         "jail_param": list(jailparam),
