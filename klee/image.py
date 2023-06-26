@@ -37,24 +37,39 @@ def root(name="image"):
     default=False,
     help="Suppress the build output and print image ID on success",
 )
+@click.option(
+    "--cleanup",
+    "-l",
+    is_flag=True,
+    default=True,
+    help="Whether or not to remove the build-container if the build fails",
+)
 @click.argument("path", nargs=1)
-def build(file, tag, quiet, path):
+def build(file, tag, quiet, cleanup, path):
     """Build an image from a context + Dockerfile located in PATH"""
-    asyncio.run(_build_image_and_listen_for_messages(file, tag, quiet, path))
+    asyncio.run(_build_image_and_listen_for_messages(file, tag, quiet, cleanup, path))
 
 
-async def _build_image_and_listen_for_messages(file_, tag, quiet, path):
+async def _build_image_and_listen_for_messages(file_, tag, quiet, cleanup, path):
     quiet = "true" if quiet else "false"
     path = os.path.abspath(path)
     endpoint = WS_IMAGE_ENDPOINT.format(
         options=urllib.parse.urlencode(
-            {"context": path, "file": file_, "tag": tag, "quiet": quiet}
+            {
+                "context": path,
+                "file": file_,
+                "tag": tag,
+                "quiet": quiet,
+                "cleanup": cleanup,
+            }
         )
     )
     try:
         async with create_websocket(endpoint) as websocket:
             hello_msg = await websocket.recv()
-            if hello_msg == "OK":
+            if hello_msg[:3] == "OK:":
+                _, build_id = hello_msg.split(":")
+                click.echo(f"build initialized with build ID {build_id}")
                 await listen_for_messages(websocket)
             elif hello_msg[:6] == "ERROR:":
                 click.echo(hello_msg[6:])

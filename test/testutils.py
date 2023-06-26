@@ -14,15 +14,18 @@ def extract_exec_id(container_output):
     return container_output[0].split(" ")[-1]
 
 
-def create_image(tag=None, dockerfile="Dockerfile", path=None, quiet=True):
+def create_image(
+    tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quiet=True
+):
     if path is None:
         path = os.getcwd()
 
     dockerfile = f"--file {dockerfile} "
     tag = "" if tag is None else f"--tag {tag} "
     quiet = "--quiet " if quiet else ""
+    cleanup = "--cleanup " if cleanup else "--no-cleanup "
 
-    output = run(f"image build {tag}{quiet}{dockerfile}{path}")
+    output = run(f"image build {tag}{quiet}{cleanup}{dockerfile}{path}")
     return output
 
 
