@@ -7,6 +7,7 @@ from .container import root as container_root
 from .image import root as image_root
 from .network import root as network_root
 from .run import run
+from .exec import exec_
 from .volume import root as volume_root
 
 
@@ -66,6 +67,7 @@ cli.add_command(image_root, name="image")
 cli.add_command(network_root, name="network")
 cli.add_command(volume_root, name="volume")
 cli.add_command(run, name="run")
+cli.add_command(exec_, name="exec")
 
 if __name__ == "__main__":
     cli()

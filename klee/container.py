@@ -1,29 +1,16 @@
-import sys
-import asyncio
 import json
-import urllib
-import functools
-import signal
 
 import click
 
+from .name_generator import random_name
+from .network import connect_
+from .exec import execution_create_and_start
+from .utils import human_duration, request_and_validate_response
 from .client.api.default.container_create import sync_detailed as container_create
 from .client.api.default.container_list import sync_detailed as container_list
 from .client.api.default.container_remove import sync_detailed as container_remove
 from .client.api.default.container_stop import sync_detailed as container_stop
-from .client.api.default.network_connect import sync_detailed as network_connect
-from .client.api.default.exec_create import sync_detailed as exec_create
 from .client.models.container_config import ContainerConfig
-from .client.models.exec_config import ExecConfig
-from .client.models.end_point_config import EndPointConfig
-from .name_generator import random_name
-from .utils import human_duration, listen_for_messages, request_and_validate_response
-from .connection import create_websocket
-from .network import connect_
-
-
-WS_EXEC_START_ENDPOINT = "/exec/{exec_id}/start?{options}"
-
 
 # pylint: disable=unused-argument
 @click.group()
@@ -215,114 +202,10 @@ def start_(attach, interactive, tty, containers):
         click.echo("only one container can be started when setting the 'attach' flag.")
     else:
         for container in containers:
-            start_container = "true"
-            _create_execution_and_start(
+            start_container = True
+            execution_create_and_start(
                 container, tty, interactive, attach, start_container
             )
-
-
-def _create_execution_and_start(
-    container_id, tty, interactive, attach, start_container, cmd=None, env=None, user=""
-):
-    cmd = [] if cmd is None else cmd
-    env = [] if env is None else env
-    exec_id = _create_exec_instance(container_id, tty, cmd, env, user)
-    if exec_id is not None:
-        if attach:
-            endpoint = _build_endpoint(
-                exec_id, attach="true", start_container=start_container
-            )
-            asyncio.run(_attached_execute(endpoint, interactive))
-        else:
-            endpoint = _build_endpoint(
-                exec_id, attach="false", start_container=start_container
-            )
-            asyncio.run(_execute(endpoint))
-
-
-async def _execute(endpoint):
-    async with create_websocket(endpoint) as websocket:
-        await websocket.wait_closed()
-        if websocket.close_code != 1001:
-            click.echo("error starting container #{container_id}")
-
-
-async def _attached_execute(endpoint, interactive):
-    loop = asyncio.get_running_loop()
-    async with create_websocket(endpoint) as websocket:
-        if interactive:
-            for signame in ["SIGINT", "SIGTERM"]:
-                loop.add_signal_handler(
-                    getattr(signal, signame),
-                    functools.partial(close_websocket, websocket, loop),
-                )
-
-        hello_msg = await websocket.recv()
-
-        if hello_msg == "OK":
-            if interactive:
-                loop = asyncio.get_event_loop()
-                loop.add_reader(sys.stdin, send_user_input, websocket)
-            await listen_for_messages(websocket)
-
-        elif hello_msg[:6] == "ERROR:":
-            click.echo(hello_msg[6:])
-            await listen_for_messages(websocket)
-
-        else:
-            click.echo("error starting container #{container_id}")
-
-
-def _build_endpoint(exec_id, attach, start_container):
-    return WS_EXEC_START_ENDPOINT.format(
-        exec_id=exec_id,
-        options=urllib.parse.urlencode(
-            {"attach": attach, "start_container": start_container}
-        ),
-    )
-
-
-def send_user_input(websocket):
-    tasks = []
-    input_line = sys.stdin.readline()
-    task = asyncio.ensure_future(websocket.send(input_line))
-    tasks.append(task)
-
-
-def start_container(container_id, tty=False):
-    exec_id = _create_exec_instance(container_id, tty)
-    if exec_id is not None:
-        asyncio.run(_execute(container_id, exec_id, tty))
-
-
-def close_websocket(websocket, loop):
-    task = asyncio.create_task(_close_websocket(websocket))
-    asyncio.ensure_future(task)
-
-
-async def _close_websocket(websocket):
-    await websocket.close(code=1000, reason="interrupted by user")
-
-
-def _create_exec_instance(container_id, tty, cmd, env, user):
-    exec_config = ExecConfig.from_dict(
-        {"container_id": container_id, "cmd": cmd, "env": env, "user": user, "tty": tty}
-    )
-    response = request_and_validate_response(
-        exec_create,
-        kwargs={"json_body": exec_config},
-        statuscode2messsage={
-            201: lambda response: "",
-            404: lambda response: response.parsed.message,
-            500: lambda response: response.parsed,
-        },
-    )
-    if response.status_code == 201:
-        click.echo(f"created execution instance {response.parsed.id}")
-        return response.parsed.id
-
-    click.echo(f"{container_id}: error creating execution instance: {response.parsed}")
-    return None
 
 
 @root.command(name="stop")

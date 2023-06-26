@@ -72,7 +72,7 @@ class TestImageSubcommand:
         ]
         create_dockerfile(instructions)
         result = create_image(quiet=False)
-        build_id, image_id, build_log = decode_valid_image_build(result)
+        build_id, _image_id, build_log = decode_valid_image_build(result)
         expected_build_output = [
             "Step 1/3 : FROM scratch",
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
@@ -81,13 +81,12 @@ class TestImageSubcommand:
             "jail: /usr/bin/env -i /bin/sh -c ls notexist: failed",
         ]
         assert build_log == expected_build_output
-        # FIXME: Finish when 'klee exec' is implemented
-        # output = run(
-        #    f"container exec -a builder#{build_id} /bin/cat /root/test.txt", exit_code=0
-        # )
-        # assert output == "lol"
-        # assert succesfully_remove_image(image_id)
-        # assert empty_image_list()
+        output = run(f"exec -a build_{build_id} /bin/cat /root/test.txt", exit_code=0)
+
+        prefix = "created execution instance "
+        assert output[0][: len(prefix)] == prefix
+        assert output[1] == "lol"
+        assert empty_image_list()
 
 
 def succesfully_remove_image(image_id):
