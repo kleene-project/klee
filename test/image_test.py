@@ -1,6 +1,7 @@
 from testutils import (
     create_dockerfile,
     create_image,
+    decode_valid_image_build,
     remove_all_containers,
     remove_all_images,
     remove_image,
@@ -28,7 +29,7 @@ class TestImageSubcommand:
     def test_build_remove_and_list_images(self):
         create_dockerfile(self.instructions)
         result = create_image()
-        _build_id, image_id, _build_log = decode_valid_build(result)
+        _build_id, image_id, _build_log = decode_valid_image_build(result)
         images = list_images()
         image_id_listed = images[0][:12]
         assert image_id == image_id_listed
@@ -38,7 +39,7 @@ class TestImageSubcommand:
     def test_build_image_receive_build_messages(self):
         create_dockerfile(self.instructions)
         result = create_image(quiet=False)
-        _build_id, image_id, build_log = decode_valid_build(result)
+        _build_id, image_id, build_log = decode_valid_image_build(result)
         expected_build_output = [
             "Step 1/3 : FROM scratch",
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
@@ -54,7 +55,7 @@ class TestImageSubcommand:
     def test_build_and_remove_and_with_a_tag(self):
         create_dockerfile(self.instructions)
         result = create_image(tag="testlol:testest")
-        _build_id, image_id, _build_log = decode_valid_build(result)
+        _build_id, image_id, _build_log = decode_valid_image_build(result)
         images = list_images()
         image_id_listed = images[0][:12]
         assert image_id == image_id_listed
@@ -63,31 +64,30 @@ class TestImageSubcommand:
         assert succesfully_remove_image(image_id)
         assert empty_image_list()
 
-        expected_image_entry = (
-            f"{image_id_created}  testlol  testest  Less than a second"
-        )
-        assert list_images()[0] == expected_image_entry
-        assert succesfully_remove_image(image_id_created)
-        assert empty_image_list()
-
-
-def decode_valid_build(result):
-    build_id_raw = result[0]
-    image_id_raw = result[-2]
-    build_log = result[1:-2]
-
-    build_id = _extract_id(build_id_raw, "build initialized with build ID ")
-    image_id = _extract_id(image_id_raw, "image created with id ")
-
-    return build_id, image_id, build_log
-
-
-def _extract_id(result_line, prefix):
-    id_ = None
-    n = len(prefix)
-    if result_line[:n] == prefix:
-        id_ = result_line[n:]
-    return id_
+    def test_failed_build_without_cleanup(self):
+        instructions = [
+            "FROM scratch",
+            'RUN echo "lol" > /root/test.txt',
+            "RUN ls notexist",
+        ]
+        create_dockerfile(instructions)
+        result = create_image(quiet=False)
+        build_id, image_id, build_log = decode_valid_image_build(result)
+        expected_build_output = [
+            "Step 1/3 : FROM scratch",
+            'Step 2/3 : RUN echo "lol" > /root/test.txt',
+            "Step 3/3 : RUN ls notexist",
+            "ls: notexist: No such file or directory",
+            "jail: /usr/bin/env -i /bin/sh -c ls notexist: failed",
+        ]
+        assert build_log == expected_build_output
+        # FIXME: Finish when 'klee exec' is implemented
+        # output = run(
+        #    f"container exec -a builder#{build_id} /bin/cat /root/test.txt", exit_code=0
+        # )
+        # assert output == "lol"
+        # assert succesfully_remove_image(image_id)
+        # assert empty_image_list()
 
 
 def succesfully_remove_image(image_id):

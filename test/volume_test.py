@@ -2,6 +2,7 @@ from testutils import (
     create_container,
     create_dockerfile,
     create_image,
+    decode_valid_image_build,
     extract_exec_id,
     remove_all_containers,
     remove_container,
@@ -35,7 +36,7 @@ class TestVolumeSubcommand:
         create_volume(volume_name)
         create_dockerfile(self.instructions)
         result = create_image(tag=image_name)
-        _, image_id = result[0].split(" id ")
+        image_id, _, _ = decode_valid_image_build(result)
         container_id = create_container(
             name="test_cont_rw_vol",
             volumes=["cont_rw_vol1:/testdir1", "/testdir2"],
@@ -62,7 +63,7 @@ class TestVolumeSubcommand:
         create_volume(volume_name)
         create_dockerfile(self.instructions)
         result = create_image(tag=image_name)
-        _, image_id = result[0].split(" id ")
+        image_id, _, _ = decode_valid_image_build(result)
         container_id = create_container(
             name="test_cont_ro_vol",
             volumes=[f"{volume_name}:/testdir1:ro", "/testdir2:ro"],

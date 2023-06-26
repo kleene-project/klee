@@ -14,6 +14,12 @@ def extract_exec_id(container_output):
     return container_output[0].split(" ")[-1]
 
 
+def create_dockerfile(instructions, name="Dockerfile"):
+    dockerfile = os.path.join(os.getcwd(), name)
+    with open(dockerfile, "w", encoding="utf8") as f:
+        f.write("\n".join(instructions))
+
+
 def create_image(
     tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quiet=True
 ):
@@ -29,14 +35,27 @@ def create_image(
     return output
 
 
-def create_dockerfile(instructions, name="Dockerfile"):
-    dockerfile = os.path.join(os.getcwd(), name)
-    with open(dockerfile, "w", encoding="utf8") as f:
-        f.write("\n".join(instructions))
-
-
 def remove_image(image_id):
     return run(f"image rm {image_id}")
+
+
+def decode_valid_image_build(result):
+    build_id_raw = result[0]
+    image_id_raw = result[-2]
+    build_log = result[1:-2]
+
+    build_id = _extract_id(build_id_raw, "build initialized with build ID ")
+    image_id = _extract_id(image_id_raw, "image created with id ")
+
+    return build_id, image_id, build_log
+
+
+def _extract_id(result_line, prefix):
+    id_ = None
+    n = len(prefix)
+    if result_line[:n] == prefix:
+        id_ = result_line[n:]
+    return id_
 
 
 def remove_all_containers():
