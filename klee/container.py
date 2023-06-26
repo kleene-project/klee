@@ -218,10 +218,7 @@ def start_(attach, interactive, tty, containers):
             )
         else:
             container = containers[0]
-            if interactive:
-                _start_interactive_container(container, tty)
-            else:
-                _start_attached_container(container, tty)
+            _execute(container, tty, interactive)
 
     else:
         if len(containers) == 1:
@@ -231,40 +228,22 @@ def start_(attach, interactive, tty, containers):
                 start_container(container_id)
 
 
-def _start_attached_container(container_id, tty):
+def _execute(container_id, tty, interactive):
     exec_id = _create_exec_instance(container_id, tty)
     endpoint = _build_endpoint(exec_id)
     if exec_id is not None:
-        asyncio.run(_async_start_attached_container(endpoint))
+        asyncio.run(_async_execute(endpoint, interactive))
 
 
-async def _async_start_attached_container(endpoint):
-    async with create_websocket(endpoint) as websocket:
-        hello_msg = await websocket.recv()
-        if hello_msg == "OK":
-            await listen_for_messages(websocket)
-        elif hello_msg[:6] == "ERROR:":
-            click.echo(hello_msg[6:])
-            await listen_for_messages(websocket)
-        else:
-            click.echo("error starting container #{container_id}")
-
-
-def _start_interactive_container(container_id, tty):
-    exec_id = _create_exec_instance(container_id, tty)
-    endpoint = _build_endpoint(exec_id)
-    if exec_id is not None:
-        asyncio.run(_async_start_interactive_container(endpoint))
-
-
-async def _async_start_interactive_container(endpoint):
+async def _async_execute(endpoint, interactive):
     loop = asyncio.get_running_loop()
     async with create_websocket(endpoint) as websocket:
-        for signame in ["SIGINT", "SIGTERM"]:
-            loop.add_signal_handler(
-                getattr(signal, signame),
-                functools.partial(close_websocket, websocket, loop),
-            )
+        if interactive:
+            for signame in ["SIGINT", "SIGTERM"]:
+                loop.add_signal_handler(
+                    getattr(signal, signame),
+                    functools.partial(close_websocket, websocket, loop),
+                )
 
         hello_msg = await websocket.recv()
         if hello_msg == "OK":
