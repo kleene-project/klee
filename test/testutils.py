@@ -20,9 +20,7 @@ def create_dockerfile(instructions, name="Dockerfile"):
         f.write("\n".join(instructions))
 
 
-def create_image(
-    tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quiet=True
-):
+def build_image(tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quiet=True):
     if path is None:
         path = os.getcwd()
 
@@ -31,12 +29,8 @@ def create_image(
     quiet = "--quiet " if quiet else ""
     cleanup = "--cleanup " if cleanup else "--no-cleanup "
 
-    output = run(f"image build {tag}{quiet}{cleanup}{dockerfile}{path}")
-    return output
-
-
-def remove_image(image_id):
-    return run(f"image rm {image_id}")
+    result = run(f"image build {tag}{quiet}{cleanup}{dockerfile}{path}")
+    return result
 
 
 def decode_valid_image_build(result):
@@ -48,6 +42,25 @@ def decode_valid_image_build(result):
     image_id = _extract_id(image_id_raw, "image created with id ")
 
     return build_id, image_id, build_log
+
+
+def create_image(method, tag=None, url=None, dataset=None):
+    tag = "" if tag is None else f"--tag={tag} "
+    dataset = "" if dataset is None else f"{dataset}"
+    url = "" if url is None else f"--url={url}"
+
+    result = run(f"image create {method} {tag}{url}{dataset}")
+    return result
+
+
+def decode_valid_image_creation(result):
+    ok_line = result[-2]
+    assert ok_line[:3] == "ok:"
+    return ok_line[3:]
+
+
+def remove_image(image_id):
+    return run(f"image rm {image_id}")
 
 
 def _extract_id(result_line, prefix):

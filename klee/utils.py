@@ -8,7 +8,7 @@ import httpx
 from .connection import request
 
 
-async def listen_for_messages(websocket):
+async def listen_for_messages(websocket, nl=False):
     while True:
         try:
             message = await websocket.recv()
@@ -16,7 +16,7 @@ async def listen_for_messages(websocket):
             click.echo(f"{websocket.close_reason}")
             break
 
-        click.echo(message, nl=False)
+        click.echo(message, nl=nl)
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):

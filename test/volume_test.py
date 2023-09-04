@@ -1,7 +1,7 @@
 from testutils import (
     create_container,
     create_dockerfile,
-    create_image,
+    build_image,
     decode_valid_image_build,
     extract_exec_id,
     remove_all_containers,
@@ -35,7 +35,7 @@ class TestVolumeSubcommand:
 
         create_volume(volume_name)
         create_dockerfile(self.instructions)
-        result = create_image(tag=image_name)
+        result = build_image(tag=image_name)
         image_id, _, _ = decode_valid_image_build(result)
         container_id = create_container(
             name="test_cont_rw_vol",
@@ -62,7 +62,7 @@ class TestVolumeSubcommand:
 
         create_volume(volume_name)
         create_dockerfile(self.instructions)
-        result = create_image(tag=image_name)
+        result = build_image(tag=image_name)
         image_id, _, _ = decode_valid_image_build(result)
         container_id = create_container(
             name="test_cont_ro_vol",

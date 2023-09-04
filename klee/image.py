@@ -11,13 +11,97 @@ from .connection import create_websocket
 from .utils import human_duration, listen_for_messages, request_and_validate_response
 
 
-WS_IMAGE_ENDPOINT = "/images/build?{options}"
+WS_IMAGE_BUILD_ENDPOINT = "/images/build?{options}"
+WS_IMAGE_CREATE_ENDPOINT = "/images/create?{options}"
 
 
 # pylint: disable=unused-argument
 @click.group()
 def root(name="image"):
     """Manage images"""
+
+
+@root.group()
+def create(name="create"):
+    """
+    Create a base image from a remote tar-archive or a ZFS dataset.
+
+    The 'fetch' command can be used for creating base images from tar-archives downloaded with fetch(1).
+    If no url is provided, kleened will download a base system from the official FreeBSD repositories based
+    on host OS information from the uname(1) utility.
+
+    The 'zfs' command can be used to create a base image from a zfs(8) dataset on the kleened host containing,
+    e.g., a FreeBSD base system that has been built locally on the kleeened host.
+
+    See the documentation for details.
+    """
+
+
+@create.command()
+@click.option(
+    "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
+)
+@click.option(
+    "--url",
+    "-u",
+    default=None,
+    help="URL to a tar-archive of the userland that the image should be created from. If no url is supplied kleened will try and fetch the userland from a FreeBSD mirror.",
+)
+@click.option(
+    "--force",
+    "-f",
+    is_flag=True,
+    default=False,
+    help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the kleened host.",
+)
+def fetch(tag, url, force):
+    """
+    Fetch a tar-archive and create a base image from it.
+    """
+
+    method = "fetch"
+    dataset = ""
+    asyncio.run(_create_image_and_listen_for_messages(tag, dataset, url, force, method))
+
+
+@create.command()
+@click.option(
+    "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
+)
+@click.argument("dataset", nargs=1)
+def zfs(tag, dataset):
+    """
+    Use a local ZFS dataset on the kleened host to create a base image.
+    The dataset can be populate with, e.g., a local build of FreeBSD or using freebsd-update(8).
+    """
+    force = False
+    url = None
+    method = "zfs"
+    asyncio.run(_create_image_and_listen_for_messages(tag, dataset, url, force, method))
+
+
+async def _create_image_and_listen_for_messages(tag, dataset, url, force, method):
+    force = "true" if force else "false"
+    endpoint = WS_IMAGE_CREATE_ENDPOINT.format(
+        options=urllib.parse.urlencode(
+            {
+                "tag": tag,
+                "method": method,
+                "zfs_dataset": dataset,
+                "url": url,
+                "force": force,
+            }
+        )
+    )
+    try:
+        async with create_websocket(endpoint) as websocket:
+            nl = method == "fetch"
+            await listen_for_messages(websocket, nl=nl)
+
+    except websockets.exceptions.ConnectionClosedError:
+        click.echo(
+            "ERROR: image creation failed unexpectantly. Failed to create image."
+        )
 
 
 @root.command()
@@ -53,7 +137,7 @@ def build(file, tag, quiet, cleanup, path):
 async def _build_image_and_listen_for_messages(file_, tag, quiet, cleanup, path):
     quiet = "true" if quiet else "false"
     path = os.path.abspath(path)
-    endpoint = WS_IMAGE_ENDPOINT.format(
+    endpoint = WS_IMAGE_BUILD_ENDPOINT.format(
         options=urllib.parse.urlencode(
             {
                 "context": path,

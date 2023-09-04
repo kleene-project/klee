@@ -1,12 +1,32 @@
 from testutils import (
     create_dockerfile,
-    create_image,
+    build_image,
     decode_valid_image_build,
+    create_image,
+    decode_valid_image_creation,
     remove_all_containers,
     remove_all_images,
     remove_image,
     run,
 )
+
+
+class TestImageCreateSubcommand:
+    def test_create_image_with_fetch_method(self):
+        url = "file:///home/vagrant/kleened/test/data/base_rescue.txz"
+        result = create_image("fetch", tag="ImageCreate:test-fetch", url=url)
+        image_id = decode_valid_image_creation(result)
+        image_id_listed = image_id_from_list(0)
+        assert image_id == image_id_listed
+        assert succesfully_remove_image(image_id)
+
+    def test_create_image_with_zfs_method(self):
+        dataset = "zroot/kleene_testdataset"
+        result = create_image("zfs", tag="ImageCreate:test-zfs", dataset=dataset)
+        image_id = decode_valid_image_creation(result)
+        image_id_listed = image_id_from_list(0)
+        assert image_id == image_id_listed
+        assert succesfully_remove_image(image_id)
 
 
 class TestImageSubcommand:
@@ -28,17 +48,16 @@ class TestImageSubcommand:
 
     def test_build_remove_and_list_images(self):
         create_dockerfile(self.instructions)
-        result = create_image()
+        result = build_image()
         _build_id, image_id, _build_log = decode_valid_image_build(result)
-        images = list_images()
-        image_id_listed = images[0][:12]
+        image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
         assert empty_image_list()
 
     def test_build_image_receive_build_messages(self):
         create_dockerfile(self.instructions)
-        result = create_image(quiet=False)
+        result = build_image(quiet=False)
         _build_id, image_id, build_log = decode_valid_image_build(result)
         expected_build_output = [
             "Step 1/3 : FROM scratch",
@@ -46,18 +65,16 @@ class TestImageSubcommand:
             "Step 3/3 : CMD /usr/bin/uname",
         ]
         assert build_log == expected_build_output
-        images = list_images()
-        image_id_listed = images[0][:12]
+        image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
         assert empty_image_list()
 
     def test_build_and_remove_and_with_a_tag(self):
         create_dockerfile(self.instructions)
-        result = create_image(tag="testlol:testest")
+        result = build_image(tag="testlol:testest")
         _build_id, image_id, _build_log = decode_valid_image_build(result)
-        images = list_images()
-        image_id_listed = images[0][:12]
+        image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         expected_image_entry = f"{image_id}  testlol  testest  Less than a second"
         assert list_images()[0] == expected_image_entry
@@ -71,7 +88,7 @@ class TestImageSubcommand:
             "RUN ls notexist",
         ]
         create_dockerfile(instructions)
-        result = create_image(quiet=False)
+        result = build_image(quiet=False)
         build_id, _image_id, build_log = decode_valid_image_build(result)
         expected_build_output = [
             "Step 1/3 : FROM scratch",
@@ -97,6 +114,12 @@ def succesfully_remove_image(image_id):
 def list_images():
     _, _, *images = run("image ls")
     return images
+
+
+def image_id_from_list(index):
+    images = list_images()
+    image_id = images[index][:12]
+    return image_id
 
 
 def empty_image_list():

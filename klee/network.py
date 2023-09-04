@@ -22,7 +22,7 @@ def root(name="network"):
     "-d",
     default="loopback",
     show_default=True,
-    help="Which driver to use for the network. 'vnet' or 'loopback' is possible. See the networking documentation for details.",
+    help="Which driver to use for the network. Possible values are 'vnet', 'loopback', and 'host'. See jails(8) and the networking documentation for details.",
 )
 @click.option(
     "--ifname",
