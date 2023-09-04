@@ -64,7 +64,9 @@ def _build_response(
 def sync_detailed(
     transport, volume_name: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Remove a volume
+    """volume remove
+
+     Remove a volume
 
     Args:
         volume_name (str):
@@ -74,7 +76,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs.update(
@@ -96,7 +98,9 @@ def sync(
     *,
     client: Client,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Remove a volume
+    """volume remove
+
+     Remove a volume
 
     Args:
         volume_name (str):
@@ -106,7 +110,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return sync_detailed(
@@ -120,7 +124,9 @@ async def asyncio_detailed(
     *,
     client: Client,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Remove a volume
+    """volume remove
+
+     Remove a volume
 
     Args:
         volume_name (str):
@@ -130,7 +136,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs = _get_kwargs(
@@ -149,7 +155,9 @@ async def asyncio(
     *,
     client: Client,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Remove a volume
+    """volume remove
+
+     Remove a volume
 
     Args:
         volume_name (str):
@@ -159,7 +167,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return (

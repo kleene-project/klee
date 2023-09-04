@@ -73,7 +73,9 @@ def _build_response(
 def sync_detailed(
     transport, network_id: str, *, client: Client, json_body: EndPointConfig, **kwargs
 ) -> Response[Union[Any, ErrorResponse]]:
-    """Connect a container to a network
+    """network connect
+
+     Connect a container to a network
 
     Args:
         network_id (str):
@@ -85,7 +87,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Union[Any, ErrorResponse]
     """
 
     kwargs.update(
@@ -109,7 +111,9 @@ def sync(
     client: Client,
     json_body: EndPointConfig,
 ) -> Optional[Union[Any, ErrorResponse]]:
-    """Connect a container to a network
+    """network connect
+
+     Connect a container to a network
 
     Args:
         network_id (str):
@@ -121,7 +125,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Union[Any, ErrorResponse]
     """
 
     return sync_detailed(
@@ -137,7 +141,9 @@ async def asyncio_detailed(
     client: Client,
     json_body: EndPointConfig,
 ) -> Response[Union[Any, ErrorResponse]]:
-    """Connect a container to a network
+    """network connect
+
+     Connect a container to a network
 
     Args:
         network_id (str):
@@ -149,7 +155,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Union[Any, ErrorResponse]
     """
 
     kwargs = _get_kwargs(
@@ -170,7 +176,9 @@ async def asyncio(
     client: Client,
     json_body: EndPointConfig,
 ) -> Optional[Union[Any, ErrorResponse]]:
-    """Connect a container to a network
+    """network connect
+
+     Connect a container to a network
 
     Args:
         network_id (str):
@@ -182,7 +190,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Union[Any, ErrorResponse]
     """
 
     return (

@@ -59,7 +59,7 @@ def _build_response(
 
 
 def sync_detailed(transport, *, client: Client, **kwargs) -> Response[List["Volume"]]:
-    """List volumes
+    """volume list
 
      Returns a compact listing of existing volumes.
 
@@ -68,7 +68,7 @@ def sync_detailed(transport, *, client: Client, **kwargs) -> Response[List["Volu
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Volume']]
+        List['Volume']
     """
 
     kwargs.update(
@@ -88,7 +88,7 @@ def sync(
     *,
     client: Client,
 ) -> Optional[List["Volume"]]:
-    """List volumes
+    """volume list
 
      Returns a compact listing of existing volumes.
 
@@ -97,7 +97,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Volume']]
+        List['Volume']
     """
 
     return sync_detailed(
@@ -109,7 +109,7 @@ async def asyncio_detailed(
     *,
     client: Client,
 ) -> Response[List["Volume"]]:
-    """List volumes
+    """volume list
 
      Returns a compact listing of existing volumes.
 
@@ -118,7 +118,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Volume']]
+        List['Volume']
     """
 
     kwargs = _get_kwargs(
@@ -135,7 +135,7 @@ async def asyncio(
     *,
     client: Client,
 ) -> Optional[List["Volume"]]:
-    """List volumes
+    """volume list
 
      Returns a compact listing of existing volumes.
 
@@ -144,7 +144,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Volume']]
+        List['Volume']
     """
 
     return (

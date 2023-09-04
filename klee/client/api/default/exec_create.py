@@ -68,18 +68,21 @@ def _build_response(
 def sync_detailed(
     transport, *, client: Client, json_body: ExecConfig, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Create an execution instance
+    """exec create
+
+     Create an execution instance within a container.
 
     Args:
         json_body (ExecConfig): Configuration of an executable to run within a container. Some of
-            the configuration parameters will overwrite the corresponding parameters in the container.
+            the configuration parameters will overwrite the corresponding parameters if they are
+            defined in the container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs.update(
@@ -101,18 +104,21 @@ def sync(
     client: Client,
     json_body: ExecConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Create an execution instance
+    """exec create
+
+     Create an execution instance within a container.
 
     Args:
         json_body (ExecConfig): Configuration of an executable to run within a container. Some of
-            the configuration parameters will overwrite the corresponding parameters in the container.
+            the configuration parameters will overwrite the corresponding parameters if they are
+            defined in the container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return sync_detailed(
@@ -126,18 +132,21 @@ async def asyncio_detailed(
     client: Client,
     json_body: ExecConfig,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Create an execution instance
+    """exec create
+
+     Create an execution instance within a container.
 
     Args:
         json_body (ExecConfig): Configuration of an executable to run within a container. Some of
-            the configuration parameters will overwrite the corresponding parameters in the container.
+            the configuration parameters will overwrite the corresponding parameters if they are
+            defined in the container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs = _get_kwargs(
@@ -156,18 +165,21 @@ async def asyncio(
     client: Client,
     json_body: ExecConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Create an execution instance
+    """exec create
+
+     Create an execution instance within a container.
 
     Args:
         json_body (ExecConfig): Configuration of an executable to run within a container. Some of
-            the configuration parameters will overwrite the corresponding parameters in the container.
+            the configuration parameters will overwrite the corresponding parameters if they are
+            defined in the container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return (

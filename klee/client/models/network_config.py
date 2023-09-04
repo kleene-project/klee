@@ -12,12 +12,13 @@ class NetworkConfig:
     """Network configuration
 
     Attributes:
-        driver (str): Network type to use. Possible values are 'loopback' and 'vnet'. See the documentation on
-            networking for details. Example: loopback.
+        driver (str): Which driver to use for the network. Possible values are 'vnet', 'loopback', and 'host'.
+            See jails(8) and the networking documentation for details.
+             Example: vnet.
         name (str): Name of the network. Example: westnet.
         subnet (str): The subnet (in CIDR-format) that is used for the network. Example: 10.13.37.0/24.
-        ifname (Union[Unset, str]): Name of the interface that is being used for the network. Ignored unless it uses
-            'loopback' as the driver. Example: kleene0.
+        ifname (Union[Unset, str]): Name of the loopback interface that is being used for the network. Only used with
+            the 'loopback' driver. Example: kleene0.
     """
 
     driver: str

@@ -68,9 +68,14 @@ def _build_response(
 def sync_detailed(
     transport, *, client: Client, all_: Union[Unset, None, bool] = UNSET, **kwargs
 ) -> Response[List["ContainerSummary"]]:
-    """List containers
+    """container list
 
-     Returns a compact listing of containers.
+     Returns a list of containers. For details on the format, see
+    [inspect endpoint](#operation/ContainerInspect) for detailed information
+    about a container.
+
+    Note that it uses a different, smaller representation of a container
+    than inspecting a single container.
 
     Args:
         all_ (Union[Unset, None, bool]):
@@ -80,7 +85,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['ContainerSummary']]
+        List['ContainerSummary']
     """
 
     kwargs.update(
@@ -102,9 +107,14 @@ def sync(
     client: Client,
     all_: Union[Unset, None, bool] = UNSET,
 ) -> Optional[List["ContainerSummary"]]:
-    """List containers
+    """container list
 
-     Returns a compact listing of containers.
+     Returns a list of containers. For details on the format, see
+    [inspect endpoint](#operation/ContainerInspect) for detailed information
+    about a container.
+
+    Note that it uses a different, smaller representation of a container
+    than inspecting a single container.
 
     Args:
         all_ (Union[Unset, None, bool]):
@@ -114,7 +124,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['ContainerSummary']]
+        List['ContainerSummary']
     """
 
     return sync_detailed(
@@ -128,9 +138,14 @@ async def asyncio_detailed(
     client: Client,
     all_: Union[Unset, None, bool] = UNSET,
 ) -> Response[List["ContainerSummary"]]:
-    """List containers
+    """container list
 
-     Returns a compact listing of containers.
+     Returns a list of containers. For details on the format, see
+    [inspect endpoint](#operation/ContainerInspect) for detailed information
+    about a container.
+
+    Note that it uses a different, smaller representation of a container
+    than inspecting a single container.
 
     Args:
         all_ (Union[Unset, None, bool]):
@@ -140,7 +155,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['ContainerSummary']]
+        List['ContainerSummary']
     """
 
     kwargs = _get_kwargs(
@@ -159,9 +174,14 @@ async def asyncio(
     client: Client,
     all_: Union[Unset, None, bool] = UNSET,
 ) -> Optional[List["ContainerSummary"]]:
-    """List containers
+    """container list
 
-     Returns a compact listing of containers.
+     Returns a list of containers. For details on the format, see
+    [inspect endpoint](#operation/ContainerInspect) for detailed information
+    about a container.
+
+    Note that it uses a different, smaller representation of a container
+    than inspecting a single container.
 
     Args:
         all_ (Union[Unset, None, bool]):
@@ -171,7 +191,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['ContainerSummary']]
+        List['ContainerSummary']
     """
 
     return (

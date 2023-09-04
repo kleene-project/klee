@@ -2,47 +2,36 @@ from typing import Any, Dict, List, Type, TypeVar
 
 import attr
 
-T = TypeVar("T", bound="ErrorResponse")
+T = TypeVar("T", bound="ImageBuildConfigBuildargs")
 
 
 @attr.s(auto_attribs=True)
-class ErrorResponse:
-    """Represents an error and (possibly) its reason.
+class ImageBuildConfigBuildargs:
+    """Object of string pairs for build-time variables. Users pass these values at build-time. Kleened uses the buildargs
+    as the environment context for commands run via the Dockerfile RUN instruction, or for variable expansion in other
+    Dockerfile instructions. This is not meant for passing secret values.
 
-    Example:
-        {'message': 'Something went wrong.'}
+        Example:
+            {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}
 
-    Attributes:
-        message (str): The error message, if any.
     """
 
-    message: str
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        message = self.message
-
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
-        field_dict.update(
-            {
-                "message": message,
-            }
-        )
+        field_dict.update({})
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
-        message = d.pop("message")
+        image_build_config_buildargs = cls()
 
-        error_response = cls(
-            message=message,
-        )
-
-        error_response.additional_properties = d
-        return error_response
+        image_build_config_buildargs.additional_properties = d
+        return image_build_config_buildargs
 
     @property
     def additional_keys(self) -> List[str]:

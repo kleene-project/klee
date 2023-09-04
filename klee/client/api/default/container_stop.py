@@ -70,7 +70,9 @@ def _build_response(
 def sync_detailed(
     transport, container_id: str, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Stop a container. Alle execution instances running in the container will be shut down.
+    """container stop
+
+     Stop a container. Alle execution instances running in the container will be shut down.
 
     Args:
         container_id (str):
@@ -80,7 +82,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs.update(
@@ -102,7 +104,9 @@ def sync(
     *,
     client: Client,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Stop a container. Alle execution instances running in the container will be shut down.
+    """container stop
+
+     Stop a container. Alle execution instances running in the container will be shut down.
 
     Args:
         container_id (str):
@@ -112,7 +116,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return sync_detailed(
@@ -126,7 +130,9 @@ async def asyncio_detailed(
     *,
     client: Client,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Stop a container. Alle execution instances running in the container will be shut down.
+    """container stop
+
+     Stop a container. Alle execution instances running in the container will be shut down.
 
     Args:
         container_id (str):
@@ -136,7 +142,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs = _get_kwargs(
@@ -155,7 +161,9 @@ async def asyncio(
     *,
     client: Client,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Stop a container. Alle execution instances running in the container will be shut down.
+    """container stop
+
+     Stop a container. Alle execution instances running in the container will be shut down.
 
     Args:
         container_id (str):
@@ -165,7 +173,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return (

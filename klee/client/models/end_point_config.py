@@ -14,7 +14,7 @@ class EndPointConfig:
     Attributes:
         container (str): Name or (possibly truncated) id of the container
         ip_address (Union[Unset, str]): The ip(v4) address that should be assigned to the container. If this field is
-            not set (or null) an ip contained in the subnet is auto-generated. Example: 10.13.37.33.
+            not set (or null) an unused ip contained in the subnet is auto-generated. Example: 10.13.37.33.
     """
 
     container: str

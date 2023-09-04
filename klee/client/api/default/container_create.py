@@ -75,19 +75,18 @@ def _build_response(
 def sync_detailed(
     transport, *, client: Client, json_body: ContainerConfig, name: str, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Create a container
+    """container create
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container. Some of the configuration
-            parameters will overwrite the corresponding parameters in the specified image.
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs.update(
@@ -111,19 +110,18 @@ def sync(
     json_body: ContainerConfig,
     name: str,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Create a container
+    """container create
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container. Some of the configuration
-            parameters will overwrite the corresponding parameters in the specified image.
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return sync_detailed(
@@ -139,19 +137,18 @@ async def asyncio_detailed(
     json_body: ContainerConfig,
     name: str,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Create a container
+    """container create
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container. Some of the configuration
-            parameters will overwrite the corresponding parameters in the specified image.
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs = _get_kwargs(
@@ -172,19 +169,18 @@ async def asyncio(
     json_body: ContainerConfig,
     name: str,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Create a container
+    """container create
 
     Args:
         name (str):
-        json_body (ContainerConfig): Configuration for a container. Some of the configuration
-            parameters will overwrite the corresponding parameters in the specified image.
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return (

@@ -59,16 +59,17 @@ def _build_response(
 
 
 def sync_detailed(transport, *, client: Client, **kwargs) -> Response[List["Image"]]:
-    """List images
+    """image list
 
-     Returns a list of images.
+     Returns a list of images on the server. Note that it uses a different, smaller representation of an
+    image than inspecting a single image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Image']]
+        List['Image']
     """
 
     kwargs.update(
@@ -88,16 +89,17 @@ def sync(
     *,
     client: Client,
 ) -> Optional[List["Image"]]:
-    """List images
+    """image list
 
-     Returns a list of images.
+     Returns a list of images on the server. Note that it uses a different, smaller representation of an
+    image than inspecting a single image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Image']]
+        List['Image']
     """
 
     return sync_detailed(
@@ -109,16 +111,17 @@ async def asyncio_detailed(
     *,
     client: Client,
 ) -> Response[List["Image"]]:
-    """List images
+    """image list
 
-     Returns a list of images.
+     Returns a list of images on the server. Note that it uses a different, smaller representation of an
+    image than inspecting a single image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Image']]
+        List['Image']
     """
 
     kwargs = _get_kwargs(
@@ -135,16 +138,17 @@ async def asyncio(
     *,
     client: Client,
 ) -> Optional[List["Image"]]:
-    """List images
+    """image list
 
-     Returns a list of images.
+     Returns a list of images on the server. Note that it uses a different, smaller representation of an
+    image than inspecting a single image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[List['Image']]
+        List['Image']
     """
 
     return (

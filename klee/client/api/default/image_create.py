@@ -1,59 +1,48 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional
 
 import httpx
 
 from ... import errors
 from ...client import Client
-from ...models.error_response import ErrorResponse
-from ...models.id_response import IdResponse
-from ...types import UNSET, Response
+from ...models.image_create_config import ImageCreateConfig
+from ...models.web_socket_message import WebSocketMessage
+from ...types import Response
 
 
 def _get_kwargs(
-    exec_id: str,
     *,
     client: Client,
-    force_stop: bool,
-    stop_container: bool,
+    json_body: ImageCreateConfig,
 ) -> Dict[str, Any]:
-    url = "{}/exec/{exec_id}/stop".format(client.base_url, exec_id=exec_id)
+    url = "{}/images/create".format(client.base_url)
 
     headers: Dict[str, str] = client.get_headers()
     cookies: Dict[str, Any] = client.get_cookies()
 
-    params: Dict[str, Any] = {}
-    params["force_stop"] = force_stop
-
-    params["stop_container"] = stop_container
-
-    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+    json_json_body = json_body.to_dict()
 
     return {
-        "method": "post",
+        "method": "get",
         "url": url,
         "headers": headers,
         "cookies": cookies,
         "timeout": client.get_timeout(),
-        "params": params,
+        "json": json_json_body,
     }
 
 
 def _parse_response(
     *, client: Client, response: httpx.Response
-) -> Optional[Union[ErrorResponse, IdResponse]]:
+) -> Optional[WebSocketMessage]:
     if response.status_code == HTTPStatus.OK:
-        response_200 = IdResponse.from_dict(response.json())
+        response_200 = WebSocketMessage.from_dict(response.json())
 
         return response_200
-    if response.status_code == HTTPStatus.NOT_FOUND:
-        response_404 = ErrorResponse.from_dict(response.json())
+    if response.status_code == HTTPStatus.BAD_REQUEST:
+        response_400 = WebSocketMessage.from_dict(response.json())
 
-        return response_404
-    if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
-        response_500 = ErrorResponse.from_dict(response.json())
-
-        return response_500
+        return response_400
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(f"Unexpected status code: {response.status_code}")
     else:
@@ -62,7 +51,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Client, response: httpx.Response
-) -> Response[Union[ErrorResponse, IdResponse]]:
+) -> Response[WebSocketMessage]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -72,37 +61,27 @@ def _build_response(
 
 
 def sync_detailed(
-    transport,
-    exec_id: str,
-    *,
-    client: Client,
-    force_stop: bool,
-    stop_container: bool,
-    **kwargs,
-) -> Response[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    transport, *, client: Client, json_body: ImageCreateConfig, **kwargs
+) -> Response[WebSocketMessage]:
+    """image create
 
-     Stop and/or destroy an execution instance.
+     make a description of the websocket endpoint here.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        json_body (ImageCreateConfig): Configuration for the creation of base images.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        WebSocketMessage
     """
 
     kwargs.update(
         _get_kwargs(
-            exec_id=exec_id,
             client=client,
-            force_stop=force_stop,
-            stop_container=stop_container,
+            json_body=json_body,
         )
     )
 
@@ -114,66 +93,54 @@ def sync_detailed(
 
 
 def sync(
-    exec_id: str,
     *,
     client: Client,
-    force_stop: bool,
-    stop_container: bool,
-) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    json_body: ImageCreateConfig,
+) -> Optional[WebSocketMessage]:
+    """image create
 
-     Stop and/or destroy an execution instance.
+     make a description of the websocket endpoint here.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        json_body (ImageCreateConfig): Configuration for the creation of base images.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        WebSocketMessage
     """
 
     return sync_detailed(
-        exec_id=exec_id,
         client=client,
-        force_stop=force_stop,
-        stop_container=stop_container,
+        json_body=json_body,
     ).parsed
 
 
 async def asyncio_detailed(
-    exec_id: str,
     *,
     client: Client,
-    force_stop: bool,
-    stop_container: bool,
-) -> Response[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    json_body: ImageCreateConfig,
+) -> Response[WebSocketMessage]:
+    """image create
 
-     Stop and/or destroy an execution instance.
+     make a description of the websocket endpoint here.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        json_body (ImageCreateConfig): Configuration for the creation of base images.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        WebSocketMessage
     """
 
     kwargs = _get_kwargs(
-        exec_id=exec_id,
         client=client,
-        force_stop=force_stop,
-        stop_container=stop_container,
+        json_body=json_body,
     )
 
     async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
@@ -183,34 +150,28 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    exec_id: str,
     *,
     client: Client,
-    force_stop: bool,
-    stop_container: bool,
-) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    json_body: ImageCreateConfig,
+) -> Optional[WebSocketMessage]:
+    """image create
 
-     Stop and/or destroy an execution instance.
+     make a description of the websocket endpoint here.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        json_body (ImageCreateConfig): Configuration for the creation of base images.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        WebSocketMessage
     """
 
     return (
         await asyncio_detailed(
-            exec_id=exec_id,
             client=client,
-            force_stop=force_stop,
-            stop_container=stop_container,
+            json_body=json_body,
         )
     ).parsed

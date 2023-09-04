@@ -2,31 +2,36 @@ from typing import Any, Dict, List, Type, TypeVar
 
 import attr
 
-T = TypeVar("T", bound="ErrorResponse")
+T = TypeVar("T", bound="ExecStartConfig")
 
 
 @attr.s(auto_attribs=True)
-class ErrorResponse:
-    """Represents an error and (possibly) its reason.
-
-    Example:
-        {'message': 'Something went wrong.'}
+class ExecStartConfig:
+    """Options for starting an execution instance.
 
     Attributes:
-        message (str): The error message, if any.
+        attach (bool): Whether to receive output from `stdin` and `stderr`.
+        exec_id (str): id of the execution instance to start
+        start_container (bool): Whether to start the container if it is not running.
     """
 
-    message: str
+    attach: bool
+    exec_id: str
+    start_container: bool
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        message = self.message
+        attach = self.attach
+        exec_id = self.exec_id
+        start_container = self.start_container
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "message": message,
+                "attach": attach,
+                "exec_id": exec_id,
+                "start_container": start_container,
             }
         )
 
@@ -35,14 +40,20 @@ class ErrorResponse:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
-        message = d.pop("message")
+        attach = d.pop("attach")
 
-        error_response = cls(
-            message=message,
+        exec_id = d.pop("exec_id")
+
+        start_container = d.pop("start_container")
+
+        exec_start_config = cls(
+            attach=attach,
+            exec_id=exec_id,
+            start_container=start_container,
         )
 
-        error_response.additional_properties = d
-        return error_response
+        exec_start_config.additional_properties = d
+        return exec_start_config
 
     @property
     def additional_keys(self) -> List[str]:

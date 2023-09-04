@@ -68,9 +68,9 @@ def _build_response(
 def sync_detailed(
     transport, *, client: Client, json_body: NetworkConfig, **kwargs
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Create network
+    """network create
 
-     Create a network. Only type 'loopback' networks are supported atm.
+     Create a network.
 
     Args:
         json_body (NetworkConfig): Network configuration
@@ -80,7 +80,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs.update(
@@ -102,9 +102,9 @@ def sync(
     client: Client,
     json_body: NetworkConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Create network
+    """network create
 
-     Create a network. Only type 'loopback' networks are supported atm.
+     Create a network.
 
     Args:
         json_body (NetworkConfig): Network configuration
@@ -114,7 +114,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return sync_detailed(
@@ -128,9 +128,9 @@ async def asyncio_detailed(
     client: Client,
     json_body: NetworkConfig,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """Create network
+    """network create
 
-     Create a network. Only type 'loopback' networks are supported atm.
+     Create a network.
 
     Args:
         json_body (NetworkConfig): Network configuration
@@ -140,7 +140,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     kwargs = _get_kwargs(
@@ -159,9 +159,9 @@ async def asyncio(
     client: Client,
     json_body: NetworkConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """Create network
+    """network create
 
-     Create a network. Only type 'loopback' networks are supported atm.
+     Create a network.
 
     Args:
         json_body (NetworkConfig): Network configuration
@@ -171,7 +171,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Union[ErrorResponse, IdResponse]
     """
 
     return (

@@ -66,16 +66,20 @@ def _build_response(
 def sync_detailed(
     transport, *, client: Client, **kwargs
 ) -> Response[Union[ErrorResponse, List["Network"]]]:
-    """List networks
+    """network list
 
-     Returns a list of networks.
+     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
+    for detailed information about a specific network.
+
+    Note that it uses a different, smaller representation of a network than
+    inspecting a single network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, List['Network']]]
+        Union[ErrorResponse, List['Network']]
     """
 
     kwargs.update(
@@ -95,16 +99,20 @@ def sync(
     *,
     client: Client,
 ) -> Optional[Union[ErrorResponse, List["Network"]]]:
-    """List networks
+    """network list
 
-     Returns a list of networks.
+     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
+    for detailed information about a specific network.
+
+    Note that it uses a different, smaller representation of a network than
+    inspecting a single network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, List['Network']]]
+        Union[ErrorResponse, List['Network']]
     """
 
     return sync_detailed(
@@ -116,16 +124,20 @@ async def asyncio_detailed(
     *,
     client: Client,
 ) -> Response[Union[ErrorResponse, List["Network"]]]:
-    """List networks
+    """network list
 
-     Returns a list of networks.
+     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
+    for detailed information about a specific network.
+
+    Note that it uses a different, smaller representation of a network than
+    inspecting a single network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, List['Network']]]
+        Union[ErrorResponse, List['Network']]
     """
 
     kwargs = _get_kwargs(
@@ -142,16 +154,20 @@ async def asyncio(
     *,
     client: Client,
 ) -> Optional[Union[ErrorResponse, List["Network"]]]:
-    """List networks
+    """network list
 
-     Returns a list of networks.
+     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
+    for detailed information about a specific network.
+
+    Note that it uses a different, smaller representation of a network than
+    inspecting a single network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, List['Network']]]
+        Union[ErrorResponse, List['Network']]
     """
 
     return (
