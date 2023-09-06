@@ -1,3 +1,4 @@
+import json
 import signal
 import asyncio
 import sys
@@ -11,7 +12,7 @@ from .client.models.exec_config import ExecConfig
 from .utils import listen_for_messages, request_and_validate_response
 from .connection import create_websocket
 
-WS_EXEC_START_ENDPOINT = "/exec/{exec_id}/start?{options}"
+WS_EXEC_START_ENDPOINT = "/exec/start"
 
 
 @click.command(name="exec")
@@ -54,16 +55,14 @@ def execution_create_and_start(
     exec_id = _create_exec_instance(container_id, tty, cmd, env, user)
     if exec_id is not None:
         # print("YIE", endpoint)
+        config = json.dumps(
+            {"exec_id": exec_id, "attach": attach, "start_container": start_container}
+        )
+
         if attach:
-            endpoint = _build_endpoint(
-                exec_id, attach=True, start_container=start_container
-            )
-            asyncio.run(_attached_execute(endpoint, interactive))
+            asyncio.run(_attached_execute(config, interactive))
         else:
-            endpoint = _build_endpoint(
-                exec_id, attach=False, start_container=start_container
-            )
-            asyncio.run(_execute(endpoint))
+            asyncio.run(_execute(config))
 
 
 def _create_exec_instance(container_id, tty, cmd, env, user):
@@ -87,16 +86,17 @@ def _create_exec_instance(container_id, tty, cmd, env, user):
     return None
 
 
-async def _execute(endpoint):
-    async with create_websocket(endpoint) as websocket:
+async def _execute(config):
+    async with create_websocket(WS_EXEC_START_ENDPOINT) as websocket:
+        await websocket.send(config)
         await websocket.wait_closed()
         if websocket.close_code != 1001:
             click.echo("error starting container #{container_id}")
 
 
-async def _attached_execute(endpoint, interactive):
+async def _attached_execute(config, interactive):
     loop = asyncio.get_running_loop()
-    async with create_websocket(endpoint) as websocket:
+    async with create_websocket(WS_EXEC_START_ENDPOINT) as websocket:
         if interactive:
             for signame in ["SIGINT", "SIGTERM"]:
                 loop.add_signal_handler(
@@ -104,31 +104,21 @@ async def _attached_execute(endpoint, interactive):
                     functools.partial(_close_websocket, websocket),
                 )
 
-        hello_msg = await websocket.recv()
+        await websocket.send(config)
+        starting_frame = await websocket.recv()
+        start_msg = json.loads(starting_frame)
 
-        if hello_msg == "OK":
+        if start_msg["msg_type"] == "starting":
             if interactive:
                 loop = asyncio.get_event_loop()
                 loop.add_reader(sys.stdin, _send_user_input, websocket)
             await listen_for_messages(websocket)
 
-        elif hello_msg[:6] == "ERROR:":
-            click.echo(hello_msg[6:])
-            await listen_for_messages(websocket)
+        elif start_msg["msg_type"] == "error":
+            click.echo(start_msg["message"])
 
         else:
             click.echo("error starting container #{container_id}")
-
-
-def _build_endpoint(exec_id, attach, start_container):
-    attach = "true" if attach else "false"
-    start_container = "true" if start_container else "false"
-    return WS_EXEC_START_ENDPOINT.format(
-        exec_id=exec_id,
-        options=urllib.parse.urlencode(
-            {"attach": attach, "start_container": start_container}
-        ),
-    )
 
 
 def _send_user_input(websocket):

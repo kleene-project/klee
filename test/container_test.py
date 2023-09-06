@@ -74,6 +74,7 @@ class TestContainerSubcommand:
         expected_output = [
             f"created execution instance {exec_id}",
             "FreeBSD",
+            "",
             container_stopped_msg(exec_id),
             "",
         ]

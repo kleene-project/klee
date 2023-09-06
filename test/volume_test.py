@@ -47,6 +47,7 @@ class TestVolumeSubcommand:
         exec_id = extract_exec_id(output)
         expected_output = [
             f"created execution instance {exec_id}",
+            "",
             container_stopped_msg(exec_id),
             "",
         ]

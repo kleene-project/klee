@@ -1,3 +1,4 @@
+import json
 import datetime
 
 import click
@@ -8,15 +9,21 @@ import httpx
 from .connection import request
 
 
-async def listen_for_messages(websocket, nl=False):
+async def listen_for_messages(websocket):
     while True:
         try:
             message = await websocket.recv()
         except websockets.exceptions.ConnectionClosed:
-            click.echo(f"{websocket.close_reason}")
+            closing_message = json.loads(websocket.close_reason)
+            click.echo("")
+            if closing_message["data"] == "":
+                click.echo(closing_message["message"])
+            else:
+                click.echo(closing_message["message"])
+                click.echo(closing_message["data"])
             break
 
-        click.echo(message, nl=nl)
+        click.echo(message, nl=False)
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):

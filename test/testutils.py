@@ -33,14 +33,18 @@ def build_image(tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quie
     return result
 
 
-def decode_valid_image_build(result):
-    build_id_raw = result[0]
-    image_id_raw = result[-2]
+def decode_invalid_image_build(result):
+    assert result[-2] == "image build failed"
+    build_id = _extract_id(result[0], "build initialized with build ID ")
     build_log = result[1:-2]
+    return build_id, build_log
 
-    build_id = _extract_id(build_id_raw, "build initialized with build ID ")
-    image_id = _extract_id(image_id_raw, "image created with id ")
 
+def decode_valid_image_build(result):
+    assert result[-3] == "image created"
+    build_id = _extract_id(result[0], "build initialized with build ID ")
+    image_id = result[-2]
+    build_log = result[1:-3]
     return build_id, image_id, build_log
 
 
@@ -51,12 +55,6 @@ def create_image(method, tag=None, url=None, dataset=None):
 
     result = run(f"image create {method} {tag}{url}{dataset}")
     return result
-
-
-def decode_valid_image_creation(result):
-    ok_line = result[-2]
-    assert ok_line[:3] == "ok:"
-    return ok_line[3:]
 
 
 def remove_image(image_id):

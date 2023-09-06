@@ -1,3 +1,4 @@
+import json
 import asyncio
 import os
 import urllib.parse
@@ -11,8 +12,8 @@ from .connection import create_websocket
 from .utils import human_duration, listen_for_messages, request_and_validate_response
 
 
-WS_IMAGE_BUILD_ENDPOINT = "/images/build?{options}"
-WS_IMAGE_CREATE_ENDPOINT = "/images/create?{options}"
+WS_IMAGE_BUILD_ENDPOINT = "/images/build"
+WS_IMAGE_CREATE_ENDPOINT = "/images/create"
 
 
 # pylint: disable=unused-argument
@@ -44,7 +45,7 @@ def create(name="create"):
 @click.option(
     "--url",
     "-u",
-    default=None,
+    default="",
     help="URL to a tar-archive of the userland that the image should be created from. If no url is supplied kleened will try and fetch the userland from a FreeBSD mirror.",
 )
 @click.option(
@@ -75,28 +76,34 @@ def zfs(tag, dataset):
     The dataset can be populate with, e.g., a local build of FreeBSD or using freebsd-update(8).
     """
     force = False
-    url = None
+    url = ""
     method = "zfs"
     asyncio.run(_create_image_and_listen_for_messages(tag, dataset, url, force, method))
 
 
 async def _create_image_and_listen_for_messages(tag, dataset, url, force, method):
-    force = "true" if force else "false"
-    endpoint = WS_IMAGE_CREATE_ENDPOINT.format(
-        options=urllib.parse.urlencode(
-            {
-                "tag": tag,
-                "method": method,
-                "zfs_dataset": dataset,
-                "url": url,
-                "force": force,
-            }
-        )
+    config = json.dumps(
+        {
+            "tag": tag,
+            "method": method,
+            "zfs_dataset": dataset,
+            "url": url,
+            "force": force,
+        }
     )
     try:
-        async with create_websocket(endpoint) as websocket:
-            nl = method == "fetch"
-            await listen_for_messages(websocket, nl=nl)
+        async with create_websocket(WS_IMAGE_CREATE_ENDPOINT) as websocket:
+            await websocket.send(config)
+            starting_frame = await websocket.recv()
+            start_msg = json.loads(starting_frame)
+            if start_msg["msg_type"] == "starting":
+                await listen_for_messages(websocket)
+
+            elif start_msg["msg_type"] == "error":
+                click.echo(start_msg["message"])
+
+            else:
+                click.echo("error creating image")
 
     except websockets.exceptions.ConnectionClosedError:
         click.echo(
@@ -137,27 +144,21 @@ def build(file, tag, quiet, cleanup, path):
 async def _build_image_and_listen_for_messages(file_, tag, quiet, cleanup, path):
     quiet = "true" if quiet else "false"
     path = os.path.abspath(path)
-    endpoint = WS_IMAGE_BUILD_ENDPOINT.format(
-        options=urllib.parse.urlencode(
-            {
-                "context": path,
-                "file": file_,
-                "tag": tag,
-                "quiet": quiet,
-                "cleanup": cleanup,
-            }
-        )
+    config = json.dumps(
+        {"context": path, "file": file_, "tag": tag, "quiet": quiet, "cleanup": cleanup}
     )
     try:
-        async with create_websocket(endpoint) as websocket:
-            hello_msg = await websocket.recv()
-            if hello_msg[:3] == "OK:":
-                _, build_id = hello_msg.split(":")
+        async with create_websocket(WS_IMAGE_BUILD_ENDPOINT) as websocket:
+            await websocket.send(config)
+            starting_frame = await websocket.recv()
+            start_msg = json.loads(starting_frame)
+            if start_msg["msg_type"] == "starting":
+                build_id = start_msg["data"]
                 click.echo(f"build initialized with build ID {build_id}")
                 await listen_for_messages(websocket)
-            elif hello_msg[:6] == "ERROR:":
-                click.echo(hello_msg[6:])
-                await listen_for_messages(websocket)
+
+            elif start_msg["msg_type"] == "error":
+                click.echo(start_msg["message"])
             else:
                 click.echo("error building image")
 

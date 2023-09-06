@@ -94,7 +94,7 @@ class TestWebsocketConnections:
 
 def succesuful_ws_connection(connection_config):
     output = ws_connection(connection_config)
-    _, _, result, _, _ = output
+    _, _, result, _, _, _ = output
     return result == "/etc/hosts"
 
 

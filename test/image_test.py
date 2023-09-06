@@ -2,8 +2,8 @@ from testutils import (
     create_dockerfile,
     build_image,
     decode_valid_image_build,
+    decode_invalid_image_build,
     create_image,
-    decode_valid_image_creation,
     remove_all_containers,
     remove_all_images,
     remove_image,
@@ -15,7 +15,8 @@ class TestImageCreateSubcommand:
     def test_create_image_with_fetch_method(self):
         url = "file:///home/vagrant/kleened/test/data/base_rescue.txz"
         result = create_image("fetch", tag="ImageCreate:test-fetch", url=url)
-        image_id = decode_valid_image_creation(result)
+        assert result[-3] == "image created"
+        image_id = result[-2]
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
@@ -23,7 +24,8 @@ class TestImageCreateSubcommand:
     def test_create_image_with_zfs_method(self):
         dataset = "zroot/kleene_testdataset"
         result = create_image("zfs", tag="ImageCreate:test-zfs", dataset=dataset)
-        image_id = decode_valid_image_creation(result)
+        assert result[-3] == "image created"
+        image_id = result[-2]
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
@@ -63,6 +65,7 @@ class TestImageSubcommand:
             "Step 1/3 : FROM scratch",
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
             "Step 3/3 : CMD /usr/bin/uname",
+            "",
         ]
         assert build_log == expected_build_output
         image_id_listed = image_id_from_list(0)
@@ -89,13 +92,14 @@ class TestImageSubcommand:
         ]
         create_dockerfile(instructions)
         result = build_image(quiet=False)
-        build_id, _image_id, build_log = decode_valid_image_build(result)
+        build_id, build_log = decode_invalid_image_build(result)
         expected_build_output = [
             "Step 1/3 : FROM scratch",
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
             "Step 3/3 : RUN ls notexist",
             "ls: notexist: No such file or directory",
             "jail: /usr/bin/env -i /bin/sh -c ls notexist: failed",
+            "executing instruction resulted in non-zero exit code",
         ]
         assert build_log == expected_build_output
         output = run(f"exec -a build_{build_id} /bin/cat /root/test.txt", exit_code=0)
