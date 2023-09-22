@@ -4,6 +4,7 @@ import os
 from click.testing import CliRunner
 
 from klee.main import cli
+from klee.image import IMAGE_BUILD_START_MESSAGE
 
 
 def container_stopped_msg(exec_id, exit_code=0):
@@ -34,18 +35,17 @@ def build_image(tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quie
 
 
 def decode_invalid_image_build(result):
-    assert result[-2] == "image build failed"
-    build_id = _extract_id(result[0], "build initialized with build ID ")
-    build_log = result[1:-2]
-    return build_id, build_log
+    assert result[-3] == "image build failed"
+    image_id = _extract_id(result[0], IMAGE_BUILD_START_MESSAGE.format(image_id=""))
+    build_log = result[1:-3]
+    return image_id, build_log
 
 
 def decode_valid_image_build(result):
     assert result[-3] == "image created"
-    build_id = _extract_id(result[0], "build initialized with build ID ")
-    image_id = result[-2]
+    image_id = _extract_id(result[0], IMAGE_BUILD_START_MESSAGE.format(image_id=""))
     build_log = result[1:-3]
-    return build_id, image_id, build_log
+    return image_id, build_log
 
 
 def create_image(method, tag=None, url=None, dataset=None):
@@ -88,6 +88,8 @@ def remove_all_images():
     for line in images:
         image_id, *_rest = line.split(" ")
         if image_id == "":
+            continue
+        if image_id == "base":
             continue
         image_ids.append(image_id)
 

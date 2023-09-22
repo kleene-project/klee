@@ -1,7 +1,6 @@
 import json
 import asyncio
 import os
-import urllib.parse
 
 import click
 import websockets
@@ -14,6 +13,8 @@ from .utils import human_duration, listen_for_messages, request_and_validate_res
 
 WS_IMAGE_BUILD_ENDPOINT = "/images/build"
 WS_IMAGE_CREATE_ENDPOINT = "/images/create"
+IMAGE_LIST_HEADER = ["ID", "NAME", "TAG", "CREATED"]
+IMAGE_BUILD_START_MESSAGE = "started building image with ID {image_id}"
 
 
 # pylint: disable=unused-argument
@@ -129,7 +130,7 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
     help="Suppress the build output and print image ID on success",
 )
 @click.option(
-    "--cleanup",
+    "--cleanup/--no-cleanup",
     "-l",
     is_flag=True,
     default=True,
@@ -153,9 +154,12 @@ async def _build_image_and_listen_for_messages(file_, tag, quiet, cleanup, path)
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
             if start_msg["msg_type"] == "starting":
-                build_id = start_msg["data"]
-                click.echo(f"build initialized with build ID {build_id}")
-                await listen_for_messages(websocket)
+                image_id = start_msg["data"]
+                click.echo(IMAGE_BUILD_START_MESSAGE.format(image_id=image_id))
+                try:
+                    await listen_for_messages(websocket)
+                except json.JSONDecodeError:
+                    click.echo("\nklee: some unexpected error occured")
 
             elif start_msg["msg_type"] == "error":
                 click.echo(start_msg["message"])
@@ -200,11 +204,10 @@ def remove(images):
 def _print_images(images):
     from tabulate import tabulate
 
-    headers = ["ID", "NAME", "TAG", "CREATED"]
     containers = [
         [img.id, img.name, img.tag, human_duration(img.created)] for img in images
     ]
 
-    lines = tabulate(containers, headers=headers).split("\n")
+    lines = tabulate(containers, headers=IMAGE_LIST_HEADER).split("\n")
     for line in lines:
         click.echo(line)

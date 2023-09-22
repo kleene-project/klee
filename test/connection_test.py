@@ -99,4 +99,4 @@ def succesuful_ws_connection(connection_config):
 
 
 def ws_connection(connection_config):
-    return run(connection_config + " run --attach base /bin/ls /etc/hosts")
+    return run(connection_config + " run --attach FreeBSD:testing /bin/ls /etc/hosts")

@@ -13,7 +13,11 @@ from testutils import (
 
 
 class TestVolumeSubcommand:
-    instructions = ["FROM scratch", "RUN mkdir /testdir1", "RUN mkdir /testdir2"]
+    instructions = [
+        "FROM FreeBSD:testing",
+        "RUN mkdir /testdir1",
+        "RUN mkdir /testdir2",
+    ]
 
     # pylint: disable=no-self-use
     @classmethod
@@ -36,7 +40,7 @@ class TestVolumeSubcommand:
         create_volume(volume_name)
         create_dockerfile(self.instructions)
         result = build_image(tag=image_name)
-        image_id, _, _ = decode_valid_image_build(result)
+        image_id, _ = decode_valid_image_build(result)
         container_id = create_container(
             name="test_cont_rw_vol",
             volumes=["cont_rw_vol1:/testdir1", "/testdir2"],
@@ -64,7 +68,7 @@ class TestVolumeSubcommand:
         create_volume(volume_name)
         create_dockerfile(self.instructions)
         result = build_image(tag=image_name)
-        image_id, _, _ = decode_valid_image_build(result)
+        image_id, _ = decode_valid_image_build(result)
         container_id = create_container(
             name="test_cont_ro_vol",
             volumes=[f"{volume_name}:/testdir1:ro", "/testdir2:ro"],

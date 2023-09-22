@@ -54,7 +54,6 @@ def execution_create_and_start(
     env = [] if env is None else env
     exec_id = _create_exec_instance(container_id, tty, cmd, env, user)
     if exec_id is not None:
-        # print("YIE", endpoint)
         config = json.dumps(
             {"exec_id": exec_id, "attach": attach, "start_container": start_container}
         )

@@ -1,3 +1,12 @@
+import os
+import subprocess
+
+from tabulate import tabulate
+
+from klee.utils import human_duration
+from klee.image import IMAGE_LIST_HEADER
+
+
 from testutils import (
     create_dockerfile,
     build_image,
@@ -13,7 +22,7 @@ from testutils import (
 
 class TestImageCreateSubcommand:
     def test_create_image_with_fetch_method(self):
-        url = "file:///home/vagrant/kleened/test/data/base_rescue.txz"
+        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
         result = create_image("fetch", tag="ImageCreate:test-fetch", url=url)
         assert result[-3] == "image created"
         image_id = result[-2]
@@ -23,6 +32,22 @@ class TestImageCreateSubcommand:
 
     def test_create_image_with_zfs_method(self):
         dataset = "zroot/kleene_testdataset"
+        if os.path.isdir(f"/{dataset}"):
+            subprocess.run(["/sbin/zfs", "destroy", "-rf", dataset], check=True)
+
+        subprocess.run(["/sbin/zfs", "create", dataset], check=True)
+
+        result = subprocess.run(
+            [
+                "/usr/bin/tar",
+                "-xf",
+                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
+                "-C",
+                f"/{dataset}",
+            ],
+            check=True,
+        )
+        assert result.returncode == 0
         result = create_image("zfs", tag="ImageCreate:test-zfs", dataset=dataset)
         assert result[-3] == "image created"
         image_id = result[-2]
@@ -34,7 +59,7 @@ class TestImageCreateSubcommand:
 class TestImageSubcommand:
     # pylint: disable=no-self-use
     instructions = [
-        "FROM scratch",
+        "FROM FreeBSD:testing",
         'RUN echo "lol" > /root/test.txt',
         "CMD /usr/bin/uname",
     ]
@@ -51,7 +76,7 @@ class TestImageSubcommand:
     def test_build_remove_and_list_images(self):
         create_dockerfile(self.instructions)
         result = build_image()
-        _build_id, image_id, _build_log = decode_valid_image_build(result)
+        image_id, _build_log = decode_valid_image_build(result)
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
@@ -60,14 +85,15 @@ class TestImageSubcommand:
     def test_build_image_receive_build_messages(self):
         create_dockerfile(self.instructions)
         result = build_image(quiet=False)
-        _build_id, image_id, build_log = decode_valid_image_build(result)
-        expected_build_output = [
-            "Step 1/3 : FROM scratch",
+        image_id, build_log = decode_valid_image_build(result)
+        expected_log = [
+            "Step 1/3 : FROM FreeBSD:testing",
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
+            "--> Snapshot created: @",
             "Step 3/3 : CMD /usr/bin/uname",
             "",
         ]
-        assert build_log == expected_build_output
+        verify_build_output(expected_log, build_log)
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
@@ -76,7 +102,7 @@ class TestImageSubcommand:
     def test_build_and_remove_and_with_a_tag(self):
         create_dockerfile(self.instructions)
         result = build_image(tag="testlol:testest")
-        _build_id, image_id, _build_log = decode_valid_image_build(result)
+        image_id, _build_log = decode_valid_image_build(result)
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         expected_image_entry = f"{image_id}  testlol  testest  Less than a second"
@@ -86,28 +112,34 @@ class TestImageSubcommand:
 
     def test_failed_build_without_cleanup(self):
         instructions = [
-            "FROM scratch",
+            "FROM FreeBSD:testing",
             'RUN echo "lol" > /root/test.txt',
             "RUN ls notexist",
         ]
         create_dockerfile(instructions)
-        result = build_image(quiet=False)
-        build_id, build_log = decode_invalid_image_build(result)
-        expected_build_output = [
-            "Step 1/3 : FROM scratch",
+        result = build_image(quiet=False, cleanup=False)
+        image_id, build_log = decode_invalid_image_build(result)
+        expected_build_log = [
+            "Step 1/3 : FROM FreeBSD:testing",
             'Step 2/3 : RUN echo "lol" > /root/test.txt',
+            "--> Snapshot created: @",
             "Step 3/3 : RUN ls notexist",
             "ls: notexist: No such file or directory",
             "jail: /usr/bin/env -i /bin/sh -c ls notexist: failed",
-            "executing instruction resulted in non-zero exit code",
+            "The command '/bin/sh -c ls notexist' returned a non-zero code: 1",
         ]
-        assert build_log == expected_build_output
-        output = run(f"exec -a build_{build_id} /bin/cat /root/test.txt", exit_code=0)
+
+        verify_build_output(expected_build_log, build_log)
+        output = run(f"run -a {image_id} /bin/cat /root/test.txt", exit_code=0)
 
         prefix = "created execution instance "
-        assert output[0][: len(prefix)] == prefix
-        assert output[1] == "lol"
-        assert empty_image_list()
+        assert output[1][: len(prefix)] == prefix
+        assert output[2] == "lol"
+
+
+def verify_build_output(expected_log, build_log):
+    for expected, log in zip(expected_log, build_log):
+        assert log[: len(expected)] == expected
 
 
 def succesfully_remove_image(image_id):
@@ -127,7 +159,8 @@ def image_id_from_list(index):
 
 
 def empty_image_list():
-    HEADER = "ID    NAME    TAG    CREATED"
-    LINE = "----  ------  -----  ---------"
-    output = tuple(run("image ls"))
-    return output == (HEADER, LINE, "", "")
+    created = human_duration("2023-09-14T21:21:57.990515Z")
+    base_image = [["base", "FreeBSD", "testing", created]]
+    lines = tabulate(base_image, headers=IMAGE_LIST_HEADER).split("\n") + ["", ""]
+    output = run("image ls")
+    return output == lines
