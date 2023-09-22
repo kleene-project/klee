@@ -136,6 +136,36 @@ class TestImageSubcommand:
         assert output[1][: len(prefix)] == prefix
         assert output[2] == "lol"
 
+    def test_inspect_snapshot_in_failed_build(self):
+        instructions = [
+            "FROM FreeBSD:testing",
+            'RUN echo "first" > /root/test.txt',
+            "RUN ls notexist",
+        ]
+        create_dockerfile(instructions)
+        result = build_image(quiet=False, cleanup=False)
+        image_id, build_log = decode_invalid_image_build(result)
+        expected_build_log = [
+            "Step 1/3 : FROM FreeBSD:testing",
+            'Step 2/3 : RUN echo "first" > /root/test.txt',
+            "--> Snapshot created: @",
+            "Step 3/3 : RUN ls notexist",
+            "ls: notexist: No such file or directory",
+            "jail: /usr/bin/env -i /bin/sh -c ls notexist: failed",
+            "The command '/bin/sh -c ls notexist' returned a non-zero code: 1",
+        ]
+
+        snapshot_line = build_log[2]
+        snapshot = snapshot_line.split("--> Snapshot created: @")[0]
+        verify_build_output(expected_build_log, build_log)
+        output = run(
+            f"run -a {image_id}:@{snapshot} /bin/cat /root/test.txt", exit_code=0
+        )
+
+        prefix = "created execution instance "
+        assert output[1][: len(prefix)] == prefix
+        assert output[2] == "first"
+
 
 def verify_build_output(expected_log, build_log):
     for expected, log in zip(expected_log, build_log):
