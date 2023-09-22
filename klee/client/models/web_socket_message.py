@@ -2,6 +2,8 @@ from typing import Any, Dict, List, Type, TypeVar
 
 import attr
 
+from ..models.web_socket_message_msg_type import WebSocketMessageMsgType
+
 T = TypeVar("T", bound="WebSocketMessage")
 
 
@@ -9,13 +11,16 @@ T = TypeVar("T", bound="WebSocketMessage")
 class WebSocketMessage:
     """The request have been validated and the request is being processed.
 
+    Example:
+        {'data': '', 'message': 'succesfully started execution instance in detached mode', 'msg_type': 'closing'}
+
     Attributes:
-        data (str): Any data that might have been created in pre-processing (e.g., a build_id). Default: ''.
-        message (str): Any data that might have been created in pre-processing (e.g., a build_id). Default: ''.
-        msg_type (str): Any data that might have been created in pre-processing (e.g., a build_id).
+        data (str): Any data that might have been created by the process such as an image id. Default: ''.
+        message (str): A useful message to tell the client what has happened. Default: ''.
+        msg_type (WebSocketMessageMsgType): Which type of message.
     """
 
-    msg_type: str
+    msg_type: WebSocketMessageMsgType
     data: str = ""
     message: str = ""
     additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
@@ -23,7 +28,7 @@ class WebSocketMessage:
     def to_dict(self) -> Dict[str, Any]:
         data = self.data
         message = self.message
-        msg_type = self.msg_type
+        msg_type = self.msg_type.value
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -44,7 +49,7 @@ class WebSocketMessage:
 
         message = d.pop("message")
 
-        msg_type = d.pop("msg_type")
+        msg_type = WebSocketMessageMsgType(d.pop("msg_type"))
 
         web_socket_message = cls(
             data=data,

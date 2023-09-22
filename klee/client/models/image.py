@@ -26,6 +26,12 @@ class Image:
         env (Union[Unset, List[str]]): Environment variables and their values to set before running command. Example:
             ['PWD=/roo/', 'JAIL_MGMT_ENGINE=kleene'].
         id (Union[Unset, str]): The id of the image
+        instructions (Union[Unset, List[List[str]]]): Instructions and their corresponding snapshots, if any, used for
+            creating the image.
+            Each item in the array is comprised of a 2-element array of the form `["<instruction>","<snapshot>"]`
+            containing a instruction and its snapshot.
+            The latter will only be present if it is a `RUN` or `COPY` instruction that executed succesfully.
+            Otherwise `<snapshot>` will be an empty string.
         layer_id (Union[Unset, str]): Id of the layer containing the image
         name (Union[Unset, str]): Name of the image
         tag (Union[Unset, str]): Tag of the image
@@ -37,6 +43,7 @@ class Image:
     created: Union[Unset, str] = UNSET
     env: Union[Unset, List[str]] = UNSET
     id: Union[Unset, str] = UNSET
+    instructions: Union[Unset, List[List[str]]] = UNSET
     layer_id: Union[Unset, str] = UNSET
     name: Union[Unset, str] = UNSET
     tag: Union[Unset, str] = UNSET
@@ -58,6 +65,14 @@ class Image:
             env = self.env
 
         id = self.id
+        instructions: Union[Unset, List[List[str]]] = UNSET
+        if not isinstance(self.instructions, Unset):
+            instructions = []
+            for instructions_item_data in self.instructions:
+                instructions_item = instructions_item_data
+
+                instructions.append(instructions_item)
+
         layer_id = self.layer_id
         name = self.name
         tag = self.tag
@@ -76,6 +91,8 @@ class Image:
             field_dict["env"] = env
         if id is not UNSET:
             field_dict["id"] = id
+        if instructions is not UNSET:
+            field_dict["instructions"] = instructions
         if layer_id is not UNSET:
             field_dict["layer_id"] = layer_id
         if name is not UNSET:
@@ -107,6 +124,13 @@ class Image:
 
         id = d.pop("id", UNSET)
 
+        instructions = []
+        _instructions = d.pop("instructions", UNSET)
+        for instructions_item_data in _instructions or []:
+            instructions_item = cast(List[str], instructions_item_data)
+
+            instructions.append(instructions_item)
+
         layer_id = d.pop("layer_id", UNSET)
 
         name = d.pop("name", UNSET)
@@ -121,6 +145,7 @@ class Image:
             created=created,
             env=env,
             id=id,
+            instructions=instructions,
             layer_id=layer_id,
             name=name,
             tag=tag,

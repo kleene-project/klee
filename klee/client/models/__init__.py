@@ -18,6 +18,7 @@ from .network_config import NetworkConfig
 from .volume import Volume
 from .volume_config import VolumeConfig
 from .web_socket_message import WebSocketMessage
+from .web_socket_message_msg_type import WebSocketMessageMsgType
 
 __all__ = (
     "ContainerConfig",
@@ -38,4 +39,5 @@ __all__ = (
     "Volume",
     "VolumeConfig",
     "WebSocketMessage",
+    "WebSocketMessageMsgType",
 )

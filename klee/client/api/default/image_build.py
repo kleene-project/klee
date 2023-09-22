@@ -59,12 +59,54 @@ def _build_response(
 def sync_detailed(
     transport, *, client: Client, json_body: ImageBuildConfig, **kwargs
 ) -> Response[WebSocketMessage]:
-    """image build
+    r"""image build
 
-     make a description of the websocket endpoint here.
+     > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
+    > Below is a description of the websocket protocol and how it relates to the dummy spec.
+
+    ## General websocket protocol
+    All of Kleened's websocket endpoints follows a similar pattern, having only differences
+    in the contents of the fields in the websocket protocol messages.
+    The specifics of the particular endpoint is described below the general description.
+
+    Once the websocket is established, Kleened expects a configuration-frame, which is given by
+    the request body below. Thus, the contents of request body should be sent as the initial
+    frame instead of being contained in the request body.
+
+    When the config is received, a starting-message is returned, indicating that the process has
+    started. The starting message, like all protocol messages, follows the schema shown for
+    the 200-response (the WebSocketMessage schema).
+    After the starting-message, subsequent frames will be 'raw' output from the particular
+    process being started.
+    When the process is finished, Kleened closes the websocket with a Close Code 1000 and a
+    WebSocketMessage contained in the Close frame's Close Reason.
+    The `msg_type` is always set to `closing` but the contents of the `data` and `message` fields
+    depend on the particular endpoint.
+
+    If the initial configuration message schema is invalid, kleened closes the websocket with
+    Close Code 1002 and a WebSocketMessage as the Close frame's Close Reason.
+    The `msg_type` is set to `error` and the contents of the `data` and `message` fields will
+    depend on the specific error.
+    This only happens before the starting-message have been sent to the client.
+
+    If Kleened encounters an error during process execution, Kleened closes the websocket with
+    Close Code 1011 and a WebSocketMessage as the Close frame's reason. The `msg_type` is set to
+    `error` and the contents of the `data` and `message` fields will depend on the specific error.
+
+    If any unexpected errors/crashes occur during the lifetime of the websocket, Kleend closes
+    the websocket with Close Code 1011 and an empty reason field.
+
+    ## Endpoint-specific details
+    The following specifics pertain to this endpoint:
+
+
+    * The `data` field in the starting-message contains the `image_id`.
+    * If the build process is successful, the `data` field in the closing-message contains the
+    `image_id` otherwise it contains the latest snapshot or empty string `\"\"` if the build failed
+    before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): make a description of the websocket endpoint here.
+        json_body (ImageBuildConfig): Configuration for an image build.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -93,12 +135,54 @@ def sync(
     client: Client,
     json_body: ImageBuildConfig,
 ) -> Optional[WebSocketMessage]:
-    """image build
+    r"""image build
 
-     make a description of the websocket endpoint here.
+     > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
+    > Below is a description of the websocket protocol and how it relates to the dummy spec.
+
+    ## General websocket protocol
+    All of Kleened's websocket endpoints follows a similar pattern, having only differences
+    in the contents of the fields in the websocket protocol messages.
+    The specifics of the particular endpoint is described below the general description.
+
+    Once the websocket is established, Kleened expects a configuration-frame, which is given by
+    the request body below. Thus, the contents of request body should be sent as the initial
+    frame instead of being contained in the request body.
+
+    When the config is received, a starting-message is returned, indicating that the process has
+    started. The starting message, like all protocol messages, follows the schema shown for
+    the 200-response (the WebSocketMessage schema).
+    After the starting-message, subsequent frames will be 'raw' output from the particular
+    process being started.
+    When the process is finished, Kleened closes the websocket with a Close Code 1000 and a
+    WebSocketMessage contained in the Close frame's Close Reason.
+    The `msg_type` is always set to `closing` but the contents of the `data` and `message` fields
+    depend on the particular endpoint.
+
+    If the initial configuration message schema is invalid, kleened closes the websocket with
+    Close Code 1002 and a WebSocketMessage as the Close frame's Close Reason.
+    The `msg_type` is set to `error` and the contents of the `data` and `message` fields will
+    depend on the specific error.
+    This only happens before the starting-message have been sent to the client.
+
+    If Kleened encounters an error during process execution, Kleened closes the websocket with
+    Close Code 1011 and a WebSocketMessage as the Close frame's reason. The `msg_type` is set to
+    `error` and the contents of the `data` and `message` fields will depend on the specific error.
+
+    If any unexpected errors/crashes occur during the lifetime of the websocket, Kleend closes
+    the websocket with Close Code 1011 and an empty reason field.
+
+    ## Endpoint-specific details
+    The following specifics pertain to this endpoint:
+
+
+    * The `data` field in the starting-message contains the `image_id`.
+    * If the build process is successful, the `data` field in the closing-message contains the
+    `image_id` otherwise it contains the latest snapshot or empty string `\"\"` if the build failed
+    before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): make a description of the websocket endpoint here.
+        json_body (ImageBuildConfig): Configuration for an image build.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -119,12 +203,54 @@ async def asyncio_detailed(
     client: Client,
     json_body: ImageBuildConfig,
 ) -> Response[WebSocketMessage]:
-    """image build
+    r"""image build
 
-     make a description of the websocket endpoint here.
+     > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
+    > Below is a description of the websocket protocol and how it relates to the dummy spec.
+
+    ## General websocket protocol
+    All of Kleened's websocket endpoints follows a similar pattern, having only differences
+    in the contents of the fields in the websocket protocol messages.
+    The specifics of the particular endpoint is described below the general description.
+
+    Once the websocket is established, Kleened expects a configuration-frame, which is given by
+    the request body below. Thus, the contents of request body should be sent as the initial
+    frame instead of being contained in the request body.
+
+    When the config is received, a starting-message is returned, indicating that the process has
+    started. The starting message, like all protocol messages, follows the schema shown for
+    the 200-response (the WebSocketMessage schema).
+    After the starting-message, subsequent frames will be 'raw' output from the particular
+    process being started.
+    When the process is finished, Kleened closes the websocket with a Close Code 1000 and a
+    WebSocketMessage contained in the Close frame's Close Reason.
+    The `msg_type` is always set to `closing` but the contents of the `data` and `message` fields
+    depend on the particular endpoint.
+
+    If the initial configuration message schema is invalid, kleened closes the websocket with
+    Close Code 1002 and a WebSocketMessage as the Close frame's Close Reason.
+    The `msg_type` is set to `error` and the contents of the `data` and `message` fields will
+    depend on the specific error.
+    This only happens before the starting-message have been sent to the client.
+
+    If Kleened encounters an error during process execution, Kleened closes the websocket with
+    Close Code 1011 and a WebSocketMessage as the Close frame's reason. The `msg_type` is set to
+    `error` and the contents of the `data` and `message` fields will depend on the specific error.
+
+    If any unexpected errors/crashes occur during the lifetime of the websocket, Kleend closes
+    the websocket with Close Code 1011 and an empty reason field.
+
+    ## Endpoint-specific details
+    The following specifics pertain to this endpoint:
+
+
+    * The `data` field in the starting-message contains the `image_id`.
+    * If the build process is successful, the `data` field in the closing-message contains the
+    `image_id` otherwise it contains the latest snapshot or empty string `\"\"` if the build failed
+    before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): make a description of the websocket endpoint here.
+        json_body (ImageBuildConfig): Configuration for an image build.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -150,12 +276,54 @@ async def asyncio(
     client: Client,
     json_body: ImageBuildConfig,
 ) -> Optional[WebSocketMessage]:
-    """image build
+    r"""image build
 
-     make a description of the websocket endpoint here.
+     > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
+    > Below is a description of the websocket protocol and how it relates to the dummy spec.
+
+    ## General websocket protocol
+    All of Kleened's websocket endpoints follows a similar pattern, having only differences
+    in the contents of the fields in the websocket protocol messages.
+    The specifics of the particular endpoint is described below the general description.
+
+    Once the websocket is established, Kleened expects a configuration-frame, which is given by
+    the request body below. Thus, the contents of request body should be sent as the initial
+    frame instead of being contained in the request body.
+
+    When the config is received, a starting-message is returned, indicating that the process has
+    started. The starting message, like all protocol messages, follows the schema shown for
+    the 200-response (the WebSocketMessage schema).
+    After the starting-message, subsequent frames will be 'raw' output from the particular
+    process being started.
+    When the process is finished, Kleened closes the websocket with a Close Code 1000 and a
+    WebSocketMessage contained in the Close frame's Close Reason.
+    The `msg_type` is always set to `closing` but the contents of the `data` and `message` fields
+    depend on the particular endpoint.
+
+    If the initial configuration message schema is invalid, kleened closes the websocket with
+    Close Code 1002 and a WebSocketMessage as the Close frame's Close Reason.
+    The `msg_type` is set to `error` and the contents of the `data` and `message` fields will
+    depend on the specific error.
+    This only happens before the starting-message have been sent to the client.
+
+    If Kleened encounters an error during process execution, Kleened closes the websocket with
+    Close Code 1011 and a WebSocketMessage as the Close frame's reason. The `msg_type` is set to
+    `error` and the contents of the `data` and `message` fields will depend on the specific error.
+
+    If any unexpected errors/crashes occur during the lifetime of the websocket, Kleend closes
+    the websocket with Close Code 1011 and an empty reason field.
+
+    ## Endpoint-specific details
+    The following specifics pertain to this endpoint:
+
+
+    * The `data` field in the starting-message contains the `image_id`.
+    * If the build process is successful, the `data` field in the closing-message contains the
+    `image_id` otherwise it contains the latest snapshot or empty string `\"\"` if the build failed
+    before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): make a description of the websocket endpoint here.
+        json_body (ImageBuildConfig): Configuration for an image build.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

@@ -13,16 +13,16 @@ class ImageCreateConfig:
     """Configuration for the creation of base images.
 
     Attributes:
-        method (ImageCreateConfigMethod): Method used for creating a new base image: If 'fetch' is selected, kleened
-            will fetch a release/snapshot of the base system and use it for image creation. When 'zfs' is used, a copy of
+        method (ImageCreateConfigMethod): Method used for creating a new base image: If `"fetch"` is selected, kleened
+            will fetch a release/snapshot of the base system and use it for image creation. When `"zfs"` is used, a copy of
             the supplied zfs dataset is used for the image.
-        force (Union[Unset, bool]): Ignore any discrepancies detected when using uname(1) to fetch the base system
-            (method 'fetch' only).
-        tag (Union[Unset, str]): Name and optionally a tag in the 'name:tag' format Default: ''.
+        force (Union[Unset, bool]): Ignore any discrepancies detected when using `uname(1)` to fetch the base system
+            (method `"fetch"` only).
+        tag (Union[Unset, str]): Name and optionally a tag in the `name:tag` format Default: ''.
         url (Union[Unset, str]): URL to a remote location where the base system (as a base.txz file) is stored. If an
             empty string is supplied kleened will try to fetch a version of the base sytem from download.freebsd.org using
-            information from uname(1) (required for method 'fetch'). Default: ''.
-        zfs_dataset (Union[Unset, str]): Dataset path on the host used for the image (required for method 'zfs' only).
+            information from `uname(1)` (required for method 'fetch'). Default: ''.
+        zfs_dataset (Union[Unset, str]): Dataset path on the host used for the image (required for method `"zfs"` only).
             Default: ''.
     """
 

@@ -16,7 +16,15 @@ class ContainerConfig:
         env (Union[Unset, List[str]]): List of environment variables when using the container. This list will be merged
             with environment variables defined by the image. The values in this list takes precedence if the variable is
             defined in both. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
-        image (Union[Unset, str]): The name or id of the image used for creating the container Example: FreeBSD-13.0.
+        image (Union[Unset, str]): The name or id and possibly a snapshot of the image used for creating the container.
+            The parameter uses the followinge format:
+
+            - `<image_id>[:@<snapshot_id>]` or
+            - `<name>[:<tag>][:@<snapshot_id>]`.
+
+            If `<tag>` is omitted, `latest` is assumed.
+             Example: ['FreeBSD:13.2-STABLE', 'FreeBSD:13.2-STABLE:@6b3c821605d4', '48fa55889b0f',
+            '48fa55889b0f:@2028818d6f06'].
         jail_param (Union[Unset, List[str]]): List of `jail(8)` parameters to use for the container. Example:
             ['allow.raw_sockets=true', 'osrelease=kleenejail'].
         user (Union[Unset, str]): User that executes the command (cmd). If no user is set the user from the image will

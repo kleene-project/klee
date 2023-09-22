@@ -13,18 +13,20 @@ T = TypeVar("T", bound="ImageBuildConfig")
 
 @attr.s(auto_attribs=True)
 class ImageBuildConfig:
-    """make a description of the websocket endpoint here.
+    """Configuration for an image build.
 
     Attributes:
-        context (str): description here
-        buildargs (Union[Unset, ImageBuildConfigBuildargs]): Object of string pairs for build-time variables. Users pass
-            these values at build-time. Kleened uses the buildargs as the environment context for commands run via the
-            Dockerfile RUN instruction, or for variable expansion in other Dockerfile instructions. This is not meant for
-            passing secret values. Example: {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}.
-        cleanup (Union[Unset, bool]): description here Default: True.
-        dockerfile (Union[Unset, str]): description here Default: 'Dockerfile'.
-        quiet (Union[Unset, bool]): description here
-        tag (Union[Unset, str]): description here Default: ''.
+        context (str): Path on the Kleened host of the context that is used for the build.
+        buildargs (Union[Unset, ImageBuildConfigBuildargs]): Object of string pairs for build-time ARG-variables.
+            Kleened uses the buildargs as the environment variables for, e.g., the RUN instruction, or for variable
+            expansion in other Dockerfile instructions. This is not meant for passing secret values. Example:
+            {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}.
+        cleanup (Union[Unset, bool]): Whether or not to remove the image in case of a build failure. Default: True.
+        dockerfile (Union[Unset, str]): Path of the Dockerfile used for the build. The path is relative to the context
+            path. Default: 'Dockerfile'.
+        quiet (Union[Unset, bool]): Whether or not to emit status messages of the build process.
+        tag (Union[Unset, str]): A name and optional tag to apply to the image in the name:tag format. If you omit the
+            tag the default latest value is assumed. Default: ''.
     """
 
     context: str
