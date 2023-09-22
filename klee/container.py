@@ -57,7 +57,13 @@ def root(name="container"):
 @click.argument("image", nargs=1)
 @click.argument("command", nargs=-1)
 def create(name, user, network, ip, volume, env, jailparam, image, command):
-    """Create a new container"""
+    """
+    Create a new container.
+
+    The IMAGE parameter syntax is: <image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]
+
+    See the documentation for details.
+    """
     create_container_and_connect_to_network(
         name, user, network, ip, volume, env, jailparam, image, command
     )

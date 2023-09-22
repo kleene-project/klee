@@ -67,7 +67,13 @@ def run(
     image,
     command,
 ):
-    """Create and start a new container"""
+    """
+    Create and start a new container.
+
+    The IMAGE parameter syntax is: <image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]
+
+    See the documentation for details.
+    """
     response = create_(name, user, network, ip, volume, env, jailparam, image, command)
     if response is None or response.status_code != 201:
         return

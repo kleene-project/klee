@@ -16,12 +16,7 @@ async def listen_for_messages(websocket):
         except websockets.exceptions.ConnectionClosed:
             closing_message = json.loads(websocket.close_reason)
             click.echo("")
-            if closing_message["data"] == "":
-                click.echo(closing_message["message"])
-            else:
-                click.echo(closing_message["message"])
-                click.echo(closing_message["data"])
-            break
+            return closing_message
 
         click.echo(message, nl=False)
 

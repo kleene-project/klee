@@ -111,7 +111,13 @@ async def _attached_execute(config, interactive):
             if interactive:
                 loop = asyncio.get_event_loop()
                 loop.add_reader(sys.stdin, _send_user_input, websocket)
-            await listen_for_messages(websocket)
+            closing_message = await listen_for_messages(websocket)
+            if closing_message["data"] == "":
+                click.echo(closing_message["message"])
+
+            else:
+                click.echo(closing_message["message"])
+                click.echo(closing_message["data"])
 
         elif start_msg["msg_type"] == "error":
             click.echo(start_msg["message"])

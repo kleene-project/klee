@@ -35,7 +35,8 @@ def build_image(tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quie
 
 
 def decode_invalid_image_build(result):
-    assert result[-3] == "image build failed"
+    error_msg_prefix = "Failed to build image"
+    assert result[-2][: len(error_msg_prefix)] == error_msg_prefix
     image_id = _extract_id(result[0], IMAGE_BUILD_START_MESSAGE.format(image_id=""))
     build_log = result[1:-3]
     return image_id, build_log

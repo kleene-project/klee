@@ -98,7 +98,14 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
             if start_msg["msg_type"] == "starting":
-                await listen_for_messages(websocket)
+                closing_message = await listen_for_messages(websocket)
+
+                if closing_message["data"] == "":
+                    click.echo(closing_message["message"])
+
+                else:
+                    click.echo(closing_message["message"])
+                    click.echo(closing_message["data"])
 
             elif start_msg["msg_type"] == "error":
                 click.echo(start_msg["message"])
@@ -157,9 +164,23 @@ async def _build_image_and_listen_for_messages(file_, tag, quiet, cleanup, path)
                 image_id = start_msg["data"]
                 click.echo(IMAGE_BUILD_START_MESSAGE.format(image_id=image_id))
                 try:
-                    await listen_for_messages(websocket)
+                    closing_message = await listen_for_messages(websocket)
                 except json.JSONDecodeError:
                     click.echo("\nklee: some unexpected error occured")
+
+                if closing_message["msg_type"] == "error":
+                    if closing_message["data"] != "":
+                        snapshot = closing_message["data"]
+                        click.echo(
+                            f"Failed to build image {image_id}. Last valid snapshot is {snapshot}"
+                        )
+
+                elif closing_message["data"] == "":
+                    click.echo(closing_message["message"])
+
+                else:
+                    click.echo(closing_message["message"])
+                    click.echo(closing_message["data"])
 
             elif start_msg["msg_type"] == "error":
                 click.echo(start_msg["message"])
