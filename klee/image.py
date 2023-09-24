@@ -26,16 +26,10 @@ def root(name="image"):
 @root.group()
 def create(name="create"):
     """
-    Create a base image from a remote tar-archive or a ZFS dataset.
+    Create a base image from a remote tar-archive or a ZFS dataset using the subcommands
+    listed below.
 
-    The 'fetch' command can be used for creating base images from tar-archives downloaded with fetch(1).
-    If no url is provided, kleened will download a base system from the official FreeBSD repositories based
-    on host OS information from the uname(1) utility.
-
-    The 'zfs' command can be used to create a base image from a zfs(8) dataset on the kleened host containing,
-    e.g., a FreeBSD base system that has been built locally on the kleeened host.
-
-    See the documentation for details.
+    See the documentation for details on base images and how to create them.
     """
 
 
@@ -58,7 +52,11 @@ def create(name="create"):
 )
 def fetch(tag, url, force):
     """
-    Fetch a tar-archive and create a base image from it.
+    Create a base image from a tar-archive fetched using fetch(1).
+
+    Fetch and create a base image from a tar-archive downloaded with fetch(1).
+    If no url is provided, kleened will download a base system from the official FreeBSD
+    repositories based on host OS information from the uname(1) utility.
     """
 
     method = "fetch"
@@ -73,8 +71,14 @@ def fetch(tag, url, force):
 @click.argument("dataset", nargs=1)
 def zfs(tag, dataset):
     """
-    Use a local ZFS dataset on the kleened host to create a base image.
-    The dataset can be populate with, e.g., a local build of FreeBSD or using freebsd-update(8).
+    Create a base image from an existing ZFS dataset.
+
+    Use a local zfs(8) dataset on the kleened host to create a base image.
+    The dataset should contain a complete userland or application that can
+    run in a jailed environement.
+
+    See the documentation for details on, e.g., building a FreeBSD base system from source or
+    using freebsd-update(8).
     """
     force = False
     url = ""
