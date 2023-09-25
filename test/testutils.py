@@ -21,16 +21,31 @@ def create_dockerfile(instructions, name="Dockerfile"):
         f.write("\n".join(instructions))
 
 
-def build_image(tag=None, dockerfile="Dockerfile", path=None, cleanup=True, quiet=True):
+def build_image(
+    tag=None,
+    dockerfile="Dockerfile",
+    path=None,
+    cleanup=True,
+    quiet=True,
+    buildargs=None,
+):
     if path is None:
         path = os.getcwd()
+
+    if buildargs is None:
+        buildargs = ""
+    else:
+        buildargs = " ".join(
+            [f"--build-arg {arg}={value}" for arg, value in buildargs.items()]
+        )
+        buildargs += " "
 
     dockerfile = f"--file {dockerfile} "
     tag = "" if tag is None else f"--tag {tag} "
     quiet = "--quiet " if quiet else ""
     cleanup = "--cleanup " if cleanup else "--no-cleanup "
 
-    result = run(f"image build {tag}{quiet}{cleanup}{dockerfile}{path}")
+    result = run(f"image build {buildargs}{tag}{quiet}{cleanup}{dockerfile}{path}")
     return result
 
 

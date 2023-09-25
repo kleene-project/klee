@@ -147,17 +147,38 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
     default=True,
     help="Whether or not to remove the build-container if the build fails",
 )
+@click.option(
+    "--build-arg",
+    multiple=True,
+    default=None,
+    help="Set build-time variables (e.g. --build-arg FIRST=hello --build-arg SECOND=world)",
+)
 @click.argument("path", nargs=1)
-def build(file, tag, quiet, cleanup, path):
+def build(file, tag, quiet, cleanup, build_arg, path):
     """Build an image from a context + Dockerfile located in PATH"""
-    asyncio.run(_build_image_and_listen_for_messages(file, tag, quiet, cleanup, path))
+    asyncio.run(
+        _build_image_and_listen_for_messages(file, tag, quiet, cleanup, build_arg, path)
+    )
 
 
-async def _build_image_and_listen_for_messages(file_, tag, quiet, cleanup, path):
+async def _build_image_and_listen_for_messages(
+    file_, tag, quiet, cleanup, build_arg, path
+):
     quiet = "true" if quiet else "false"
     path = os.path.abspath(path)
+    buildargs = {}
+    for buildarg in build_arg:
+        var, value = buildarg.split("=", maxsplit=1)
+        buildargs[var] = value
     config = json.dumps(
-        {"context": path, "file": file_, "tag": tag, "quiet": quiet, "cleanup": cleanup}
+        {
+            "context": path,
+            "file": file_,
+            "tag": tag,
+            "quiet": quiet,
+            "cleanup": cleanup,
+            "buildargs": buildargs,
+        }
     )
     try:
         async with create_websocket(WS_IMAGE_BUILD_ENDPOINT) as websocket:
@@ -165,8 +186,9 @@ async def _build_image_and_listen_for_messages(file_, tag, quiet, cleanup, path)
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
             if start_msg["msg_type"] == "starting":
-                image_id = start_msg["data"]
-                click.echo(IMAGE_BUILD_START_MESSAGE.format(image_id=image_id))
+                if start_msg["data"] != "":
+                    image_id = start_msg["data"]
+                    click.echo(IMAGE_BUILD_START_MESSAGE.format(image_id=image_id))
                 try:
                     closing_message = await listen_for_messages(websocket)
                 except json.JSONDecodeError:

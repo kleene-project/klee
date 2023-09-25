@@ -110,6 +110,21 @@ class TestImageSubcommand:
         assert succesfully_remove_image(image_id)
         assert empty_image_list()
 
+    def test_build_image_with_buildarg(self):
+        instructions = ["FROM FreeBSD:testing", "ARG TEST=notthis", 'RUN echo "$TEST"']
+        create_dockerfile(instructions)
+        result = build_image(quiet=False, buildargs={"TEST": "but_this"})
+        image_id, build_log = decode_valid_image_build(result)
+        expected_log = [
+            "Step 1/3 : FROM FreeBSD:testing",
+            "Step 2/3 : ARG TEST=notthis",
+            'Step 3/3 : RUN echo "$TEST"',
+            "but_this",
+            "--> Snapshot created: @",
+        ]
+        verify_build_output(expected_log, build_log)
+        assert succesfully_remove_image(image_id)
+
     def test_failed_build_without_cleanup(self):
         instructions = [
             "FROM FreeBSD:testing",
@@ -165,6 +180,19 @@ class TestImageSubcommand:
         prefix = "created execution instance "
         assert output[1][: len(prefix)] == prefix
         assert output[2] == "first"
+
+    def test_invalid_dockerfile(self):
+        instructions = [
+            "ENV testvar=lol",
+            "FROM FreeBSD:testing",
+            'RUN echo "this never happens"',
+        ]
+        create_dockerfile(instructions)
+        result = build_image(quiet=False)
+        assert result == [
+            "error in 'ENV testvar=lol': instruction not permitted before a FROM instruction",
+            "",
+        ]
 
 
 def verify_build_output(expected_log, build_log):
