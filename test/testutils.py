@@ -2,9 +2,10 @@ import json
 import os
 
 from click.testing import CliRunner
+from rich.console import Console
 
 from klee.main import cli
-from klee.image import IMAGE_BUILD_START_MESSAGE
+from klee.image import BUILD_START_MESSAGE
 
 
 def container_stopped_msg(exec_id, exit_code=0):
@@ -52,14 +53,14 @@ def build_image(
 def decode_invalid_image_build(result):
     error_msg_prefix = "Failed to build image"
     assert result[-2][: len(error_msg_prefix)] == error_msg_prefix
-    image_id = _extract_id(result[0], IMAGE_BUILD_START_MESSAGE.format(image_id=""))
+    image_id = _extract_id(result)
     build_log = result[1:-3]
     return image_id, build_log
 
 
 def decode_valid_image_build(result):
     assert result[-3] == "image created"
-    image_id = _extract_id(result[0], IMAGE_BUILD_START_MESSAGE.format(image_id=""))
+    image_id = _extract_id(result)
     build_log = result[1:-3]
     return image_id, build_log
 
@@ -77,7 +78,10 @@ def remove_image(image_id):
     return run(f"image rm {image_id}")
 
 
-def _extract_id(result_line, prefix):
+def _extract_id(result):
+    result_line = result[0]
+    prefix = rich_render(BUILD_START_MESSAGE.format(image_id=""))
+
     id_ = None
     n = len(prefix)
     if result_line[:n] == prefix:
@@ -88,8 +92,9 @@ def _extract_id(result_line, prefix):
 def remove_all_containers():
     _header, _lines, *containers = run("container ls -a")
     container_ids = []
-    for line in containers:
-        container_id, *_rest = line.split(" ")
+    for line in containers[:-1]:
+        lines = line.split(" ")
+        container_id = lines[1]
         if container_id == "":
             continue
         container_ids.append(container_id)
@@ -140,6 +145,14 @@ def create_container(
         f"container create {volumes}{network}{ip}{name}{image} {command}"
     )
     return container_id
+
+
+def rich_render(message):
+    console = Console()
+    with console.capture() as capture:
+        console.print(message, end="")
+
+    return capture.get()
 
 
 def container_get_netstat_info(container_id, driver):

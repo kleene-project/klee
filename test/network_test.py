@@ -16,8 +16,8 @@ class TestNetworkSubcommand:
         remove_all_networks()
 
     # pylint: disable=no-self-use
-    def test_empty_network_listing_of_networks(self):
-        assert empty_network_list()
+    def test_assert_empty_network_listing_of_networks(self):
+        assert_empty_network_list()
 
     def test_add_remove_and_list_networks(self):
         name = "test_arl_networks"
@@ -26,12 +26,12 @@ class TestNetworkSubcommand:
 
         networks = list_non_default_networks()
         assert len(networks) == 1
-        assert networks[0][:12] == network_id
+        assert networks[0][1:13] == network_id
 
         network_id_remove = remove_network(name)
         assert network_id_remove == network_id
 
-        assert empty_network_list()
+        assert_empty_network_list()
 
     def test_remove_network_by_id(self):
         name1 = "test_network_rm1"
@@ -42,7 +42,7 @@ class TestNetworkSubcommand:
         network_id2_again = remove_network(network_id2[:8])
         assert network_id1 == network_id1_again
         assert network_id2 == network_id2_again
-        assert empty_network_list()
+        assert_empty_network_list()
 
     def test_create_container_connected_to_custom_network_with_default_driver(self):
         network_id = create_network(
@@ -234,26 +234,24 @@ def remove_all_networks():
     for network in networks:
         if network[:4] == "host":
             continue
-        remove_network(network[:12])
+        remove_network(network[1:13])
 
 
 def list_non_default_networks():
     tmp = run("network ls")
-    _header, _header_line, _host_network, *networks, _, _ = tmp
+    _header, _header_line, _host_network, *networks, _ = tmp
     return networks
 
 
-def empty_network_list():
-    HEADER = "ID    NAME    DRIVER    SUBNET"
-    HEADER_LINE = "----  ------  --------  --------"
-    HOST_NETWORK = "host  host    host      n/a"
-    tmp = run("network ls")
-    header, header_line, host_network, _, _ = tmp
-    assert header == HEADER
-    assert header_line == HEADER_LINE
-    # assert default_network[12:] == DEFAULT_NETWORK
-    assert host_network == HOST_NETWORK
-    return True
+def assert_empty_network_list():
+    expected_output = [
+        " ID     NAME   DRIVER   SUBNET ",
+        "───────────────────────────────",
+        " host   host   host     n/a    ",
+        "",
+    ]
+    output = run("network ls")
+    assert expected_output == output
 
 
 def remove_network(network_id):

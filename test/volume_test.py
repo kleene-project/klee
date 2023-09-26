@@ -97,20 +97,22 @@ def create_volume(name):
 
 
 def empty_volume_list():
-    expected_output = ["VOLUME NAME    CREATED", "-------------  ---------", "", ""]
+    expected_output = [" VOLUME NAME   CREATED ", "───────────────────────", ""]
     output = run("volume ls")
     return expected_output == output
 
 
 def remove_volume(volume_name):
-    network_id, _ = run(f"volume rm {volume_name}")
+    output = run(f"volume rm {volume_name}")
+    network_id = output[0]
     return network_id
 
 
 def list_volumes():
     output = run("volume ls")
-    _header, _headerline, *volumes, _, _ = output
-    return [volume.split(" ")[0] for volume in volumes]
+    _header, _headerline, *volumes, _ = output
+    volumes = [volume.split(" ")[1] for volume in volumes]
+    return volumes
 
 
 def remove_all_volumes():

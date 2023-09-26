@@ -1,12 +1,6 @@
 import os
 import subprocess
 
-from tabulate import tabulate
-
-from klee.utils import human_duration
-from klee.image import IMAGE_LIST_HEADER
-
-
 from testutils import (
     create_dockerfile,
     build_image,
@@ -19,41 +13,7 @@ from testutils import (
     run,
 )
 
-
-class TestImageCreateSubcommand:
-    def test_create_image_with_fetch_method(self):
-        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
-        result = create_image("fetch", tag="ImageCreate:test-fetch", url=url)
-        assert result[-3] == "image created"
-        image_id = result[-2]
-        image_id_listed = image_id_from_list(0)
-        assert image_id == image_id_listed
-        assert succesfully_remove_image(image_id)
-
-    def test_create_image_with_zfs_method(self):
-        dataset = "zroot/kleene_testdataset"
-        if os.path.isdir(f"/{dataset}"):
-            subprocess.run(["/sbin/zfs", "destroy", "-rf", dataset], check=True)
-
-        subprocess.run(["/sbin/zfs", "create", dataset], check=True)
-
-        result = subprocess.run(
-            [
-                "/usr/bin/tar",
-                "-xf",
-                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
-                "-C",
-                f"/{dataset}",
-            ],
-            check=True,
-        )
-        assert result.returncode == 0
-        result = create_image("zfs", tag="ImageCreate:test-zfs", dataset=dataset)
-        assert result[-3] == "image created"
-        image_id = result[-2]
-        image_id_listed = image_id_from_list(0)
-        assert image_id == image_id_listed
-        assert succesfully_remove_image(image_id)
+from klee.utils import human_duration
 
 
 class TestImageSubcommand:
@@ -70,7 +30,6 @@ class TestImageSubcommand:
         remove_all_images()
 
     def test_empty_listing_of_images(self):
-        remove_all_images()
         assert empty_image_list()
 
     def test_build_remove_and_list_images(self):
@@ -105,8 +64,10 @@ class TestImageSubcommand:
         image_id, _build_log = decode_valid_image_build(result)
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
-        expected_image_entry = f"{image_id}  testlol  testest  Less than a second"
-        assert list_images()[0] == expected_image_entry
+        assert (
+            list_images()[0]
+            == f" {image_id}   testlol   testest   Less than a second ago "
+        )
         assert succesfully_remove_image(image_id)
         assert empty_image_list()
 
@@ -195,6 +156,47 @@ class TestImageSubcommand:
         ]
 
 
+class TestImageCreateSubcommand:
+    @classmethod
+    def setup_class(cls):
+        remove_all_containers()
+        remove_all_images()
+
+    def test_create_image_with_fetch_method(self):
+        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+        result = create_image("fetch", tag="ImageCreate:test-fetch", url=url)
+        assert result[-3] == "image created"
+        image_id = result[-2]
+        image_id_listed = image_id_from_list(0)
+        assert image_id == image_id_listed
+        assert succesfully_remove_image(image_id)
+
+    def test_create_image_with_zfs_method(self):
+        dataset = "zroot/kleene_testdataset"
+        if os.path.isdir(f"/{dataset}"):
+            subprocess.run(["/sbin/zfs", "destroy", "-rf", dataset], check=True)
+
+        subprocess.run(["/sbin/zfs", "create", dataset], check=True)
+
+        result = subprocess.run(
+            [
+                "/usr/bin/tar",
+                "-xf",
+                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
+                "-C",
+                f"/{dataset}",
+            ],
+            check=True,
+        )
+        assert result.returncode == 0
+        result = create_image("zfs", tag="ImageCreate:test-zfs", dataset=dataset)
+        assert result[-3] == "image created"
+        image_id = result[-2]
+        image_id_listed = image_id_from_list(0)
+        assert image_id == image_id_listed
+        assert succesfully_remove_image(image_id)
+
+
 def verify_build_output(expected_log, build_log):
     for expected, log in zip(expected_log, build_log):
         assert log[: len(expected)] == expected
@@ -212,13 +214,17 @@ def list_images():
 
 def image_id_from_list(index):
     images = list_images()
-    image_id = images[index][:12]
+    image_id = images[index][1:13]
     return image_id
 
 
 def empty_image_list():
     created = human_duration("2023-09-14T21:21:57.990515Z")
-    base_image = [["base", "FreeBSD", "testing", created]]
-    lines = tabulate(base_image, headers=IMAGE_LIST_HEADER).split("\n") + ["", ""]
+    lines = [
+        " ID     NAME      TAG       CREATED     ",
+        "────────────────────────────────────────",
+        f" base   FreeBSD   testing   {created} ago ",
+        "",
+    ]
     output = run("image ls")
     return output == lines

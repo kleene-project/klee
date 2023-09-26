@@ -1,58 +1,53 @@
 from testutils import run
 
 EMPTY_LIST = [
-    "CONTAINER ID    IMAGE    TAG    COMMAND    CREATED    STATUS    NAME",
-    "--------------  -------  -----  ---------  ---------  --------  ------",
-    "",
-    "",
-]
-
-SELF_SIGNED_ERROR = [
-    "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1134)",
+    " CONTAINER ID    NAME   IMAGE   TAG   COMMAND   CREATED   STATUS ",
+    "─────────────────────────────────────────────────────────────────",
     "",
 ]
 
-CERTIFICATE_REQUIRED_ERROR = [
-    "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required (_ssl.c:2638)",
-    "",
-]
+SELF_SIGNED_ERROR = "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1134)"
+
+CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required (_ssl.c:2638)"
 
 
 class TestHTTPConnections:
     # pylint: disable=no-self-use
     def test_connecting_with_ipv6_and_no_tls(self):
-        assert successful_http_connection("--host http://[::1]:8080")
+        successful_http_connection("--host http://[::1]:8080")
 
     def test_connecting_with_unixsocket_and_no_tls(self):
-        assert successful_http_connection("--host http:///var/run/kleened.sock")
+        successful_http_connection("--host http:///var/run/kleened.sock")
 
     def test_connecting_with_unixsocket_and_basic_tls(self):
-        assert successful_http_connection(
+        successful_http_connection(
             "--host https:///var/run/kleened.tlssock --tlsverify --tlscacert=/usr/local/etc/kleened/certs/ca.pem"
         )
 
-        assert successful_http_connection(
+        successful_http_connection(
             "--host https:///var/run/kleened.tlssock --no-tlsverify"
         )
 
     def test_connecting_with_ipv4_and_tls_using_client_authentication(self):
-        assert successful_http_connection(
+        successful_http_connection(
             "--host https://127.0.0.1:8085 --tlsverify --tlscacert=/usr/local/etc/kleened/certs/ca.pem --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
         )
-        assert successful_http_connection(
+        successful_http_connection(
             "--host https://127.0.0.1:8085 --no-tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
         )
-        assert SELF_SIGNED_ERROR == http_connection(
-            "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
+        assert SELF_SIGNED_ERROR == "".join(
+            http_connection(
+                "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
+            )
         )
-        assert CERTIFICATE_REQUIRED_ERROR == http_connection(
-            "--host https://127.0.0.1:8085 --no-tlsverify"
+        assert CERTIFICATE_REQUIRED_ERROR == "".join(
+            http_connection("--host https://127.0.0.1:8085 --no-tlsverify")
         )
 
 
 def successful_http_connection(connection_config):
     result = http_connection(connection_config)
-    return result == EMPTY_LIST
+    assert result == EMPTY_LIST
 
 
 def http_connection(connection_config):
@@ -84,11 +79,13 @@ class TestWebsocketConnections:
             "--host https://127.0.0.1:8085 --no-tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
         )
 
-        assert SELF_SIGNED_ERROR == ws_connection(
-            "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
+        assert SELF_SIGNED_ERROR == "".join(
+            ws_connection(
+                "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
+            )
         )
-        assert CERTIFICATE_REQUIRED_ERROR == run(
-            "--host https://127.0.0.1:8085 --no-tlsverify container ls"
+        assert CERTIFICATE_REQUIRED_ERROR == "".join(
+            run("--host https://127.0.0.1:8085 --no-tlsverify container ls")
         )
 
 

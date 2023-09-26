@@ -7,8 +7,25 @@ from .client.api.default.network_list import sync_detailed as network_list
 from .client.api.default.network_remove import sync_detailed as network_remove
 from .client.models.end_point_config import EndPointConfig
 from .client.models.network_config import NetworkConfig
-from .utils import request_and_validate_response
 
+from .utils import (
+    request_and_validate_response,
+    console,
+    print_table,
+    KLEE_MSG,
+    CONNECTION_CLOSED_UNEXPECTEDLY,
+    UNEXPECTED_ERROR,
+)
+
+IFNAME_NEEDED_FOR_LOOPBACK_DRIVER = KLEE_MSG.format(
+    msg="Option 'ifname' is needed when the network driver 'loopback' is used"
+)
+NETWORK_LIST_COLUMNS = [
+    ("ID", {"style": "cyan"}),
+    ("NAME", {"style": "bold aquamarine1"}),
+    ("DRIVER", {"style": "bright_white"}),
+    ("SUBNET", {"style": "bold aquamarine1"}),
+]
 
 # pylint: disable=unused-argument
 @click.group()
@@ -40,9 +57,7 @@ def create(driver, ifname, subnet, network_name):
         "driver": driver,
     }
     if driver == "loopback" and ifname is None:
-        click.echo(
-            "Option 'ifname' is needed when the network driver 'loopback' is used"
-        )
+        console.print(IFNAME_NEEDED_FOR_LOOPBACK_DRIVER)
 
     else:
         network_config = NetworkConfig.from_dict(network_config)
@@ -90,14 +105,8 @@ def list_networks():
 
 
 def _print_networks(networks):
-    from tabulate import tabulate
-
-    headers = ["ID", "NAME", "DRIVER", "SUBNET"]
-    containers = [[nw.id, nw.name, nw.driver, nw.subnet] for nw in networks]
-
-    lines = tabulate(containers, headers=headers).split("\n")
-    for line in lines:
-        click.echo(line)
+    networks = [[nw.id, nw.name, nw.driver, nw.subnet] for nw in networks]
+    print_table(networks, NETWORK_LIST_COLUMNS)
 
 
 @root.command(name="connect")

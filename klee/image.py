@@ -8,13 +8,30 @@ import websockets
 from .client.api.default.image_list import sync_detailed as image_list
 from .client.api.default.image_remove import sync_detailed as image_remove
 from .connection import create_websocket
-from .utils import human_duration, listen_for_messages, request_and_validate_response
+from .utils import (
+    console,
+    print_table,
+    KLEE_MSG,
+    CONNECTION_CLOSED_UNEXPECTEDLY,
+    UNEXPECTED_ERROR,
+    human_duration,
+    listen_for_messages,
+    request_and_validate_response,
+)
 
 
 WS_IMAGE_BUILD_ENDPOINT = "/images/build"
 WS_IMAGE_CREATE_ENDPOINT = "/images/create"
-IMAGE_LIST_HEADER = ["ID", "NAME", "TAG", "CREATED"]
-IMAGE_BUILD_START_MESSAGE = "started building image with ID {image_id}"
+
+IMAGE_LIST_COLUMNS = [
+    ("ID", {"style": "cyan"}),
+    ("NAME", {"style": "bold aquamarine1"}),
+    ("TAG", {"style": "aquamarine1"}),
+    ("CREATED", {"style": "bright_white"}),
+]
+
+BUILD_START_MESSAGE = "[bold]Started building image with ID {image_id}[/bold]"
+BUILD_FAILED = "Failed to build image {image_id}. Last valid snapshot is {snapshot}"
 
 
 # pylint: disable=unused-argument
@@ -105,22 +122,24 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
                 closing_message = await listen_for_messages(websocket)
 
                 if closing_message["data"] == "":
-                    click.echo(closing_message["message"])
+                    print_closing(closing_message, ["message"])
 
                 else:
-                    click.echo(closing_message["message"])
-                    click.echo(closing_message["data"])
+                    print_closing(closing_message, ["message", "data"])
 
             elif start_msg["msg_type"] == "error":
-                click.echo(start_msg["message"])
+                print_closing(closing_message, ["message"])
 
             else:
-                click.echo("error creating image")
+                console.print(UNEXPECTED_ERROR)
 
     except websockets.exceptions.ConnectionClosedError:
-        click.echo(
-            "ERROR: image creation failed unexpectantly. Failed to create image."
-        )
+        console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
+
+
+def print_closing(msg, attributes):
+    for attrib in attributes:
+        console.print(KLEE_MSG.format(msg=msg[attrib]))
 
 
 @root.command()
@@ -188,33 +207,34 @@ async def _build_image_and_listen_for_messages(
             if start_msg["msg_type"] == "starting":
                 if start_msg["data"] != "":
                     image_id = start_msg["data"]
-                    click.echo(IMAGE_BUILD_START_MESSAGE.format(image_id=image_id))
+                    msg = BUILD_START_MESSAGE.format(image_id=image_id)
+                    console.print(msg)
                 try:
                     closing_message = await listen_for_messages(websocket)
                 except json.JSONDecodeError:
-                    click.echo("\nklee: some unexpected error occured")
+                    console.print(UNEXPECTED_ERROR)
 
                 if closing_message["msg_type"] == "error":
                     if closing_message["data"] != "":
                         snapshot = closing_message["data"]
-                        click.echo(
-                            f"Failed to build image {image_id}. Last valid snapshot is {snapshot}"
+                        console.print(
+                            BUILD_FAILED.format(snapshot=snapshot, image_id=image_id)
                         )
 
                 elif closing_message["data"] == "":
-                    click.echo(closing_message["message"])
+                    console.print(KLEE_MSG.format(msg=closing_message["message"]))
 
                 else:
-                    click.echo(closing_message["message"])
-                    click.echo(closing_message["data"])
+                    console.print(KLEE_MSG.format(msg=closing_message["message"]))
+                    console.print(KLEE_MSG.format(msg=closing_message["data"]))
 
             elif start_msg["msg_type"] == "error":
-                click.echo(start_msg["message"])
+                console.print(KLEE_MSG.format(msg=start_msg["message"]))
             else:
-                click.echo("error building image")
+                console.print(UNEXPECTED_ERROR)
 
     except websockets.exceptions.ConnectionClosedError:
-        click.echo("ERROR: build failed unexpectantly. Failed to build image.")
+        console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
 
 
 @root.command(name="ls")
@@ -228,6 +248,14 @@ def list_images():
             500: "kleened backend error",
         },
     )
+
+
+def _print_images(images):
+    images = [
+        [img.id, img.name, img.tag, human_duration(img.created) + " ago"]
+        for img in images
+    ]
+    print_table(images, IMAGE_LIST_COLUMNS)
 
 
 @root.command(name="rm")
@@ -246,15 +274,3 @@ def remove(images):
         )
         if response is None or response.status_code != 200:
             break
-
-
-def _print_images(images):
-    from tabulate import tabulate
-
-    containers = [
-        [img.id, img.name, img.tag, human_duration(img.created)] for img in images
-    ]
-
-    lines = tabulate(containers, headers=IMAGE_LIST_HEADER).split("\n")
-    for line in lines:
-        click.echo(line)

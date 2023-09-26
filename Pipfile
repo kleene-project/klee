@@ -9,9 +9,9 @@ jcli = {editable = true, path = "."}
 attrs = "*"
 httpx = "*"
 python-dateutil = "*"
-tabulate = "*"
 websockets = "*"
 pytest = "*"
+rich = "*"
 
 [dev-packages]
 pytest = "*"

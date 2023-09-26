@@ -5,12 +5,34 @@ import click
 from .name_generator import random_name
 from .network import connect_
 from .exec import execution_create_and_start
-from .utils import human_duration, request_and_validate_response
+from .utils import (
+    console,
+    print_table,
+    KLEE_MSG,
+    UNEXPECTED_ERROR,
+    human_duration,
+    request_and_validate_response,
+)
 from .client.api.default.container_create import sync_detailed as container_create
 from .client.api.default.container_list import sync_detailed as container_list
 from .client.api.default.container_remove import sync_detailed as container_remove
 from .client.api.default.container_stop import sync_detailed as container_stop
 from .client.models.container_config import ContainerConfig
+
+START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = KLEE_MSG.format(
+    msg="only one container can be started when setting the 'attach' flag."
+)
+
+CONTAINER_LIST_COLUMNS = [
+    ("CONTAINER ID", {"style": "cyan", "min_width": 13}),
+    ("NAME", {"style": "bold aquamarine1"}),
+    ("IMAGE", {"style": "bold bright_magenta"}),
+    ("TAG", {"style": "aquamarine1"}),
+    ("COMMAND", {"style": "bright_white"}),
+    ("CREATED", {"style": "bright_white"}),
+    ("STATUS", {}),
+]
+
 
 # pylint: disable=unused-argument
 @click.group()
@@ -133,36 +155,27 @@ def list_containers(**kwargs):
 
 
 def _print_container(containers):
-    from tabulate import tabulate
-
     def command_json2command_human(command_str):
         return " ".join(json.loads(command_str))
 
     def is_running_str(running):
         if running:
-            return "running"
-        return "stopped"
+            return "[green]running[/green]"
+        return "[red]stopped[/red]"
 
-    headers = ["CONTAINER ID", "IMAGE", "TAG", "COMMAND", "CREATED", "STATUS", "NAME"]
     containers = [
         [
             c.id,
+            c.name,
             c.image_id,
             c.image_tag,
             command_json2command_human(c.command),
-            human_duration(c.created),
+            human_duration(c.created) + " ago",
             is_running_str(c.running),
-            c.name,
         ]
         for c in containers
     ]
-
-    # NOTE: The README.md says that 'maxcolwidths' exists but it complains here.
-    # Perhaps it is not in the newest version on pypi yet? col_widths = [12,15,23,18,7]
-    # lines = tabulate(containers, headers=headers, maxcolwidths=col_widths).split("\n")
-    lines = tabulate(containers, headers=headers).split("\n")
-    for line in lines:
-        click.echo(line)
+    print_table(containers, CONTAINER_LIST_COLUMNS)
 
 
 @root.command(name="rm")
@@ -205,7 +218,7 @@ def start(attach, interactive, tty, containers):
 
 def start_(attach, interactive, tty, containers):
     if attach and len(containers) != 1:
-        click.echo("only one container can be started when setting the 'attach' flag.")
+        console.print(START_ONLY_ONE_CONTAINER_WHEN_ATTACHED)
     else:
         for container in containers:
             start_container = True

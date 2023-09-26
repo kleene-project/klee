@@ -27,7 +27,7 @@ class TestContainerSubcommand:
 
         assert empty_container_list(all_=False)
         _header, _lines, container, *_ = run("container ls -a")
-        assert container[:12] == container_id
+        assert container[1:13] == container_id
 
         container_id2, _ = run(f"container rm {name}")
         assert container_id2 == container_id
@@ -91,14 +91,18 @@ def container_is_running(container_id):
 
 
 def empty_container_list(all_=True):
-    HEADER = "CONTAINER ID    IMAGE    TAG    COMMAND    CREATED    STATUS    NAME"
-    LINE = "--------------  -------  -----  ---------  ---------  --------  ------"
+    expected_output = [
+        " CONTAINER ID    NAME   IMAGE   TAG   COMMAND   CREATED   STATUS ",
+        "─────────────────────────────────────────────────────────────────",
+        "",
+    ]
 
     if all_:
-        output = tuple(run("container ls -a"))
+        output = run("container ls -a")
     else:
-        output = tuple(run("container ls"))
-    return output == (HEADER, LINE, "", "")
+        output = run("container ls")
+
+    return output == expected_output
 
 
 def container_list(all_=True):
@@ -108,5 +112,5 @@ def container_list(all_=True):
     else:
         output = run("container ls")
     output = output[2:-2]  # exclude header + postfixed line-endings
-    container_ids = [row[:12] for row in output]
+    container_ids = [row[1:13] for row in output[:-1]]
     return tuple(container_ids)

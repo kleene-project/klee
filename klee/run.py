@@ -2,6 +2,7 @@ import click
 
 from .container import create_, start_
 from .container import connect_
+from .utils import console, KLEE_MSG
 
 
 @click.command(name="run", context_settings={"ignore_unknown_options": True})
@@ -82,7 +83,7 @@ def run(
     if network is not None:
         response = connect_(ip, network, container_id)
         if response is None or response.status_code != 204:
-            click.echo("could not start container")
+            console.print(KLEE_MSG.format(msg="could not start container"))
             return
 
     start_(attach, interactive, tty, [container_id])

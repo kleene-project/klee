@@ -5,8 +5,38 @@ import click
 import dateutil.parser
 import websockets
 import httpx
+from rich.console import Console
+from rich.table import Table
+from rich import box
 
 from .connection import request
+
+console = Console()
+
+KLEE_MSG = "[bold]{msg}[/bold]"
+CONNECTION_CLOSED_UNEXPECTEDLY = "ERROR! Connection closed unexpectedly."
+UNEXPECTED_ERROR = "\n[bold]klee[/bold]: ERROR! Some unexpected error occured"
+UNABLE_TO_CONNECT = KLEE_MSG.format(msg="unable to connect to kleened: {e}")
+UNRECOGNIZED_STATUS_CODE = KLEE_MSG.format(
+    msg="unrecognized status-code received from kleened: {status_code}"
+)
+
+
+def print_table(items, columns):
+    table = Table(show_edge=False, box=box.SIMPLE)
+
+    for column_name, kwargs in columns:
+        table.add_column(column_name, **kwargs)
+
+    for item in items:
+        table.add_row(*item)
+
+    console.print(table)
+
+
+def print_closing(msg, attributes):
+    for attrib in attributes:
+        console.print(KLEE_MSG.format(msg=msg[attrib]))
 
 
 async def listen_for_messages(websocket):
@@ -15,37 +45,37 @@ async def listen_for_messages(websocket):
             message = await websocket.recv()
         except websockets.exceptions.ConnectionClosed:
             closing_message = json.loads(websocket.close_reason)
-            click.echo("")
+            console.out("")
             return closing_message
 
-        click.echo(message, nl=False)
+        console.out(message, end="")
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
     try:
         response = request(endpoint, kwargs)
     except httpx.ConnectError as e:
-        click.echo(f"unable to connect to kleened: {e}")
+        console.print(UNABLE_TO_CONNECT.format(e=e))
         return None
     except httpx.ReadError as e:
-        click.echo(f"unable to connect to kleened: {e}")
+        console.print(UNABLE_TO_CONNECT.format(e=e))
         return None
 
     # Try validating the response
     try:
         return_message = statuscode2messsage[response.status_code]
     except KeyError:
-        click.echo(f"unknown status-code received from kleened: {response.status_code}")
+        console.print(UNRECOGNIZED_STATUS_CODE.format(status_code=response.status_code))
         return response
 
     if callable(return_message):
         return_message = return_message(response)
-        if return_message != "":
-            click.echo(return_message)
+        if return_message != "" and return_message is not None:
+            console.print(KLEE_MSG.format(msg=return_message))
         return response
 
     if not isinstance(return_message, str):
-        click.echo("internal error in klee")
+        console.print(UNEXPECTED_ERROR)
 
     return response
 

@@ -4,8 +4,9 @@ from .client.api.default.volume_create import sync_detailed as volume_create
 from .client.api.default.volume_list import sync_detailed as volume_list
 from .client.api.default.volume_remove import sync_detailed as volume_remove
 from .client.models.volume_config import VolumeConfig
-from .utils import human_duration, request_and_validate_response
+from .utils import print_table, human_duration, request_and_validate_response
 
+EMPTY_LIST = [" VOLUME NAME   CREATED ", "───────────────────────", ""]
 
 # pylint: disable=unused-argument
 @click.group()
@@ -44,15 +45,15 @@ def list_volumes():
     )
 
 
+VOLUME_LIST_COLUMNS = [
+    ("VOLUME NAME", {"style": "bold aquamarine1"}),
+    ("CREATED", {"style": "bright_white"}),
+]
+
+
 def _print_volumes(volumes):
-    from tabulate import tabulate
-
-    headers = ["VOLUME NAME", "CREATED"]
-    containers = [[vol.name, human_duration(vol.created)] for vol in volumes]
-
-    lines = tabulate(containers, headers=headers).split("\n")
-    for line in lines:
-        click.echo(line)
+    volumes = [[vol.name, human_duration(vol.created) + "ago"] for vol in volumes]
+    print_table(volumes, VOLUME_LIST_COLUMNS)
 
 
 @root.command(name="rm")

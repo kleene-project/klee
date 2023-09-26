@@ -9,10 +9,25 @@ import click
 
 from .client.api.default.exec_create import sync_detailed as exec_create
 from .client.models.exec_config import ExecConfig
-from .utils import listen_for_messages, request_and_validate_response
+from .utils import (
+    listen_for_messages,
+    request_and_validate_response,
+    console,
+    print_table,
+    print_closing,
+    KLEE_MSG,
+    CONNECTION_CLOSED_UNEXPECTEDLY,
+    UNEXPECTED_ERROR,
+)
 from .connection import create_websocket
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
+
+EXEC_INSTANCE_CREATE_ERROR = KLEE_MSG.format(
+    msg="{container_id}: error creating execution instance: {exec_id}"
+)
+EXEC_INSTANCE_CREATED = KLEE_MSG.format(msg="created execution instance {exec_id}")
+ERROR_STARTING_CONTAINER = KLEE_MSG.format(msg="error starting container")
 
 
 @click.command(name="exec")
@@ -78,10 +93,14 @@ def _create_exec_instance(container_id, tty, cmd, env, user):
         },
     )
     if response.status_code == 201:
-        click.echo(f"created execution instance {response.parsed.id}")
+        console.print(EXEC_INSTANCE_CREATED.format(exec_id=response.parsed.id))
         return response.parsed.id
 
-    click.echo(f"{container_id}: error creating execution instance: {response.parsed}")
+    console.print(
+        EXEC_INSTANCE_CREATE_ERROR.format(
+            container_id=container_id, exec_id=response.parsed
+        )
+    )
     return None
 
 
@@ -90,7 +109,7 @@ async def _execute(config):
         await websocket.send(config)
         await websocket.wait_closed()
         if websocket.close_code != 1001:
-            click.echo("error starting container #{container_id}")
+            console.print(ERROR_STARTING_CONTAINER)
 
 
 async def _attached_execute(config, interactive):
@@ -113,17 +132,16 @@ async def _attached_execute(config, interactive):
                 loop.add_reader(sys.stdin, _send_user_input, websocket)
             closing_message = await listen_for_messages(websocket)
             if closing_message["data"] == "":
-                click.echo(closing_message["message"])
+                print_closing(closing_message, ["message"])
 
             else:
-                click.echo(closing_message["message"])
-                click.echo(closing_message["data"])
+                print_closing(closing_message, ["message", "data"])
 
         elif start_msg["msg_type"] == "error":
-            click.echo(start_msg["message"])
+            print_closing(closing_message, ["message"])
 
         else:
-            click.echo("error starting container #{container_id}")
+            console.print(UNEXPECTED_ERROR)
 
 
 def _send_user_input(websocket):
