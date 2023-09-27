@@ -9,9 +9,10 @@ from .network import root as network_root
 from .run import run
 from .exec import exec_
 from .volume import root as volume_root
+from .richclick import RichGroup
 
 
-@click.group()
+@click.group(cls=RichGroup)
 @click.version_option(version="0.0.1")
 @click.option(
     "--host",

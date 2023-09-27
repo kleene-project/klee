@@ -1,17 +1,12 @@
 import json
 import datetime
-
-import click
 import dateutil.parser
+
 import websockets
 import httpx
-from rich.console import Console
-from rich.table import Table
-from rich import box
 
 from .connection import request
-
-console = Console()
+from .richclick import console
 
 KLEE_MSG = "[bold]{msg}[/bold]"
 CONNECTION_CLOSED_UNEXPECTEDLY = "ERROR! Connection closed unexpectedly."
@@ -20,18 +15,6 @@ UNABLE_TO_CONNECT = KLEE_MSG.format(msg="unable to connect to kleened: {e}")
 UNRECOGNIZED_STATUS_CODE = KLEE_MSG.format(
     msg="unrecognized status-code received from kleened: {status_code}"
 )
-
-
-def print_table(items, columns):
-    table = Table(show_edge=False, box=box.SIMPLE)
-
-    for column_name, kwargs in columns:
-        table.add_column(column_name, **kwargs)
-
-    for item in items:
-        table.add_row(*item)
-
-    console.print(table)
 
 
 def print_closing(msg, attributes):

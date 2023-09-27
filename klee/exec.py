@@ -2,35 +2,32 @@ import json
 import signal
 import asyncio
 import sys
-import urllib
 import functools
 
 import click
 
 from .client.api.default.exec_create import sync_detailed as exec_create
 from .client.models.exec_config import ExecConfig
+from .richclick import console, RichCommand
 from .utils import (
     listen_for_messages,
     request_and_validate_response,
-    console,
-    print_table,
     print_closing,
     KLEE_MSG,
-    CONNECTION_CLOSED_UNEXPECTEDLY,
     UNEXPECTED_ERROR,
 )
 from .connection import create_websocket
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
+EXEC_INSTANCE_CREATED = KLEE_MSG.format(msg="created execution instance {exec_id}")
 EXEC_INSTANCE_CREATE_ERROR = KLEE_MSG.format(
     msg="{container_id}: error creating execution instance: {exec_id}"
 )
-EXEC_INSTANCE_CREATED = KLEE_MSG.format(msg="created execution instance {exec_id}")
-ERROR_STARTING_CONTAINER = KLEE_MSG.format(msg="error starting container")
+EXEC_START_ERROR = KLEE_MSG.format(msg="error starting container")
 
 
-@click.command(name="exec")
+@click.command(cls=RichCommand, name="exec")
 @click.option(
     "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
 )
@@ -109,7 +106,7 @@ async def _execute(config):
         await websocket.send(config)
         await websocket.wait_closed()
         if websocket.close_code != 1001:
-            console.print(ERROR_STARTING_CONTAINER)
+            console.print(EXEC_START_ERROR)
 
 
 async def _attached_execute(config, interactive):

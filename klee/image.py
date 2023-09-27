@@ -8,9 +8,9 @@ import websockets
 from .client.api.default.image_list import sync_detailed as image_list
 from .client.api.default.image_remove import sync_detailed as image_remove
 from .connection import create_websocket
+from .richclick import console, print_table, RichCommand, RichGroup
 from .utils import (
-    console,
-    print_table,
+    print_closing,
     KLEE_MSG,
     CONNECTION_CLOSED_UNEXPECTEDLY,
     UNEXPECTED_ERROR,
@@ -35,12 +35,12 @@ BUILD_FAILED = "Failed to build image {image_id}. Last valid snapshot is {snapsh
 
 
 # pylint: disable=unused-argument
-@click.group()
+@click.group(cls=RichGroup)
 def root(name="image"):
     """Manage images"""
 
 
-@root.group()
+@root.group(cls=RichGroup)
 def create(name="create"):
     """
     Create a base image from a remote tar-archive or a ZFS dataset using the subcommands
@@ -50,7 +50,7 @@ def create(name="create"):
     """
 
 
-@create.command()
+@create.command(cls=RichCommand)
 @click.option(
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
@@ -69,11 +69,11 @@ def create(name="create"):
 )
 def fetch(tag, url, force):
     """
-    Create a base image from a tar-archive fetched using fetch(1).
+    Create a base image from a tar-archive fetched using `fetch(1)`.
 
-    Fetch and create a base image from a tar-archive downloaded with fetch(1).
+    Fetch and create a base image from a tar-archive downloaded with `fetch(1)`.
     If no url is provided, kleened will download a base system from the official FreeBSD
-    repositories based on host OS information from the uname(1) utility.
+    repositories based on host OS information from the `uname(1)` utility.
     """
 
     method = "fetch"
@@ -81,7 +81,7 @@ def fetch(tag, url, force):
     asyncio.run(_create_image_and_listen_for_messages(tag, dataset, url, force, method))
 
 
-@create.command()
+@create.command(cls=RichCommand)
 @click.option(
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
@@ -137,12 +137,7 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
         console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
 
 
-def print_closing(msg, attributes):
-    for attrib in attributes:
-        console.print(KLEE_MSG.format(msg=msg[attrib]))
-
-
-@root.command()
+@root.command(cls=RichCommand)
 @click.option(
     "--file",
     "-f",
@@ -237,7 +232,7 @@ async def _build_image_and_listen_for_messages(
         console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
 
 
-@root.command(name="ls")
+@root.command(cls=RichCommand, name="ls")
 def list_images():
     """List images"""
     request_and_validate_response(
@@ -258,7 +253,7 @@ def _print_images(images):
     print_table(images, IMAGE_LIST_COLUMNS)
 
 
-@root.command(name="rm")
+@root.command(cls=RichCommand, name="rm")
 @click.argument("images", required=True, nargs=-1)
 def remove(images):
     """Remove one or more images"""

@@ -2,22 +2,16 @@ import json
 
 import click
 
-from .name_generator import random_name
-from .network import connect_
-from .exec import execution_create_and_start
-from .utils import (
-    console,
-    print_table,
-    KLEE_MSG,
-    UNEXPECTED_ERROR,
-    human_duration,
-    request_and_validate_response,
-)
 from .client.api.default.container_create import sync_detailed as container_create
 from .client.api.default.container_list import sync_detailed as container_list
 from .client.api.default.container_remove import sync_detailed as container_remove
 from .client.api.default.container_stop import sync_detailed as container_stop
 from .client.models.container_config import ContainerConfig
+from .name_generator import random_name
+from .network import connect_
+from .exec import execution_create_and_start
+from .richclick import console, print_table, RichCommand, RichGroup
+from .utils import KLEE_MSG, human_duration, request_and_validate_response
 
 START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = KLEE_MSG.format(
     msg="only one container can be started when setting the 'attach' flag."
@@ -35,16 +29,19 @@ CONTAINER_LIST_COLUMNS = [
 
 
 # pylint: disable=unused-argument
-@click.group()
+@click.group(cls=RichGroup)
 def root(name="container"):
     """Manage containers"""
 
 
-@root.command(name="create", context_settings={"ignore_unknown_options": True})
+@root.command(
+    cls=RichCommand, name="create", context_settings={"ignore_unknown_options": True}
+)
 @click.option("--name", default="", help="Assign a name to the container")
 @click.option(
     "--user",
     "-u",
+    metavar="TEXT",
     default="",
     help="Alternate user that should be used for starting the container",
 )
@@ -80,9 +77,8 @@ def root(name="container"):
 @click.argument("command", nargs=-1)
 def create(name, user, network, ip, volume, env, jailparam, image, command):
     """
-    Create a new container.
-
-    The IMAGE parameter syntax is: <image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]
+    Create a new container. The **IMAGE** parameter syntax is:
+    `<image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]`
 
     See the documentation for details.
     """
@@ -134,7 +130,7 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
     )
 
 
-@root.command(name="ls")
+@root.command(cls=RichCommand, name="ls")
 @click.option(
     "--all",
     "-a",
@@ -178,7 +174,7 @@ def _print_container(containers):
     print_table(containers, CONTAINER_LIST_COLUMNS)
 
 
-@root.command(name="rm")
+@root.command(cls=RichCommand, name="rm")
 @click.argument("containers", required=True, nargs=-1)
 def remove(containers):
     """Remove one or more containers"""
@@ -196,7 +192,7 @@ def remove(containers):
             break
 
 
-@root.command(name="start")
+@root.command(cls=RichCommand, name="start")
 @click.option(
     "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
 )
@@ -227,7 +223,7 @@ def start_(attach, interactive, tty, containers):
             )
 
 
-@root.command(name="stop")
+@root.command(cls=RichCommand, name="stop")
 @click.argument("containers", nargs=-1)
 def stop(containers):
     """Stop one or more running containers"""

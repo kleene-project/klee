@@ -4,17 +4,16 @@ from .client.api.default.volume_create import sync_detailed as volume_create
 from .client.api.default.volume_list import sync_detailed as volume_list
 from .client.api.default.volume_remove import sync_detailed as volume_remove
 from .client.models.volume_config import VolumeConfig
-from .utils import print_table, human_duration, request_and_validate_response
-
-EMPTY_LIST = [" VOLUME NAME   CREATED ", "───────────────────────", ""]
+from .richclick import print_table, RichCommand, RichGroup
+from .utils import human_duration, request_and_validate_response
 
 # pylint: disable=unused-argument
-@click.group()
+@click.group(cls=RichGroup)
 def root(name="volume"):
     """Manage volumes"""
 
 
-@root.command()
+@root.command(cls=RichCommand)
 @click.argument("volume_name", nargs=1)
 def create(volume_name):
     """
@@ -32,7 +31,7 @@ def create(volume_name):
     )
 
 
-@root.command(name="ls")
+@root.command(cls=RichCommand, name="ls")
 def list_volumes():
     """List volumes"""
     request_and_validate_response(
@@ -56,7 +55,7 @@ def _print_volumes(volumes):
     print_table(volumes, VOLUME_LIST_COLUMNS)
 
 
-@root.command(name="rm")
+@root.command(cls=RichCommand, name="rm")
 @click.argument("volumes", required=True, nargs=-1)
 def remove(volumes):
     """Remove one or more volumes"""
