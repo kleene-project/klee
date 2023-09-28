@@ -13,7 +13,6 @@ from .utils import (
     request_and_validate_response,
     KLEE_MSG,
     CONNECTION_CLOSED_UNEXPECTEDLY,
-    UNEXPECTED_ERROR,
 )
 
 IFNAME_NEEDED_FOR_LOOPBACK_DRIVER = KLEE_MSG.format(

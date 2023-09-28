@@ -36,7 +36,6 @@ class RichGroup(click.Group):
 def _print_commands_section(self, console, highlighter, ctx):
     from rich.panel import Panel
 
-    # Building options section
     commands_table = Table(highlight=True, box=None, show_header=False)
 
     commands = []
