@@ -73,7 +73,7 @@ def run(
     """
     Create and start a new container.
 
-    The IMAGE parameter syntax is: <image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]
+    The IMAGE parameter syntax is: (**IMAGE_ID**|**IMAGE_NAME**[:**TAG**])[:**@SNAPSHOT**]
 
     See the documentation for details.
     """
