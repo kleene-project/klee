@@ -9,6 +9,7 @@ from .client.models.end_point_config import EndPointConfig
 from .client.models.network_config import NetworkConfig
 
 from .richclick import console, print_table, RichCommand, RichGroup
+from .config import config
 from .utils import (
     request_and_validate_response,
     KLEE_MSG,
@@ -26,12 +27,12 @@ NETWORK_LIST_COLUMNS = [
 ]
 
 # pylint: disable=unused-argument
-@click.group(cls=RichGroup)
+@click.group(cls=config.group_cls)
 def root(name="network"):
     """Manage networks"""
 
 
-@root.command(cls=RichCommand, name="create")
+@root.command(cls=config.command_cls, name="create")
 @click.option(
     "--driver",
     "-d",
@@ -71,7 +72,7 @@ def create(driver, ifname, subnet, network_name):
         )
 
 
-@root.command(cls=RichCommand, name="rm")
+@root.command(cls=config.command_cls, name="rm")
 @click.argument("networks", required=True, nargs=-1)
 def remove(networks):
     """Remove one or more networks."""
@@ -89,7 +90,7 @@ def remove(networks):
             break
 
 
-@root.command(cls=RichCommand, name="ls")
+@root.command(cls=config.command_cls, name="ls")
 def list_networks():
     """List networks"""
     request_and_validate_response(
@@ -107,7 +108,7 @@ def _print_networks(networks):
     print_table(networks, NETWORK_LIST_COLUMNS)
 
 
-@root.command(cls=RichCommand, name="connect")
+@root.command(cls=config.command_cls, name="connect")
 @click.option(
     "--ip",
     default=None,
@@ -140,7 +141,7 @@ def connect_(ip, network, container):
     )
 
 
-@root.command(cls=RichCommand, name="disconnect")
+@root.command(cls=config.command_cls, name="disconnect")
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
 def disconnect(network, container):

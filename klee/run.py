@@ -3,10 +3,13 @@ import click
 from .container import create_, start_, connect_
 from .richclick import console, RichCommand
 from .utils import KLEE_MSG
+from .config import config
 
 
 @click.command(
-    cls=RichCommand, name="run", context_settings={"ignore_unknown_options": True}
+    cls=config.command_cls,
+    name="run",
+    context_settings={"ignore_unknown_options": True},
 )
 @click.option("--name", default="", help="Assign a name to the container")
 @click.option(

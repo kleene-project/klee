@@ -9,6 +9,7 @@ from .client.api.default.image_list import sync_detailed as image_list
 from .client.api.default.image_remove import sync_detailed as image_remove
 from .connection import create_websocket
 from .richclick import console, print_table, RichCommand, RichGroup
+from .config import config
 from .utils import (
     print_closing,
     KLEE_MSG,
@@ -35,12 +36,12 @@ BUILD_FAILED = "Failed to build image {image_id}. Last valid snapshot is {snapsh
 
 
 # pylint: disable=unused-argument
-@click.group(cls=RichGroup)
+@click.group(cls=config.group_cls)
 def root(name="image"):
     """Manage images"""
 
 
-@root.group(cls=RichGroup)
+@root.group(cls=config.group_cls)
 def create(name="create"):
     """
     Create a base image from a remote tar-archive or a ZFS dataset using the subcommands
@@ -50,7 +51,7 @@ def create(name="create"):
     """
 
 
-@create.command(cls=RichCommand)
+@create.command(cls=config.command_cls)
 @click.option(
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
@@ -81,7 +82,7 @@ def fetch(tag, url, force):
     asyncio.run(_create_image_and_listen_for_messages(tag, dataset, url, force, method))
 
 
-@create.command(cls=RichCommand)
+@create.command(cls=config.command_cls)
 @click.option(
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
@@ -137,7 +138,7 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
         console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
 
 
-@root.command(cls=RichCommand)
+@root.command(cls=config.command_cls)
 @click.option(
     "--file",
     "-f",
@@ -232,7 +233,7 @@ async def _build_image_and_listen_for_messages(
         console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
 
 
-@root.command(cls=RichCommand, name="ls")
+@root.command(cls=config.command_cls, name="ls")
 def list_images():
     """List images"""
     request_and_validate_response(
@@ -253,7 +254,7 @@ def _print_images(images):
     print_table(images, IMAGE_LIST_COLUMNS)
 
 
-@root.command(cls=RichCommand, name="rm")
+@root.command(cls=config.command_cls, name="rm")
 @click.argument("images", required=True, nargs=-1)
 def remove(images):
     """Remove one or more images"""

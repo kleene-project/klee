@@ -12,6 +12,7 @@ from .network import connect_
 from .exec import execution_create_and_start
 from .richclick import console, print_table, RichCommand, RichGroup
 from .utils import KLEE_MSG, human_duration, request_and_validate_response
+from .config import config
 
 START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = KLEE_MSG.format(
     msg="only one container can be started when setting the 'attach' flag."
@@ -29,13 +30,15 @@ CONTAINER_LIST_COLUMNS = [
 
 
 # pylint: disable=unused-argument
-@click.group(cls=RichGroup)
+@click.group(cls=config.group_cls)
 def root(name="container"):
     """Manage containers"""
 
 
 @root.command(
-    cls=RichCommand, name="create", context_settings={"ignore_unknown_options": True}
+    cls=config.command_cls,
+    name="create",
+    context_settings={"ignore_unknown_options": True},
 )
 @click.option("--name", default="", help="Assign a name to the container")
 @click.option(
@@ -130,7 +133,7 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
     )
 
 
-@root.command(cls=RichCommand, name="ls")
+@root.command(cls=config.command_cls, name="ls")
 @click.option(
     "--all",
     "-a",
@@ -174,7 +177,7 @@ def _print_container(containers):
     print_table(containers, CONTAINER_LIST_COLUMNS)
 
 
-@root.command(cls=RichCommand, name="rm")
+@root.command(cls=config.command_cls, name="rm")
 @click.argument("containers", required=True, nargs=-1)
 def remove(containers):
     """Remove one or more containers"""
@@ -192,7 +195,7 @@ def remove(containers):
             break
 
 
-@root.command(cls=RichCommand, name="start")
+@root.command(cls=config.command_cls, name="start")
 @click.option(
     "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
 )
@@ -223,7 +226,7 @@ def start_(attach, interactive, tty, containers):
             )
 
 
-@root.command(cls=RichCommand, name="stop")
+@root.command(cls=config.command_cls, name="stop")
 @click.argument("containers", nargs=-1)
 def stop(containers):
     """Stop one or more running containers"""

@@ -7,22 +7,9 @@ import httpx
 import websockets
 
 from .client.client import Client
+from .config import config
 
 URL_TEMPLATE = "{scheme}://{host}{endpoint}"
-
-
-class ConnectionConfig:
-    host = None
-    tlsverify = None
-    tlscert = None
-    tlskey = None
-    tlscacert = None
-
-    def httpx_tls_kwargs(self):
-        return {"verify": self.tlsverify, "cert": (self.tlscert, self.tlskey)}
-
-
-config = ConnectionConfig()
 
 
 def request(endpoint, kwargs):

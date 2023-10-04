@@ -17,6 +17,7 @@ from .utils import (
     UNEXPECTED_ERROR,
 )
 from .connection import create_websocket
+from .config import config
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
@@ -27,7 +28,7 @@ EXEC_INSTANCE_CREATE_ERROR = KLEE_MSG.format(
 EXEC_START_ERROR = KLEE_MSG.format(msg="error starting container")
 
 
-@click.command(cls=RichCommand, name="exec")
+@click.command(cls=config.command_cls, name="exec")
 @click.option(
     "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
 )
