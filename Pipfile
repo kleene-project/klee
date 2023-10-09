@@ -5,13 +5,14 @@ name = "pypi"
 
 [packages]
 click = "*"
-jcli = {editable = true, path = "."}
+klee = {editable = true, path = "."}
 attrs = "*"
 httpx = "*"
 python-dateutil = "*"
 websockets = "*"
 pytest = "*"
 rich = "*"
+pyyaml = "*"
 
 [dev-packages]
 pytest = "*"
