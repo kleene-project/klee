@@ -5,8 +5,8 @@ import os
 import click
 import websockets
 
-from .client.api.default.image_list import sync_detailed as image_list
-from .client.api.default.image_remove import sync_detailed as image_remove
+from .client.api.default.image_list import sync_detailed as image_list_endpoint
+from .client.api.default.image_remove import sync_detailed as image_remove_endpoint
 from .connection import create_websocket
 from .richclick import console, print_table, RichCommand, RichGroup
 from .config import config
@@ -36,6 +36,7 @@ BUILD_FAILED = "Failed to build image {image_id}. Last valid snapshot is {snapsh
 
 
 # pylint: disable=unused-argument
+# @click.group(cls=config.test_cls, name="image")
 @click.group(cls=config.group_cls)
 def root(name="image"):
     """Manage images"""
@@ -138,42 +139,53 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
         console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
 
 
-@root.command(cls=config.command_cls)
-@click.option(
-    "--file",
-    "-f",
-    default="Dockerfile",
-    help="Name of the Dockerfile (default: 'Dockerfile')",
-)
-@click.option(
-    "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
-)
-@click.option(
-    "--quiet",
-    "-q",
-    is_flag=True,
-    default=False,
-    help="Suppress the build output and print image ID on success",
-)
-@click.option(
-    "--cleanup/--no-cleanup",
-    "-l",
-    is_flag=True,
-    default=True,
-    help="Whether or not to remove the build-container if the build fails",
-)
-@click.option(
-    "--build-arg",
-    multiple=True,
-    default=None,
-    help="Set build-time variables (e.g. --build-arg FIRST=hello --build-arg SECOND=world)",
-)
-@click.argument("path", nargs=1)
-def build(file, tag, quiet, cleanup, build_arg, path):
-    """Build an image from a context + Dockerfile located in PATH"""
-    asyncio.run(
-        _build_image_and_listen_for_messages(file, tag, quiet, cleanup, build_arg, path)
+def image_build(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.option(
+        "--file",
+        "-f",
+        default="Dockerfile",
+        help="Name of the Dockerfile (default: 'Dockerfile')",
     )
+    @click.option(
+        "--tag",
+        "-t",
+        default="",
+        help="Name and optionally a tag in the 'name:tag' format",
+    )
+    @click.option(
+        "--quiet",
+        "-q",
+        is_flag=True,
+        default=False,
+        help="Suppress the build output and print image ID on success",
+    )
+    @click.option(
+        "--cleanup/--no-cleanup",
+        "-l",
+        is_flag=True,
+        default=True,
+        help="Whether or not to remove the build-container if the build fails",
+    )
+    @click.option(
+        "--build-arg",
+        multiple=True,
+        default=None,
+        help="Set build-time variables (e.g. --build-arg FIRST=hello --build-arg SECOND=world)",
+    )
+    @click.argument("path", nargs=1)
+    def build(file, tag, quiet, cleanup, build_arg, path):
+        """Build an image from a context + Dockerfile located in PATH"""
+        asyncio.run(
+            _build_image_and_listen_for_messages(
+                file, tag, quiet, cleanup, build_arg, path
+            )
+        )
+
+    return build
+
+
+root.add_command(image_build("build"), name="build")
 
 
 async def _build_image_and_listen_for_messages(
@@ -233,17 +245,23 @@ async def _build_image_and_listen_for_messages(
         console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
 
 
-@root.command(cls=config.command_cls, name="ls")
-def list_images():
-    """List images"""
-    request_and_validate_response(
-        image_list,
-        kwargs={},
-        statuscode2messsage={
-            200: lambda response: _print_images(response.parsed),
-            500: "kleened backend error",
-        },
-    )
+def image_list(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    def _image_list():
+        """List images"""
+        request_and_validate_response(
+            image_list_endpoint,
+            kwargs={},
+            statuscode2messsage={
+                200: lambda response: _print_images(response.parsed),
+                500: "kleened backend error",
+            },
+        )
+
+    return _image_list
+
+
+root.add_command(image_list("ls"), name="ls")
 
 
 def _print_images(images):
@@ -254,19 +272,25 @@ def _print_images(images):
     print_table(images, IMAGE_LIST_COLUMNS)
 
 
-@root.command(cls=config.command_cls, name="rm")
-@click.argument("images", required=True, nargs=-1)
-def remove(images):
-    """Remove one or more images"""
-    for image_id in images:
-        response = request_and_validate_response(
-            image_remove,
-            kwargs={"image_id": image_id},
-            statuscode2messsage={
-                200: lambda response: response.parsed.id,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
-            },
-        )
-        if response is None or response.status_code != 200:
-            break
+def image_remove(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.argument("images", required=True, nargs=-1)
+    def remove(images):
+        """Remove one or more images"""
+        for image_id in images:
+            response = request_and_validate_response(
+                image_remove_endpoint,
+                kwargs={"image_id": image_id},
+                statuscode2messsage={
+                    200: lambda response: response.parsed.id,
+                    404: lambda response: response.parsed.message,
+                    500: "kleened backend error",
+                },
+            )
+            if response is None or response.status_code != 200:
+                break
+
+    return remove
+
+
+root.add_command(image_remove("rm"), name="rm")

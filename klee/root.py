@@ -2,18 +2,39 @@ from urllib.parse import urlparse
 
 import click
 
-from .container import root as container_root
-from .image import root as image_root
+from .container import (
+    root as container_root,
+    container_create,
+    container_remove,
+    container_exec,
+    container_list,
+    container_start,
+    container_stop,
+    container_restart,
+)
+from .image import root as image_root, image_list, image_build, image_remove
 from .network import root as network_root
 from .run import run
-from .exec import exec_
 from .volume import root as volume_root
+
+SHORTCUTS = [
+    ("build", image_build("build", hidden=True)),
+    ("create", container_create("create", hidden=True)),
+    ("exec", container_exec("exec", hidden=True)),
+    ("lsc", container_list("lsc", hidden=True)),
+    ("lsi", image_list(name="lsi", hidden=True)),
+    ("restart", container_restart("restart", hidden=True)),
+    ("rmc", container_remove("rmc", hidden=True)),
+    ("rmi", image_remove("rmi", hidden=True)),
+    ("start", container_start("start", hidden=True)),
+    ("stop", container_stop("stop", hidden=True)),
+]
 
 
 def create_cli():
     from .config import config
 
-    @click.group(cls=config.group_cls)
+    @click.group(cls=config.root_cls, name="klee")
     @click.version_option(version="0.0.1")
     @click.option(
         "--host",
@@ -68,6 +89,8 @@ def create_cli():
     cli.add_command(network_root, name="network")
     cli.add_command(volume_root, name="volume")
     cli.add_command(run, name="run")
-    cli.add_command(exec_, name="exec")
+
+    for name, shortcut in SHORTCUTS:
+        cli.add_command(shortcut)
 
     return cli

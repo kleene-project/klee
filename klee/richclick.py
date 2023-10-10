@@ -1,6 +1,8 @@
+from gettext import gettext
 import inspect
 
 import click
+from click.core import HelpFormatter, Context
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
@@ -22,15 +24,73 @@ def print_table(items, columns):
     console.print(table)
 
 
+class RootGroup(click.Group):
+    def format_options(self, ctx: Context, formatter: HelpFormatter) -> None:
+        click.Command.format_options(self, ctx, formatter)
+        self.format_shortcuts(ctx, formatter)
+        self.format_commands(ctx, formatter)
+
+    def format_shortcuts(self, ctx: Context, formatter: HelpFormatter) -> None:
+        """Extra format methods for multi methods that adds all the commands
+        after the options.
+        """
+        commands = []
+        for subcommand in self.list_commands(ctx):
+            cmd = self.get_command(ctx, subcommand)
+            # What is this, the tool lied about a command.  Ignore it
+            if cmd is None:
+                continue
+            if cmd.hidden:
+                commands.append((subcommand, cmd))
+
+        # allow for 3 times the default spacing
+        if len(commands) != 0:
+            limit = formatter.width - 6 - max(len(cmd[0]) for cmd in commands)
+
+            rows = []
+            for subcommand, cmd in commands:
+                help_ = cmd.get_short_help_str(limit)
+                rows.append((subcommand, help_))
+
+            if rows:
+                with formatter.section(gettext("Shortcuts")):
+                    formatter.write_dl(rows)
+
+
 class RichGroup(click.Group):
     def format_help(self, ctx, _formatter):
         highlighter = _create_highlighter()
         console = _create_help_console(highlighter)
-
         _print_usage_line(self, ctx, console)
         _print_help_section(self, console)
         _print_options_section(self, console, highlighter, ctx)
         _print_commands_section(self, console, highlighter, ctx)
+        if ctx.command_path == "klee":
+            _print_shortcuts_section(self, console, highlighter, ctx)
+
+
+def _print_shortcuts_section(self, console, highlighter, ctx):
+    from rich.panel import Panel
+
+    commands_table = Table(highlight=True, box=None, show_header=False)
+
+    commands = []
+    for name, command in self.commands.items():
+        # Hidden commands are the shortcuts
+        if command.hidden:
+            commands.append((name, command))
+            cmd_help = command.get_short_help_str(limit=200)
+            commands_table.add_row(name, highlighter(cmd_help))
+
+    console.print(
+        Panel(
+            commands_table,
+            border_style="dim",
+            title="Shortcuts",
+            style="bold",
+            title_align="left",
+        )
+    )
 
 
 def _print_commands_section(self, console, highlighter, ctx):

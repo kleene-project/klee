@@ -1,6 +1,6 @@
 import click
 
-from .richclick import RichGroup, RichCommand
+from .richclick import RichGroup, RichCommand, RootGroup
 from .docs_generator import DocsGroup, DocsCommand
 
 
@@ -32,6 +32,19 @@ class ConfigSingleton:
 
         if self.cli_type == "click-cli":
             return click.Group
+
+        if self.cli_type == "docs-generator":
+            return DocsGroup
+
+        raise Exception(f"CLI-type '{self.cli_type}' not known")
+
+    @property
+    def root_cls(self):
+        if self.cli_type == "rich-cli":
+            return RichGroup
+
+        if self.cli_type == "click-cli":
+            return RootGroup
 
         if self.cli_type == "docs-generator":
             return DocsGroup

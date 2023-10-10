@@ -1,18 +1,46 @@
+import signal
+import asyncio
+import sys
+import functools
+
 import json
 
 import click
 
-from .client.api.default.container_create import sync_detailed as container_create
-from .client.api.default.container_list import sync_detailed as container_list
-from .client.api.default.container_remove import sync_detailed as container_remove
-from .client.api.default.container_stop import sync_detailed as container_stop
+from .client.api.default.container_create import (
+    sync_detailed as container_create_endpoint,
+)
+from .client.api.default.container_list import sync_detailed as container_list_endpoint
+from .client.api.default.container_remove import (
+    sync_detailed as container_remove_endpoint,
+)
+from .client.api.default.container_stop import sync_detailed as container_stop_endpoint
+from .client.api.default.exec_create import sync_detailed as exec_create_endpoint
 from .client.models.container_config import ContainerConfig
+from .client.models.exec_config import ExecConfig
 from .name_generator import random_name
 from .network import connect_
-from .exec import execution_create_and_start
-from .richclick import console, print_table, RichCommand, RichGroup
-from .utils import KLEE_MSG, human_duration, request_and_validate_response
+from .richclick import console, print_table
+from .connection import create_websocket
+from .utils import (
+    KLEE_MSG,
+    UNEXPECTED_ERROR,
+    human_duration,
+    request_and_validate_response,
+    listen_for_messages,
+    print_closing,
+)
 from .config import config
+
+
+WS_EXEC_START_ENDPOINT = "/exec/start"
+
+EXEC_INSTANCE_CREATED = KLEE_MSG.format(msg="created execution instance {exec_id}")
+EXEC_INSTANCE_CREATE_ERROR = KLEE_MSG.format(
+    msg="{container_id}: error creating execution instance: {exec_id}"
+)
+EXEC_START_ERROR = KLEE_MSG.format(msg="error starting container")
+
 
 START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = KLEE_MSG.format(
     msg="only one container can be started when setting the 'attach' flag."
@@ -28,66 +56,74 @@ CONTAINER_LIST_COLUMNS = [
     ("STATUS", {}),
 ]
 
-
 # pylint: disable=unused-argument
 @click.group(cls=config.group_cls)
 def root(name="container"):
     """Manage containers"""
 
 
-@root.command(
-    cls=config.command_cls,
-    name="create",
-    context_settings={"ignore_unknown_options": True},
-)
-@click.option("--name", default="", help="Assign a name to the container")
-@click.option(
-    "--user",
-    "-u",
-    metavar="TEXT",
-    default="",
-    help="Alternate user that should be used for starting the container",
-)
-@click.option("--network", "-n", default=None, help="Connect a container to a network.")
-@click.option(
-    "--ip",
-    default=None,
-    help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
-)
-@click.option(
-    "--volume",
-    "-v",
-    multiple=True,
-    default=None,
-    help="Bind mount a volume to the container",
-)
-@click.option(
-    "--env",
-    "-e",
-    multiple=True,
-    default=None,
-    help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
-)
-@click.option(
-    "--jailparam",
-    "-J",
-    multiple=True,
-    default=["mount.devfs", 'exec.stop="/bin/sh /etc/rc.shutdown jail"'],
-    show_default=True,
-    help="Specify a jail parameters, see jail(8) for details",
-)
-@click.argument("image", nargs=1)
-@click.argument("command", nargs=-1)
-def create(name, user, network, ip, volume, env, jailparam, image, command):
-    """
-    Create a new container. The **IMAGE** parameter syntax is:
-    `<image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]`
-
-    See the documentation for details.
-    """
-    create_container_and_connect_to_network(
-        name, user, network, ip, volume, env, jailparam, image, command
+def container_create(name, hidden=False):
+    @click.command(
+        cls=config.command_cls,
+        name=name,
+        hidden=hidden,
+        context_settings={"ignore_unknown_options": True},
     )
+    @click.option("--name", default="", help="Assign a name to the container")
+    @click.option(
+        "--user",
+        "-u",
+        metavar="TEXT",
+        default="",
+        help="Alternate user that should be used for starting the container",
+    )
+    @click.option(
+        "--network", "-n", default=None, help="Connect a container to a network."
+    )
+    @click.option(
+        "--ip",
+        default=None,
+        help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
+    )
+    @click.option(
+        "--volume",
+        "-v",
+        multiple=True,
+        default=None,
+        help="Bind mount a volume to the container",
+    )
+    @click.option(
+        "--env",
+        "-e",
+        multiple=True,
+        default=None,
+        help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
+    )
+    @click.option(
+        "--jailparam",
+        "-J",
+        multiple=True,
+        default=["mount.devfs", 'exec.stop="/bin/sh /etc/rc.shutdown jail"'],
+        show_default=True,
+        help="Specify a jail parameters, see jail(8) for details",
+    )
+    @click.argument("image", nargs=1)
+    @click.argument("command", nargs=-1)
+    def create(name, user, network, ip, volume, env, jailparam, image, command):
+        """
+        Create a new container. The **IMAGE** parameter syntax is:
+        `<image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]`
+
+        See the documentation for details.
+        """
+        create_container_and_connect_to_network(
+            name, user, network, ip, volume, env, jailparam, image, command
+        )
+
+    return create
+
+
+root.add_command(container_create("create"), name="create")
 
 
 def create_container_and_connect_to_network(
@@ -123,7 +159,7 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
         name = random_name()
 
     return request_and_validate_response(
-        container_create,
+        container_create_endpoint,
         kwargs={"json_body": container_config, "name": name},
         statuscode2messsage={
             201: lambda response: response.parsed.id,
@@ -133,24 +169,30 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
     )
 
 
-@root.command(cls=config.command_cls, name="ls")
-@click.option(
-    "--all",
-    "-a",
-    default=False,
-    is_flag=True,
-    help="Show all containers (default shows only running containers)",
-)
-def list_containers(**kwargs):
-    """List containers"""
-    request_and_validate_response(
-        container_list,
-        kwargs={"all_": kwargs["all"]},
-        statuscode2messsage={
-            200: lambda response: _print_container(response.parsed),
-            500: "kleened backend error",
-        },
+def container_list(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.option(
+        "--all",
+        "-a",
+        default=False,
+        is_flag=True,
+        help="Show all containers (default shows only running containers)",
     )
+    def listing(**kwargs):
+        """List containers"""
+        request_and_validate_response(
+            container_list_endpoint,
+            kwargs={"all_": kwargs["all"]},
+            statuscode2messsage={
+                200: lambda response: _print_container(response.parsed),
+                500: "kleened backend error",
+            },
+        )
+
+    return listing
+
+
+root.add_command(container_list("ls"), name="ls")
 
 
 def _print_container(containers):
@@ -177,42 +219,114 @@ def _print_container(containers):
     print_table(containers, CONTAINER_LIST_COLUMNS)
 
 
-@root.command(cls=config.command_cls, name="rm")
-@click.argument("containers", required=True, nargs=-1)
-def remove(containers):
-    """Remove one or more containers"""
-    for container_id in containers:
-        response = request_and_validate_response(
-            container_remove,
-            kwargs={"container_id": container_id},
-            statuscode2messsage={
-                200: lambda response: response.parsed.id,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
-            },
-        )
-        if response is None or response.status_code != 200:
-            break
+def container_remove(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.argument("containers", required=True, nargs=-1)
+    def remove(containers):
+        """Remove one or more containers"""
+        for container_id in containers:
+            response = request_and_validate_response(
+                container_remove_endpoint,
+                kwargs={"container_id": container_id},
+                statuscode2messsage={
+                    200: lambda response: response.parsed.id,
+                    404: lambda response: response.parsed.message,
+                    500: "kleened backend error",
+                },
+            )
+            if response is None or response.status_code != 200:
+                break
+
+    return remove
 
 
-@root.command(cls=config.command_cls, name="start")
-@click.option(
-    "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
-)
-@click.option(
-    "--interactive",
-    "-i",
-    default=False,
-    is_flag=True,
-    help="Send terminal input to container's STDIN. Ignored if '--attach' is not used.",
-)
-@click.option("--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY")
-@click.argument("containers", required=True, nargs=-1)
-def start(attach, interactive, tty, containers):
-    """Start one or more stopped containers.
-    Attach only if a single container is started
-    """
-    start_(attach, interactive, tty, containers)
+root.add_command(container_remove("rm"), name="rm")
+
+
+def container_start(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.option(
+        "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
+    )
+    @click.option(
+        "--interactive",
+        "-i",
+        default=False,
+        is_flag=True,
+        help="Send terminal input to container's STDIN. Ignored if '--attach' is not used.",
+    )
+    @click.option(
+        "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
+    )
+    @click.argument("containers", required=True, nargs=-1)
+    def start_(attach, interactive, tty, containers):
+        """Start one or more stopped containers.
+        Attach only if a single container is started
+        """
+        start_(attach, interactive, tty, containers)
+
+    return start_
+
+
+root.add_command(container_start("start"), name="start")
+
+
+def container_stop(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.argument("containers", nargs=-1)
+    def stop(containers):
+        """Stop one or more running containers"""
+        for container_id in containers:
+            response = request_and_validate_response(
+                container_stop_endpoint,
+                kwargs={"container_id": container_id},
+                statuscode2messsage={
+                    200: lambda response: response.parsed.id,
+                    304: lambda response: response.parsed.message,
+                    404: lambda response: response.parsed.message,
+                    500: "kleened backend error",
+                },
+            )
+            if response is None or response.status_code != 200:
+                break
+
+    return stop
+
+
+root.add_command(container_stop("stop"), name="stop")
+
+
+def container_restart(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.argument("containers", nargs=-1)
+    def restart(containers):
+        """Restart one or more containers"""
+        for container_id in containers:
+            response = request_and_validate_response(
+                container_stop_endpoint,
+                kwargs={"container_id": container_id},
+                statuscode2messsage={
+                    200: lambda response: response.parsed.id,
+                    304: lambda response: response.parsed.message,
+                    404: lambda response: response.parsed.message,
+                    500: "kleened backend error",
+                },
+            )
+            if response is None or response.status_code != 200:
+                break
+
+            execution_create_and_start(
+                response.parsed.id,
+                tty=False,
+                interactive=False,
+                attach=False,
+                start_container="true",
+            )
+
+    return restart
+
+
+root.add_command(container_restart("restart"), name="restart")
 
 
 def start_(attach, interactive, tty, containers):
@@ -226,20 +340,140 @@ def start_(attach, interactive, tty, containers):
             )
 
 
-@root.command(cls=config.command_cls, name="stop")
-@click.argument("containers", nargs=-1)
-def stop(containers):
-    """Stop one or more running containers"""
-    for container_id in containers:
-        response = request_and_validate_response(
-            container_stop,
-            kwargs={"container_id": container_id},
-            statuscode2messsage={
-                200: lambda response: response.parsed.id,
-                304: lambda response: response.parsed.message,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
-            },
+def container_exec(name, hidden=False):
+    @click.command(cls=config.command_cls, name="exec", hidden=hidden)
+    @click.option(
+        "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
+    )
+    @click.option(
+        "--env",
+        "-e",
+        multiple=True,
+        default=None,
+        help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
+    )
+    @click.option(
+        "--interactive",
+        "-i",
+        default=False,
+        is_flag=True,
+        help="Send terminal input to STDIN. Ignored if '--attach' is not used.",
+    )
+    @click.option(
+        "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
+    )
+    @click.option(
+        "--user", "-u", default="", help="Username or UID of the executing user"
+    )
+    @click.argument("container", nargs=1)
+    @click.argument("command", nargs=-1)
+    def exec(attach, env, interactive, tty, user, container, command):
+        """
+        Run a command in a container
+        """
+        start_container = "true"
+        execution_create_and_start(
+            container, tty, interactive, attach, start_container, command, env, user
         )
-        if response is None or response.status_code != 200:
-            break
+
+    return exec
+
+
+root.add_command(container_exec("exec"), name="exec")
+
+
+def execution_create_and_start(
+    container_id, tty, interactive, attach, start_container, cmd=None, env=None, user=""
+):
+    cmd = [] if cmd is None else cmd
+    env = [] if env is None else env
+    exec_id = _create_exec_instance(container_id, tty, cmd, env, user)
+    if exec_id is not None:
+        config = json.dumps(
+            {"exec_id": exec_id, "attach": attach, "start_container": start_container}
+        )
+
+        if attach:
+            asyncio.run(_attached_execute(config, interactive))
+        else:
+            asyncio.run(_execute(config))
+
+
+def _create_exec_instance(container_id, tty, cmd, env, user):
+    exec_config = ExecConfig.from_dict(
+        {"container_id": container_id, "cmd": cmd, "env": env, "user": user, "tty": tty}
+    )
+    response = request_and_validate_response(
+        exec_create_endpoint,
+        kwargs={"json_body": exec_config},
+        statuscode2messsage={
+            201: lambda response: "",
+            404: lambda response: response.parsed.message,
+            500: lambda response: response.parsed,
+        },
+    )
+    if response.status_code == 201:
+        console.print(EXEC_INSTANCE_CREATED.format(exec_id=response.parsed.id))
+        return response.parsed.id
+
+    console.print(
+        EXEC_INSTANCE_CREATE_ERROR.format(
+            container_id=container_id, exec_id=response.parsed
+        )
+    )
+    return None
+
+
+async def _execute(config):
+    async with create_websocket(WS_EXEC_START_ENDPOINT) as websocket:
+        await websocket.send(config)
+        await websocket.wait_closed()
+        if websocket.close_code != 1001:
+            console.print(EXEC_START_ERROR)
+
+
+async def _attached_execute(config, interactive):
+    loop = asyncio.get_running_loop()
+    async with create_websocket(WS_EXEC_START_ENDPOINT) as websocket:
+        if interactive:
+            for signame in ["SIGINT", "SIGTERM"]:
+                loop.add_signal_handler(
+                    getattr(signal, signame),
+                    functools.partial(_close_websocket, websocket),
+                )
+
+        await websocket.send(config)
+        starting_frame = await websocket.recv()
+        start_msg = json.loads(starting_frame)
+
+        if start_msg["msg_type"] == "starting":
+            if interactive:
+                loop = asyncio.get_event_loop()
+                loop.add_reader(sys.stdin, _send_user_input, websocket)
+            closing_message = await listen_for_messages(websocket)
+            if closing_message["data"] == "":
+                print_closing(closing_message, ["message"])
+
+            else:
+                print_closing(closing_message, ["message", "data"])
+
+        elif start_msg["msg_type"] == "error":
+            print_closing(closing_message, ["message"])
+
+        else:
+            console.print(UNEXPECTED_ERROR)
+
+
+def _send_user_input(websocket):
+    tasks = []
+    input_line = sys.stdin.readline()
+    task = asyncio.ensure_future(websocket.send(input_line))
+    tasks.append(task)
+
+
+def _close_websocket(websocket):
+    async def _close_ws(websocket):
+        await websocket.close(code=1000, reason="interrupted by user")
+
+    task = asyncio.create_task(_close_ws(websocket))
+    asyncio.ensure_future(task)
