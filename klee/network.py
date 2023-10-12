@@ -27,9 +27,9 @@ NETWORK_LIST_COLUMNS = [
 ]
 
 # pylint: disable=unused-argument
-@click.group(cls=config.group_cls)
+@click.group(cls=config.group_cls, add_help_option=True, short_help="Manage networks")
 def root(name="network"):
-    """Manage networks"""
+    """Manage networks using the following subcommands."""
 
 
 @root.command(cls=config.command_cls, name="create")
@@ -75,7 +75,9 @@ def create(driver, ifname, subnet, network_name):
 @root.command(cls=config.command_cls, name="rm")
 @click.argument("networks", required=True, nargs=-1)
 def remove(networks):
-    """Remove one or more networks."""
+    """
+    Remove one or more networks. Any connected containers will be disconnected.
+    """
     for network_id in networks:
         response = request_and_validate_response(
             network_remove,
@@ -117,7 +119,13 @@ def _print_networks(networks):
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
 def connect(ip, network, container):
-    """Connect a container to a network"""
+    """
+    Connect a container to a network.
+
+    You can connect a container by name or by ID.
+    Once connected, the container can communicate with other containers in
+    the same network.
+    """
     connect_(ip, network, container)
 
 
@@ -145,7 +153,11 @@ def connect_(ip, network, container):
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
 def disconnect(network, container):
-    """Disconnect a container to a network"""
+    """
+    Disconnect a container from a network.
+
+    The container must be stopped before it can be disconnected.
+    """
     request_and_validate_response(
         network_disconnect,
         kwargs={"network_id": network, "container_id": container},

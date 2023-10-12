@@ -18,8 +18,7 @@ def root(name="volume"):
 @click.argument("volume_name", nargs=1)
 def create(volume_name):
     """
-    Create a new volume. If no volume name is provided kleened generates one.
-    If the volume name already exists nothing happens.
+    Create a new volume. If the volume name already exists nothing happens.
     """
     config = VolumeConfig.from_dict({"name": volume_name})
     request_and_validate_response(
@@ -59,7 +58,7 @@ def _print_volumes(volumes):
 @root.command(cls=config.command_cls, name="rm")
 @click.argument("volumes", required=True, nargs=-1)
 def remove(volumes):
-    """Remove one or more volumes"""
+    """Remove one or more volumes. You cannot remove a volume that is in use by a container."""
     for volume_name in volumes:
         response = request_and_validate_response(
             volume_remove,
