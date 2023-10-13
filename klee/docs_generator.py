@@ -1,161 +1,105 @@
 import inspect
 
 import click
-from rich.console import Console
-from rich.table import Table
-from rich.text import Text
-from rich import box
-
-# FIXME: This should be adjusted - copied from RichGroup/RichCommand
-
-console = Console()
-
-
-def print_table(items, columns):
-    table = Table(show_edge=False, box=box.SIMPLE)
-
-    for column_name, kwargs in columns:
-        table.add_column(column_name, **kwargs)
-
-    for item in items:
-        table.add_row(*item)
-
-    console.print(table)
 
 
 class DocsGroup(click.Group):
+    docs = None
+
     def format_help(self, ctx, _formatter):
-        highlighter = _create_highlighter()
-        console = _create_help_console(highlighter)
-
-        _print_usage_line(self, ctx, console)
-        _print_help_section(self, console)
-        _print_options_section(self, console, highlighter, ctx)
-        _print_commands_section(self, console, highlighter, ctx)
-
-
-def _print_commands_section(self, console, highlighter, ctx):
-    from rich.panel import Panel
-
-    commands_table = Table(highlight=True, box=None, show_header=False)
-
-    commands = []
-    for subcommand in self.list_commands(ctx):
-        cmd = self.get_command(ctx, subcommand)
-        # What is this, the tool lied about a command.  Ignore it
-        if cmd is None:
-            continue
-        if cmd.hidden:
-            continue
-
-        commands.append((subcommand, cmd))
-
-    for subcommand, cmd in commands:
-        cmd_help = cmd.get_short_help_str(limit=200)
-        commands_table.add_row(subcommand, highlighter(cmd_help))
-
-    console.print(
-        Panel(
-            commands_table,
-            border_style="dim",
-            title="Commands",
-            style="bold",
-            title_align="left",
-        )
-    )
+        self.docs = {
+            "usage": _usage(self, ctx),
+            "long": _long_help(self),
+            "short": _short_help(self),
+            "options": _options(self, ctx),
+        }
+        _additional_fields(self.docs, ctx)
+        cnames, clinks = _commands(self, ctx)
+        self.docs["cnames"] = cnames
+        self.docs["clinks"] = clinks
 
 
 class DocsCommand(click.Command):
-    """Override Clicks help with a Richer version."""
+    docs = None
 
     def format_help(self, ctx, _formatter):
-        highlighter = _create_highlighter()
-        console = _create_help_console(highlighter)
-
-        _print_usage_line(self, ctx, console)
-        _print_help_section(self, console)
-        _print_options_section(self, console, highlighter, ctx)
-
-
-def _print_usage_line(self, ctx, console):
-    pieces = []
-    pieces.append(f"[b]{ctx.command_path}[/b]")
-    for piece in self.collect_usage_pieces(ctx):
-        pieces.append(f"[b]{piece}[/b]")
-
-    console.print("Usage: " + " ".join(pieces))
+        self.docs = {
+            "usage": _usage(self, ctx),
+            "long": _long_help(self),
+            "short": _short_help(self),
+            "options": _options(self, ctx),
+        }
+        _additional_fields(self.docs, ctx)
 
 
-def _print_help_section(self, console):
-    if self.help is not None:
-        # truncate the help text to the first form feed
-        # text = inspect.cleandoc(self.help).partition("\f")[0]
-        text = inspect.cleandoc(self.help)
-    else:
-        text = ""
-
-    if text:
-        from rich.markdown import Markdown
-
-        help_table = Table(highlight=True, box=None, show_header=False, padding=(1, 2))
-        help_table.add_row(Markdown(text))
-        console.print(help_table)
+def _short_help(self):
+    return self.get_short_help_str()
 
 
-def _print_options_section(self, console, highlighter, ctx):
-    from rich.panel import Panel
-
-    # Building options section
-    options_table = Table(highlight=True, box=None, show_header=False)
-
-    for param in self.get_params(ctx):
-
-        if param.opts[0][:2] != "--":
+def _commands(self, ctx):
+    cnames = []
+    clinks = []
+    cname_template = "{root_cmd} {subcmd}"
+    clink_template = "klee_{root_cmd}_{subcmd}.yaml"
+    for subcommand, cmd in self.commands.items():
+        # What is this, the tool lied about a command. Ignore it
+        if cmd is None:
             continue
 
+        if cmd.hidden:
+            continue
+
+        # cmd_help = cmd.get_short_help_str(limit=200)
+        root_cmd = ctx.command_path
+        cnames.append(cname_template.format(root_cmd=root_cmd, subcmd=subcommand))
+        clinks.append(clink_template.format(root_cmd=root_cmd[5:], subcmd=subcommand))
+    return cnames, clinks
+
+
+def _additional_fields(docs, ctx):
+    command_list = ctx.command_path.split(" ")
+    docs["command"] = ctx.command_path
+    docs["deprecated"] = False
+    docs["experimental"] = False
+    docs["experimentalcli"] = False
+
+    if len(command_list) != 1:
+        parent_command = " ".join(command_list[:-1])
+        docs["pname"] = parent_command
+        docs["plink"] = parent_command.replace(" ", "_") + ".yaml"
+
+
+def _usage(self, ctx):
+    return ctx.command_path + " " + " ".join(self.collect_usage_pieces(ctx))
+
+
+def _long_help(self):
+    if self.help is not None:
+        return inspect.cleandoc(self.help)
+    return ""
+
+
+def _options(self, ctx):
+    options = []
+    for param in self.get_params(ctx):
+        option = {"deprecated": False, "experimental": False, "experimentalcli": False}
+        # We're only interested in click.Options
+        if isinstance(param, click.Argument):
+            continue
+
+        # [2:] to avoid '--'
+        option["option"] = param.opts[0][2:]
         if len(param.opts) == 2:
-            opt1 = highlighter(param.opts[1])
-            opt2 = highlighter(param.opts[0])
-        else:
-            opt2 = highlighter(param.opts[0])
-            opt1 = Text("")
+            # [1:] to avoid '-'
+            option["shorthand"] = param.opts[1][1:]
 
         if param.metavar:
-            opt2 += Text(f" {param.metavar}", style="bold yellow")
+            option["value_type"] = param.metavar
 
         help_record = param.get_help_record(ctx)
-        if help_record is None:
-            help_ = ""
-        else:
-            help_ = Text.from_markup(param.get_help_record(ctx)[-1], emoji=False)
+        if help_record is not None:
+            option["description"] = param.get_help_record(ctx)[-1]
 
-        options_table.add_row(opt1, opt2, highlighter(help_))
+        options.append(option)
 
-    console.print(
-        Panel(
-            options_table,
-            border_style="dim",
-            title="Options",
-            style="bold",
-            title_align="left",
-        )
-    )
-
-
-def _create_help_console(highlighter):
-    from rich.theme import Theme
-
-    console = Console(
-        theme=Theme({"option": "bold cyan", "switch": "bold green"}),
-        highlighter=highlighter,
-    )
-    return console
-
-
-def _create_highlighter():
-    from rich.highlighter import RegexHighlighter
-
-    class OptionHighlighter(RegexHighlighter):
-        highlights = [r"(?P<switch>\-\w)", r"(?P<option>\-\-[\w\-]+)"]
-
-    return OptionHighlighter()
+    return options
