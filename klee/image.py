@@ -140,12 +140,14 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
 
 
 def image_build(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, short_help="Build a new image"
+    )
     @click.option(
         "--file",
         "-f",
         default="Dockerfile",
-        help="Name of the Dockerfile (default: 'Dockerfile')",
+        help="Alternative location of the Dockerfile. The location should be relative to `PATH` (default: 'Dockerfile')",
     )
     @click.option(
         "--tag",
@@ -175,7 +177,7 @@ def image_build(name, hidden=False):
     )
     @click.argument("path", nargs=1)
     def build(file, tag, quiet, cleanup, build_arg, path):
-        """Build an image from a context + Dockerfile located in PATH"""
+        """Build an image from a context and Dockerfile located in PATH"""
         asyncio.run(
             _build_image_and_listen_for_messages(
                 file, tag, quiet, cleanup, build_arg, path
