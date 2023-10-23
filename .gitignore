@@ -1,5 +1,5 @@
 vim
-JCli.egg-info
+Klee.egg-info
 update_client_code.sh
 vim_*
 __pycache__
