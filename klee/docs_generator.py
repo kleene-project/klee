@@ -1,3 +1,5 @@
+import os
+
 import inspect
 
 import click
@@ -9,14 +11,15 @@ class DocsGroup(click.Group):
     def format_help(self, ctx, _formatter):
         self.docs = {
             "usage": _usage(self, ctx),
-            "long": _long_help(self),
-            "short": _short_help(self),
+            "long": _long_help(self, ctx),
+            "short": self.get_short_help_str(),
             "options": _options(self, ctx),
         }
+        _examples(self.docs, ctx)
         _additional_fields(self.docs, ctx)
         cnames, clinks = _commands(self, ctx)
-        self.docs["cnames"] = cnames
-        self.docs["clinks"] = clinks
+        self.docs["cname"] = cnames
+        self.docs["clink"] = clinks
 
 
 class DocsCommand(click.Command):
@@ -25,15 +28,12 @@ class DocsCommand(click.Command):
     def format_help(self, ctx, _formatter):
         self.docs = {
             "usage": _usage(self, ctx),
-            "long": _long_help(self),
-            "short": _short_help(self),
+            "long": _long_help(self, ctx),
+            "short": self.get_short_help_str(),
             "options": _options(self, ctx),
         }
+        _examples(self.docs, ctx)
         _additional_fields(self.docs, ctx)
-
-
-def _short_help(self):
-    return self.get_short_help_str()
 
 
 def _commands(self, ctx):
@@ -73,12 +73,6 @@ def _usage(self, ctx):
     return ctx.command_path + " " + " ".join(self.collect_usage_pieces(ctx))
 
 
-def _long_help(self):
-    if self.help is not None:
-        return inspect.cleandoc(self.help)
-    return ""
-
-
 def _options(self, ctx):
     options = []
     for param in self.get_params(ctx):
@@ -103,3 +97,75 @@ def _options(self, ctx):
         options.append(option)
 
     return options
+
+
+def _long_help(self, ctx):
+    command = _command(ctx)
+    docs_file = _docs_file(command)
+
+    if docs_file is not None:
+        description, _ = _extract_sections_from_docsfile(docs_file)
+        if description is not None:
+            return description
+
+    if self.help is not None:
+        return inspect.cleandoc(self.help)
+
+    return ""
+
+
+def _examples(docs, ctx):
+    command = _command(ctx)
+    docs_file = _docs_file(command)
+
+    if docs_file is not None:
+        _description, examples = _extract_sections_from_docsfile(docs_file)
+        if examples is not None:
+            docs["examples"] = examples
+
+
+def _command(ctx):
+    command_list = ctx.command_path.split(" ")
+    if len(command_list) == 2:
+        potential_shortcut = command_list[1]
+        if potential_shortcut in SHORTCUTS:
+            source_command = SHORTCUTS[potential_shortcut]
+            return f"klee {source_command}"
+
+    return ctx.command_path
+
+
+def _docs_file(command):
+    docs_path = os.path.join(os.path.dirname(__file__), "../docs")
+    docs_path = os.path.abspath(docs_path)
+    command_docs_file = command.replace(" ", "_") + ".md"
+    command_docs = os.path.join(docs_path, command_docs_file)
+    try:
+        with open(command_docs, "r", encoding="utf8") as f:
+            return f.read()
+
+    except FileNotFoundError:
+        return None
+
+
+def _extract_sections_from_docsfile(docsfile):
+    description_mark = "## Description\n"
+    examples_mark = "## Examples\n"
+    description_start = docsfile.find(description_mark)
+    examples_start = docsfile.find(examples_mark)
+    description = None
+    examples = None
+    if description_start > -1:
+        # The description subsection exists, check for examples and extract description subsection accordingly
+        if examples_start > -1:
+            description = docsfile[
+                description_start + len(description_mark) : examples_start - 1
+            ]
+        else:
+            description = docsfile[description_start + len(description_mark) :]
+
+    if examples_start > -1:
+        # The examples subsection exists, extract it
+        examples = docsfile[examples_start + len(examples_mark) :]
+
+    return description, examples

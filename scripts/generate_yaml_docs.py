@@ -1,3 +1,6 @@
+import argparse
+import os
+
 import yaml
 
 from click.testing import CliRunner
@@ -30,15 +33,20 @@ def create_yaml_data(cmd, obj):
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(
+        prog="generate-docs",
+        description="Generate YAML-files for Kleenes reference documentation",
+    )
+    parser.add_argument(
+        "outdir", help="Path to a directory where the generated files should be stored."
+    )
+    args = parser.parse_args()
     runner = CliRunner()
     cli = create_cli()
     for cmd, obj in iter_commands(cli):
-        if cmd == ["image", "build"]:  # , "create"]:
-            # cmd.append("--help")
-            print("Running: ", cmd, obj, "\n")
-            yaml_data = create_yaml_data(cmd, obj)
-            filename = "_".join(["klee"] + cmd) + ".yaml"
-            print(yaml_data)
-            with open(filename, "w", encoding="utf8") as f:
-                f.write(yaml_data)
-            break
+        print("Running: ", cmd, obj)
+        yaml_data = create_yaml_data(cmd, obj)
+        filename = "_".join(["klee"] + cmd) + ".yaml"
+        # print(yaml_data)
+        with open(os.path.join(args.outdir, filename), "w", encoding="utf8") as f:
+            f.write(yaml_data)
