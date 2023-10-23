@@ -11,29 +11,32 @@ from .container import (
     container_start,
     container_stop,
     container_restart,
+    container_run,
 )
 from .image import root as image_root, image_list, image_build, image_remove
 from .network import root as network_root
-from .run import run
 from .volume import root as volume_root
+from .config import config
+from .shortcuts import SHORTCUTS
 
-SHORTCUTS = [
-    ("build", image_build("build", hidden=True)),
-    ("create", container_create("create", hidden=True)),
-    ("exec", container_exec("exec", hidden=True)),
-    ("lsc", container_list("lsc", hidden=True)),
-    ("lsi", image_list(name="lsi", hidden=True)),
-    ("restart", container_restart("restart", hidden=True)),
-    ("rmc", container_remove("rmc", hidden=True)),
-    ("rmi", image_remove("rmi", hidden=True)),
-    ("start", container_start("start", hidden=True)),
-    ("stop", container_stop("stop", hidden=True)),
-]
+
+shortcuts2command_obj = {
+    # Format: <shortcut name>: <actual click command object>
+    "build": image_build("build", hidden=True),
+    "create": container_create("create", hidden=True),
+    "exec": container_exec("exec", hidden=True),
+    "lsc": container_list("lsc", hidden=True),
+    "lsi": image_list(name="lsi", hidden=True),
+    "restart": container_restart("restart", hidden=True),
+    "rmc": container_remove("rmc", hidden=True),
+    "rmi": image_remove("rmi", hidden=True),
+    "run": container_run("run", hidden=True),
+    "start": container_start("start", hidden=True),
+    "stop": container_stop("stop", hidden=True),
+}
 
 
 def create_cli():
-    from .config import config
-
     @click.group(cls=config.root_cls, name="klee")
     @click.version_option(version="0.0.1")
     @click.option(
@@ -88,9 +91,9 @@ def create_cli():
     cli.add_command(image_root, name="image")
     cli.add_command(network_root, name="network")
     cli.add_command(volume_root, name="volume")
-    cli.add_command(run, name="run")
 
-    for name, shortcut in SHORTCUTS:
+    for name in SHORTCUTS.keys():
+        shortcut = shortcuts2command_obj[name]
         cli.add_command(shortcut)
 
     return cli

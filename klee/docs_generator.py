@@ -4,6 +4,8 @@ import inspect
 
 import click
 
+from .shortcuts import SHORTCUTS
+
 
 class DocsGroup(click.Group):
     docs = None

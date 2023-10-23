@@ -3,7 +3,6 @@ import click
 from .richclick import RichGroup, RichCommand, RootGroup
 from .docs_generator import DocsGroup, DocsCommand
 
-
 class ConfigSingleton:
     host = None
     tlsverify = None
