@@ -1,21 +1,22 @@
 from typing import Any, Dict, List, Type, TypeVar, Union, cast
 
-import attr
+from attrs import define as _attrs_define
+from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="ContainerConfig")
 
 
-@attr.s(auto_attribs=True)
+@_attrs_define
 class ContainerConfig:
     """
     Attributes:
-        cmd (Union[Unset, List[str]]): Command to execute when the container is started. If no command is specified the
-            command from the image is used. Example: ['/bin/sh', '-c', 'ls /'].
-        env (Union[Unset, List[str]]): List of environment variables when using the container. This list will be merged
-            with environment variables defined by the image. The values in this list takes precedence if the variable is
-            defined in both. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
+        cmd (Union[Unset, None, List[str]]): Command to execute when the container is started. If no command is
+            specified the command from the image is used. Example: ['/bin/sh', '-c', 'ls /'].
+        env (Union[Unset, None, List[str]]): List of environment variables when using the container. This list will be
+            merged with environment variables defined by the image. The values in this list takes precedence if the variable
+            is defined in both. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
         image (Union[Unset, str]): The name or id and possibly a snapshot of the image used for creating the container.
             The parameter uses the followinge format:
 
@@ -25,39 +26,54 @@ class ContainerConfig:
             If `<tag>` is omitted, `latest` is assumed.
              Example: ['FreeBSD:13.2-STABLE', 'FreeBSD:13.2-STABLE:@6b3c821605d4', '48fa55889b0f',
             '48fa55889b0f:@2028818d6f06'].
-        jail_param (Union[Unset, List[str]]): List of `jail(8)` parameters to use for the container. Example:
+        jail_param (Union[Unset, None, List[str]]): List of `jail(8)` parameters to use for the container. Example:
             ['allow.raw_sockets=true', 'osrelease=kleenejail'].
-        user (Union[Unset, str]): User that executes the command (cmd). If no user is set the user from the image will
-            be used (which in turn is 'root' if no user is specified there). Default: ''.
-        volumes (Union[Unset, List[str]]): List of volumes that should be mounted into the container
+        name (Union[Unset, None, str]): Name of the container. Must match `/?[a-zA-Z0-9][a-zA-Z0-9_.-]+`.
+        user (Union[Unset, None, str]): User that executes the command (cmd). If no user is set the user from the image
+            will be used (which in turn is 'root' if no user is specified there). Default: ''.
+        volumes (Union[Unset, None, List[str]]): List of volumes that should be mounted into the container
     """
 
-    cmd: Union[Unset, List[str]] = UNSET
-    env: Union[Unset, List[str]] = UNSET
+    cmd: Union[Unset, None, List[str]] = UNSET
+    env: Union[Unset, None, List[str]] = UNSET
     image: Union[Unset, str] = UNSET
-    jail_param: Union[Unset, List[str]] = UNSET
-    user: Union[Unset, str] = ""
-    volumes: Union[Unset, List[str]] = UNSET
-    additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
+    jail_param: Union[Unset, None, List[str]] = UNSET
+    name: Union[Unset, None, str] = UNSET
+    user: Union[Unset, None, str] = ""
+    volumes: Union[Unset, None, List[str]] = UNSET
+    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        cmd: Union[Unset, List[str]] = UNSET
+        cmd: Union[Unset, None, List[str]] = UNSET
         if not isinstance(self.cmd, Unset):
-            cmd = self.cmd
+            if self.cmd is None:
+                cmd = None
+            else:
+                cmd = self.cmd
 
-        env: Union[Unset, List[str]] = UNSET
+        env: Union[Unset, None, List[str]] = UNSET
         if not isinstance(self.env, Unset):
-            env = self.env
+            if self.env is None:
+                env = None
+            else:
+                env = self.env
 
         image = self.image
-        jail_param: Union[Unset, List[str]] = UNSET
+        jail_param: Union[Unset, None, List[str]] = UNSET
         if not isinstance(self.jail_param, Unset):
-            jail_param = self.jail_param
+            if self.jail_param is None:
+                jail_param = None
+            else:
+                jail_param = self.jail_param
 
+        name = self.name
         user = self.user
-        volumes: Union[Unset, List[str]] = UNSET
+        volumes: Union[Unset, None, List[str]] = UNSET
         if not isinstance(self.volumes, Unset):
-            volumes = self.volumes
+            if self.volumes is None:
+                volumes = None
+            else:
+                volumes = self.volumes
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -70,6 +86,8 @@ class ContainerConfig:
             field_dict["image"] = image
         if jail_param is not UNSET:
             field_dict["jail_param"] = jail_param
+        if name is not UNSET:
+            field_dict["name"] = name
         if user is not UNSET:
             field_dict["user"] = user
         if volumes is not UNSET:
@@ -88,6 +106,8 @@ class ContainerConfig:
 
         jail_param = cast(List[str], d.pop("jail_param", UNSET))
 
+        name = d.pop("name", UNSET)
+
         user = d.pop("user", UNSET)
 
         volumes = cast(List[str], d.pop("volumes", UNSET))
@@ -97,6 +117,7 @@ class ContainerConfig:
             env=env,
             image=image,
             jail_param=jail_param,
+            name=name,
             user=user,
             volumes=volumes,
         )

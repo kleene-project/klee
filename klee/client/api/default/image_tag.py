@@ -11,24 +11,21 @@ from ...types import UNSET, Response
 
 
 def _get_kwargs(
-    exec_id: str,
+    image_id: str,
     *,
-    force_stop: bool,
-    stop_container: bool,
+    nametag: str,
 ) -> Dict[str, Any]:
     pass
 
     params: Dict[str, Any] = {}
-    params["force_stop"] = force_stop
-
-    params["stop_container"] = stop_container
+    params["nametag"] = nametag
 
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
     return {
         "method": "post",
-        "url": "/exec/{exec_id}/stop".format(
-            exec_id=exec_id,
+        "url": "/images/{image_id}/tag".format(
+            image_id=image_id,
         ),
         "params": params,
     }
@@ -68,21 +65,19 @@ def _build_response(
 
 def sync_detailed(
     transport,
-    exec_id: str,
+    image_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    nametag: str,
     **kwargs,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    """image tag
 
-     Stop and/or destroy an execution instance.
+     Update the tag of an image.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        image_id (str):
+        nametag (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -94,9 +89,8 @@ def sync_detailed(
 
     kwargs.update(
         _get_kwargs(
-            exec_id=exec_id,
-            force_stop=force_stop,
-            stop_container=stop_container,
+            image_id=image_id,
+            nametag=nametag,
         )
     )
 
@@ -107,20 +101,18 @@ def sync_detailed(
 
 
 def sync(
-    exec_id: str,
+    image_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    nametag: str,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    """image tag
 
-     Stop and/or destroy an execution instance.
+     Update the tag of an image.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        image_id (str):
+        nametag (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -131,28 +123,25 @@ def sync(
     """
 
     return sync_detailed(
-        exec_id=exec_id,
+        image_id=image_id,
         client=client,
-        force_stop=force_stop,
-        stop_container=stop_container,
+        nametag=nametag,
     ).parsed
 
 
 async def asyncio_detailed(
-    exec_id: str,
+    image_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    nametag: str,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    """image tag
 
-     Stop and/or destroy an execution instance.
+     Update the tag of an image.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        image_id (str):
+        nametag (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -163,9 +152,8 @@ async def asyncio_detailed(
     """
 
     kwargs = _get_kwargs(
-        exec_id=exec_id,
-        force_stop=force_stop,
-        stop_container=stop_container,
+        image_id=image_id,
+        nametag=nametag,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -174,20 +162,18 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    exec_id: str,
+    image_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    nametag: str,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """exec stop
+    """image tag
 
-     Stop and/or destroy an execution instance.
+     Update the tag of an image.
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        image_id (str):
+        nametag (str):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -199,9 +185,8 @@ async def asyncio(
 
     return (
         await asyncio_detailed(
-            exec_id=exec_id,
+            image_id=image_id,
             client=client,
-            force_stop=force_stop,
-            stop_container=stop_container,
+            nametag=nametag,
         )
     ).parsed

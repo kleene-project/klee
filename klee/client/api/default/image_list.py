@@ -1,34 +1,25 @@
 from http import HTTPStatus
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
 from ... import errors
-from ...client import Client
+from ...client import AuthenticatedClient, Client
 from ...models.image import Image
 from ...types import Response
 
 
-def _get_kwargs(
-    *,
-    client: Client,
-) -> Dict[str, Any]:
-    url = "{}/images/list".format(client.base_url)
-
-    headers: Dict[str, str] = client.get_headers()
-    cookies: Dict[str, Any] = client.get_cookies()
+def _get_kwargs() -> Dict[str, Any]:
+    pass
 
     return {
         "method": "get",
-        "url": url,
-        "headers": headers,
-        "cookies": cookies,
-        "timeout": client.get_timeout(),
+        "url": "/images/list",
     }
 
 
 def _parse_response(
-    *, client: Client, response: httpx.Response
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[List["Image"]]:
     if response.status_code == HTTPStatus.OK:
         response_200 = []
@@ -42,13 +33,13 @@ def _parse_response(
 
         return response_200
     if client.raise_on_unexpected_status:
-        raise errors.UnexpectedStatus(f"Unexpected status code: {response.status_code}")
+        raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
         return None
 
 
 def _build_response(
-    *, client: Client, response: httpx.Response
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Response[List["Image"]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
@@ -58,7 +49,9 @@ def _build_response(
     )
 
 
-def sync_detailed(transport, *, client: Client, **kwargs) -> Response[List["Image"]]:
+def sync_detailed(
+    transport, *, client: Union[AuthenticatedClient, Client], **kwargs
+) -> Response[List["Image"]]:
     """image list
 
      Returns a list of images on the server. Note that it uses a different, smaller representation of an
@@ -69,17 +62,12 @@ def sync_detailed(transport, *, client: Client, **kwargs) -> Response[List["Imag
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['Image']
+        Response[List['Image']]
     """
 
-    kwargs.update(
-        _get_kwargs(
-            client=client,
-        )
-    )
+    kwargs.update(_get_kwargs())
 
-    cookies = kwargs.pop("cookies")
-    client = httpx.Client(transport=transport, cookies=cookies)
+    client = httpx.Client(base_url=client._base_url, transport=transport)
     response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
@@ -87,7 +75,7 @@ def sync_detailed(transport, *, client: Client, **kwargs) -> Response[List["Imag
 
 def sync(
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Optional[List["Image"]]:
     """image list
 
@@ -109,7 +97,7 @@ def sync(
 
 async def asyncio_detailed(
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Response[List["Image"]]:
     """image list
 
@@ -121,22 +109,19 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['Image']
+        Response[List['Image']]
     """
 
-    kwargs = _get_kwargs(
-        client=client,
-    )
+    kwargs = _get_kwargs()
 
-    async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
-        response = await _client.request(**kwargs)
+    response = await client.get_async_httpx_client().request(**kwargs)
 
     return _build_response(client=client, response=response)
 
 
 async def asyncio(
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Optional[List["Image"]]:
     """image list
 

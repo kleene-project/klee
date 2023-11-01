@@ -146,7 +146,11 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
     else:
         volumes = list(volume)
 
+    if name == "":
+        name = random_name()
+
     container_config = {
+        "name": name,
         "cmd": list(command),
         "volumes": volumes,
         "image": image,
@@ -155,12 +159,10 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
         "user": user,
     }
     container_config = ContainerConfig.from_dict(container_config)
-    if name == "":
-        name = random_name()
 
     return request_and_validate_response(
         container_create_endpoint,
-        kwargs={"json_body": container_config, "name": name},
+        kwargs={"json_body": container_config},
         statuscode2messsage={
             201: lambda response: response.parsed.id,
             404: lambda response: response.parsed.message,
@@ -259,13 +261,13 @@ def container_start(name, hidden=False):
         "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
     )
     @click.argument("containers", required=True, nargs=-1)
-    def start_(attach, interactive, tty, containers):
+    def start(attach, interactive, tty, containers):
         """Start one or more stopped containers.
         Attach only if a single container is started
         """
         start_(attach, interactive, tty, containers)
 
-    return start_
+    return start
 
 
 root.add_command(container_start("start"), name="start")

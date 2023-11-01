@@ -1,6 +1,7 @@
 from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
 
-import attr
+from attrs import define as _attrs_define
+from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
 
@@ -11,7 +12,7 @@ if TYPE_CHECKING:
 T = TypeVar("T", bound="Image")
 
 
-@attr.s(auto_attribs=True)
+@_attrs_define
 class Image:
     """the image metadata
 
@@ -48,7 +49,7 @@ class Image:
     name: Union[Unset, str] = UNSET
     tag: Union[Unset, str] = UNSET
     user: Union[Unset, str] = UNSET
-    additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
+    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         buildargs: Union[Unset, Dict[str, Any]] = UNSET

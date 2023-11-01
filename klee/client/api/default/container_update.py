@@ -5,46 +5,45 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.container_config import ContainerConfig
 from ...models.error_response import ErrorResponse
 from ...models.id_response import IdResponse
-from ...types import UNSET, Response
+from ...types import Response
 
 
 def _get_kwargs(
-    exec_id: str,
+    container_id: str,
     *,
-    force_stop: bool,
-    stop_container: bool,
+    json_body: ContainerConfig,
 ) -> Dict[str, Any]:
     pass
 
-    params: Dict[str, Any] = {}
-    params["force_stop"] = force_stop
-
-    params["stop_container"] = stop_container
-
-    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+    json_json_body = json_body.to_dict()
 
     return {
         "method": "post",
-        "url": "/exec/{exec_id}/stop".format(
-            exec_id=exec_id,
+        "url": "/containers/{container_id}/update".format(
+            container_id=container_id,
         ),
-        "params": params,
+        "json": json_json_body,
     }
 
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    if response.status_code == HTTPStatus.OK:
-        response_200 = IdResponse.from_dict(response.json())
+    if response.status_code == HTTPStatus.CREATED:
+        response_201 = IdResponse.from_dict(response.json())
 
-        return response_200
+        return response_201
     if response.status_code == HTTPStatus.NOT_FOUND:
         response_404 = ErrorResponse.from_dict(response.json())
 
         return response_404
+    if response.status_code == HTTPStatus.CONFLICT:
+        response_409 = ErrorResponse.from_dict(response.json())
+
+        return response_409
     if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
         response_500 = ErrorResponse.from_dict(response.json())
 
@@ -68,21 +67,17 @@ def _build_response(
 
 def sync_detailed(
     transport,
-    exec_id: str,
+    container_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    json_body: ContainerConfig,
     **kwargs,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """exec stop
-
-     Stop and/or destroy an execution instance.
+    """container update
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        container_id (str):
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -94,9 +89,8 @@ def sync_detailed(
 
     kwargs.update(
         _get_kwargs(
-            exec_id=exec_id,
-            force_stop=force_stop,
-            stop_container=stop_container,
+            container_id=container_id,
+            json_body=json_body,
         )
     )
 
@@ -107,20 +101,16 @@ def sync_detailed(
 
 
 def sync(
-    exec_id: str,
+    container_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    json_body: ContainerConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """exec stop
-
-     Stop and/or destroy an execution instance.
+    """container update
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        container_id (str):
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -131,28 +121,23 @@ def sync(
     """
 
     return sync_detailed(
-        exec_id=exec_id,
+        container_id=container_id,
         client=client,
-        force_stop=force_stop,
-        stop_container=stop_container,
+        json_body=json_body,
     ).parsed
 
 
 async def asyncio_detailed(
-    exec_id: str,
+    container_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    json_body: ContainerConfig,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
-    """exec stop
-
-     Stop and/or destroy an execution instance.
+    """container update
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        container_id (str):
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -163,9 +148,8 @@ async def asyncio_detailed(
     """
 
     kwargs = _get_kwargs(
-        exec_id=exec_id,
-        force_stop=force_stop,
-        stop_container=stop_container,
+        container_id=container_id,
+        json_body=json_body,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -174,20 +158,16 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    exec_id: str,
+    container_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
-    force_stop: bool,
-    stop_container: bool,
+    json_body: ContainerConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
-    """exec stop
-
-     Stop and/or destroy an execution instance.
+    """container update
 
     Args:
-        exec_id (str):
-        force_stop (bool):
-        stop_container (bool):
+        container_id (str):
+        json_body (ContainerConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -199,9 +179,8 @@ async def asyncio(
 
     return (
         await asyncio_detailed(
-            exec_id=exec_id,
+            container_id=container_id,
             client=client,
-            force_stop=force_stop,
-            stop_container=stop_container,
+            json_body=json_body,
         )
     ).parsed

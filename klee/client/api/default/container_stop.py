@@ -4,7 +4,7 @@ from typing import Any, Dict, Optional, Union
 import httpx
 
 from ... import errors
-from ...client import Client
+from ...client import AuthenticatedClient, Client
 from ...models.error_response import ErrorResponse
 from ...models.id_response import IdResponse
 from ...types import Response
@@ -12,27 +12,19 @@ from ...types import Response
 
 def _get_kwargs(
     container_id: str,
-    *,
-    client: Client,
 ) -> Dict[str, Any]:
-    url = "{}/containers/{container_id}/stop".format(
-        client.base_url, container_id=container_id
-    )
-
-    headers: Dict[str, str] = client.get_headers()
-    cookies: Dict[str, Any] = client.get_cookies()
+    pass
 
     return {
         "method": "post",
-        "url": url,
-        "headers": headers,
-        "cookies": cookies,
-        "timeout": client.get_timeout(),
+        "url": "/containers/{container_id}/stop".format(
+            container_id=container_id,
+        ),
     }
 
 
 def _parse_response(
-    *, client: Client, response: httpx.Response
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     if response.status_code == HTTPStatus.OK:
         response_200 = IdResponse.from_dict(response.json())
@@ -51,13 +43,13 @@ def _parse_response(
 
         return response_500
     if client.raise_on_unexpected_status:
-        raise errors.UnexpectedStatus(f"Unexpected status code: {response.status_code}")
+        raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
         return None
 
 
 def _build_response(
-    *, client: Client, response: httpx.Response
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
@@ -68,7 +60,11 @@ def _build_response(
 
 
 def sync_detailed(
-    transport, container_id: str, *, client: Client, **kwargs
+    transport,
+    container_id: str,
+    *,
+    client: Union[AuthenticatedClient, Client],
+    **kwargs,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container stop
 
@@ -82,18 +78,16 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        Response[Union[ErrorResponse, IdResponse]]
     """
 
     kwargs.update(
         _get_kwargs(
             container_id=container_id,
-            client=client,
         )
     )
 
-    cookies = kwargs.pop("cookies")
-    client = httpx.Client(transport=transport, cookies=cookies)
+    client = httpx.Client(base_url=client._base_url, transport=transport)
     response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
@@ -102,7 +96,7 @@ def sync_detailed(
 def sync(
     container_id: str,
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container stop
 
@@ -128,7 +122,7 @@ def sync(
 async def asyncio_detailed(
     container_id: str,
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container stop
 
@@ -142,16 +136,14 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        Response[Union[ErrorResponse, IdResponse]]
     """
 
     kwargs = _get_kwargs(
         container_id=container_id,
-        client=client,
     )
 
-    async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
-        response = await _client.request(**kwargs)
+    response = await client.get_async_httpx_client().request(**kwargs)
 
     return _build_response(client=client, response=response)
 
@@ -159,7 +151,7 @@ async def asyncio_detailed(
 async def asyncio(
     container_id: str,
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container stop
 

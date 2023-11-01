@@ -1,11 +1,12 @@
 from typing import Any, Dict, List, Type, TypeVar
 
-import attr
+from attrs import define as _attrs_define
+from attrs import field as _attrs_field
 
 T = TypeVar("T", bound="ImageBuildConfigBuildargs")
 
 
-@attr.s(auto_attribs=True)
+@_attrs_define
 class ImageBuildConfigBuildargs:
     """Object of string pairs for build-time ARG-variables. Kleened uses the buildargs as the environment variables for,
     e.g., the RUN instruction, or for variable expansion in other Dockerfile instructions. This is not meant for passing
@@ -16,7 +17,7 @@ class ImageBuildConfigBuildargs:
 
     """
 
-    additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
+    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         field_dict: Dict[str, Any] = {}

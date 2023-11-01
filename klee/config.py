@@ -1,7 +1,10 @@
+from urllib.parse import urlparse
+
 import click
 
 from .richclick import RichGroup, RichCommand, RootGroup
 from .docs_generator import DocsGroup, DocsCommand
+
 
 class ConfigSingleton:
     host = None
@@ -10,6 +13,9 @@ class ConfigSingleton:
     tlskey = None
     tlscacert = None
     cli_type = None
+
+    def __init__(self):
+        self.host = urlparse(self.host)
 
     @property
     def command_cls(self):

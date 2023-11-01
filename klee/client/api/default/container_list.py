@@ -4,20 +4,16 @@ from typing import Any, Dict, List, Optional, Union
 import httpx
 
 from ... import errors
-from ...client import Client
+from ...client import AuthenticatedClient, Client
 from ...models.container_summary import ContainerSummary
 from ...types import UNSET, Response, Unset
 
 
 def _get_kwargs(
     *,
-    client: Client,
     all_: Union[Unset, None, bool] = UNSET,
 ) -> Dict[str, Any]:
-    url = "{}/containers/list".format(client.base_url)
-
-    headers: Dict[str, str] = client.get_headers()
-    cookies: Dict[str, Any] = client.get_cookies()
+    pass
 
     params: Dict[str, Any] = {}
     params["all"] = all_
@@ -26,16 +22,13 @@ def _get_kwargs(
 
     return {
         "method": "get",
-        "url": url,
-        "headers": headers,
-        "cookies": cookies,
-        "timeout": client.get_timeout(),
+        "url": "/containers/list",
         "params": params,
     }
 
 
 def _parse_response(
-    *, client: Client, response: httpx.Response
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Optional[List["ContainerSummary"]]:
     if response.status_code == HTTPStatus.OK:
         response_200 = []
@@ -49,13 +42,13 @@ def _parse_response(
 
         return response_200
     if client.raise_on_unexpected_status:
-        raise errors.UnexpectedStatus(f"Unexpected status code: {response.status_code}")
+        raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
         return None
 
 
 def _build_response(
-    *, client: Client, response: httpx.Response
+    *, client: Union[AuthenticatedClient, Client], response: httpx.Response
 ) -> Response[List["ContainerSummary"]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
@@ -66,7 +59,11 @@ def _build_response(
 
 
 def sync_detailed(
-    transport, *, client: Client, all_: Union[Unset, None, bool] = UNSET, **kwargs
+    transport,
+    *,
+    client: Union[AuthenticatedClient, Client],
+    all_: Union[Unset, None, bool] = UNSET,
+    **kwargs,
 ) -> Response[List["ContainerSummary"]]:
     """container list
 
@@ -85,18 +82,16 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['ContainerSummary']
+        Response[List['ContainerSummary']]
     """
 
     kwargs.update(
         _get_kwargs(
-            client=client,
             all_=all_,
         )
     )
 
-    cookies = kwargs.pop("cookies")
-    client = httpx.Client(transport=transport, cookies=cookies)
+    client = httpx.Client(base_url=client._base_url, transport=transport)
     response = client.request(**kwargs)
 
     return _build_response(client=client, response=response)
@@ -104,7 +99,7 @@ def sync_detailed(
 
 def sync(
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
     all_: Union[Unset, None, bool] = UNSET,
 ) -> Optional[List["ContainerSummary"]]:
     """container list
@@ -135,7 +130,7 @@ def sync(
 
 async def asyncio_detailed(
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
     all_: Union[Unset, None, bool] = UNSET,
 ) -> Response[List["ContainerSummary"]]:
     """container list
@@ -155,23 +150,21 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        List['ContainerSummary']
+        Response[List['ContainerSummary']]
     """
 
     kwargs = _get_kwargs(
-        client=client,
         all_=all_,
     )
 
-    async with httpx.AsyncClient(verify=client.verify_ssl) as _client:
-        response = await _client.request(**kwargs)
+    response = await client.get_async_httpx_client().request(**kwargs)
 
     return _build_response(client=client, response=response)
 
 
 async def asyncio(
     *,
-    client: Client,
+    client: Union[AuthenticatedClient, Client],
     all_: Union[Unset, None, bool] = UNSET,
 ) -> Optional[List["ContainerSummary"]]:
     """container list

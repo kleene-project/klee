@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Type, TypeVar, Union
 
-import attr
+from attrs import define as _attrs_define
+from attrs import field as _attrs_field
 
 from ..models.image_create_config_method import ImageCreateConfigMethod
 from ..types import UNSET, Unset
@@ -8,7 +9,7 @@ from ..types import UNSET, Unset
 T = TypeVar("T", bound="ImageCreateConfig")
 
 
-@attr.s(auto_attribs=True)
+@_attrs_define
 class ImageCreateConfig:
     """Configuration for the creation of base images.
 
@@ -31,7 +32,7 @@ class ImageCreateConfig:
     tag: Union[Unset, str] = ""
     url: Union[Unset, str] = ""
     zfs_dataset: Union[Unset, str] = ""
-    additional_properties: Dict[str, Any] = attr.ib(init=False, factory=dict)
+    additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         method = self.method.value
