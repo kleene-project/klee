@@ -6,10 +6,25 @@ from click.core import HelpFormatter, Context
 from rich.console import Console
 from rich.table import Table
 from rich.text import Text
+
 from rich import box
 
 
 console = Console()
+
+
+def print_id_list(id_list):
+    id_list = " ".join(id_list)
+    console.print(id_list)
+
+
+def print_json(json_obj):
+    import json
+
+    console.print_json(json.dumps(json_obj.to_dict()))
+
+    # from rich.pretty import pprint
+    # pprint(json_obj)
 
 
 def print_table(items, columns):

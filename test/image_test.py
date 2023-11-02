@@ -10,6 +10,8 @@ from testutils import (
     remove_all_containers,
     remove_all_images,
     remove_image,
+    inspect,
+    prune,
     run,
 )
 
@@ -40,6 +42,36 @@ class TestImageSubcommand:
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
         assert empty_image_list()
+
+    def test_inspect_image(self):
+        create_dockerfile(self.instructions)
+        result = build_image()
+        image_id, _build_log = decode_valid_image_build(result)
+        assert inspect("image", "notexist") == "image not found"
+        image_endpoints = inspect("image", image_id)
+        assert image_endpoints["id"] == image_id
+        remove_image(image_id)
+
+    def test_prune_image(self):
+        create_dockerfile(self.instructions)
+        result = build_image()
+        image_id1, _build_log = decode_valid_image_build(result)
+
+        create_dockerfile(self.instructions)
+        result = build_image()
+        image_id2, _build_log = decode_valid_image_build(result)
+        assert prune("image") == [image_id2, image_id1]
+
+    def test_update_tag(self):
+        create_dockerfile(self.instructions)
+        result = build_image(tag="test:re-tagging")
+        image_id, _build_log = decode_valid_image_build(result)
+        output = run(f"image tag {image_id} test2:newtag")
+        assert output[0] == image_id
+        image_endpoints = inspect("image", image_id)
+        assert image_endpoints["name"] == "test2"
+        assert image_endpoints["tag"] == "newtag"
+        remove_image(image_id)
 
     def test_build_image_receive_build_messages(self):
         create_dockerfile(self.instructions)

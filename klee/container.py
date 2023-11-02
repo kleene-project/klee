@@ -14,8 +14,18 @@ from .client.api.default.container_list import sync_detailed as container_list_e
 from .client.api.default.container_remove import (
     sync_detailed as container_remove_endpoint,
 )
+from .client.api.default.container_prune import (
+    sync_detailed as container_prune_endpoint,
+)
 from .client.api.default.container_stop import sync_detailed as container_stop_endpoint
 from .client.api.default.exec_create import sync_detailed as exec_create_endpoint
+from .client.api.default.container_inspect import (
+    sync_detailed as container_inspect_endpoint,
+)
+from .client.api.default.container_update import (
+    sync_detailed as container_update_endpoint,
+)
+
 from .client.models.container_config import ContainerConfig
 from .client.models.exec_config import ExecConfig
 from .name_generator import random_name
@@ -30,6 +40,8 @@ from .utils import (
     listen_for_messages,
     print_closing,
 )
+from .prune import prune_command
+from .inspect import inspect_command
 from .config import config
 
 
@@ -221,6 +233,18 @@ def _print_container(containers):
     print_table(containers, CONTAINER_LIST_COLUMNS)
 
 
+root.add_command(
+    inspect_command(
+        name="inspect",
+        argument="container",
+        id_var="container_id",
+        docs="Display detailed information on a container.",
+        endpoint=container_inspect_endpoint,
+    ),
+    name="inspect",
+)
+
+
 def container_remove(name, hidden=False):
     @click.command(cls=config.command_cls, name=name, hidden=hidden)
     @click.argument("containers", required=True, nargs=-1)
@@ -243,6 +267,16 @@ def container_remove(name, hidden=False):
 
 
 root.add_command(container_remove("rm"), name="rm")
+
+
+root.add_command(
+    prune_command(
+        name="prune",
+        docs="Remove all stopped containers.",
+        warning="WARNING! This will remove all stopped containers.",
+        endpoint=container_prune_endpoint,
+    )
+)
 
 
 def container_start(name, hidden=False):
@@ -369,7 +403,7 @@ def container_exec(name, hidden=False):
     )
     @click.argument("container", nargs=1)
     @click.argument("command", nargs=-1)
-    def exec(attach, env, interactive, tty, user, container, command):
+    def exec_(attach, env, interactive, tty, user, container, command):
         """
         Run a command in a container
         """
@@ -378,10 +412,97 @@ def container_exec(name, hidden=False):
             container, tty, interactive, attach, start_container, command, env, user
         )
 
-    return exec
+    return exec_
 
 
 root.add_command(container_exec("exec"), name="exec")
+
+
+def container_update(name, hidden=False):
+    @click.command(
+        cls=config.command_cls,
+        name=name,
+        hidden=hidden,
+        # context_settings={"ignore_unknown_options": True},
+    )
+    @click.option("--name", default=None, help="Assign a new name to the container")
+    @click.option(
+        "--user",
+        "-u",
+        metavar="TEXT",
+        default=None,
+        help="Alternate user that should be used for starting the container",
+    )
+    @click.option(
+        "--env",
+        "-e",
+        multiple=True,
+        default=None,
+        help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
+    )
+    @click.option(
+        "--jailparam",
+        "-J",
+        multiple=True,
+        default=None,
+        show_default=True,
+        help="Specify a jail parameters, see jail(8) for details",
+    )
+    @click.argument("container", nargs=1)
+    @click.argument("command", nargs=-1)
+    def update(name, user, env, jailparam, container, command):
+        """
+        See the documentation for details.
+        """
+        config = {
+            "name": name,
+            "user": user,
+            "env": env,
+            "jailparam": jailparam,
+            "container": container,
+        }
+
+        config["cmd"] = None if len(command) == 0 else list(command)
+        config = ContainerConfig.from_dict(config)
+        request_and_validate_response(
+            container_update_endpoint,
+            kwargs={"container_id": container, "json_body": config},
+            statuscode2messsage={
+                201: lambda response: response.parsed.id,
+                409: lambda response: response.parsed.message,
+                404: lambda response: response.parsed.message,
+            },
+        )
+
+    return update
+
+
+root.add_command(container_update("update"), name="update")
+
+
+def container_rename(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.argument("container", nargs=1)
+    @click.argument("name", nargs=1)
+    def rename(container, name):
+        """
+        Rename a container.
+        """
+        config = ContainerConfig.from_dict({"name": name})
+        request_and_validate_response(
+            container_update_endpoint,
+            kwargs={"container_id": container, "json_body": config},
+            statuscode2messsage={
+                201: lambda response: response.parsed.id,
+                409: lambda response: response.parsed.message,
+                404: lambda response: response.parsed.message,
+            },
+        )
+
+    return rename
+
+
+root.add_command(container_rename("rename"), name="rename")
 
 
 def container_run(name, hidden=False):

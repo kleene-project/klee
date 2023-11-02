@@ -4,6 +4,8 @@ from testutils import (
     extract_exec_id,
     remove_all_containers,
     remove_container,
+    inspect,
+    prune,
     run,
     container_stopped_msg,
 )
@@ -32,6 +34,25 @@ class TestNetworkSubcommand:
         assert network_id_remove == network_id
 
         assert_empty_network_list()
+
+    def test_inspect_network(self):
+        name = "test_network_inspect"
+        network_id = create_network(name=name, ifname="testif", subnet="10.13.37.0/24")
+        assert inspect("network", "notexist") == "network not found"
+        network_endpoints = inspect("network", network_id)
+        assert network_endpoints["network"]["name"] == name
+        remove_network(network_id)
+
+    def test_prune_network(self):
+        name1 = "test_network_prune1"
+        name2 = "test_network_prune2"
+        network_id1 = create_network(
+            name=name1, ifname="testif1", subnet="10.13.37.0/24"
+        )
+        network_id2 = create_network(
+            name=name2, ifname="testif2", subnet="10.13.38.0/24"
+        )
+        assert prune("network") == [network_id1, network_id2]
 
     def test_remove_network_by_id(self):
         name1 = "test_network_rm1"

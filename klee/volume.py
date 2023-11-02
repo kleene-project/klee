@@ -2,10 +2,15 @@ import click
 
 from .client.api.default.volume_create import sync_detailed as volume_create
 from .client.api.default.volume_list import sync_detailed as volume_list
+from .client.api.default.volume_inspect import sync_detailed as volume_inspect_endpoint
 from .client.api.default.volume_remove import sync_detailed as volume_remove
+from .client.api.default.volume_prune import sync_detailed as volume_prune_endpoint
+
 from .client.models.volume_config import VolumeConfig
-from .richclick import print_table, RichCommand, RichGroup
+from .richclick import print_table, print_json, RichCommand, RichGroup
 from .config import config
+from .prune import prune_command
+from .inspect import inspect_command
 from .utils import human_duration, request_and_validate_response
 
 # pylint: disable=unused-argument
@@ -55,6 +60,18 @@ def _print_volumes(volumes):
     print_table(volumes, VOLUME_LIST_COLUMNS)
 
 
+root.add_command(
+    inspect_command(
+        name="inspect",
+        argument="volume",
+        id_var="volume_name",
+        docs="Display detailed information on an volume.",
+        endpoint=volume_inspect_endpoint,
+    ),
+    name="inspect",
+)
+
+
 @root.command(cls=config.command_cls, name="rm")
 @click.argument("volumes", required=True, nargs=-1)
 def remove(volumes):
@@ -71,3 +88,13 @@ def remove(volumes):
         )
         if response is None or response.status_code != 200:
             break
+
+
+root.add_command(
+    prune_command(
+        name="prune",
+        docs="Remove all volumes that are not being mounted into any containers.",
+        warning="WARNING! This will remove all unused volumes.",
+        endpoint=volume_prune_endpoint,
+    )
+)

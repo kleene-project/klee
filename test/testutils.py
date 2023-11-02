@@ -155,6 +155,20 @@ def rich_render(message):
     return capture.get()
 
 
+def prune(obj_type):
+    output = run(f"{obj_type} prune -f")
+    return output[0].split(" ")
+
+
+def inspect(obj_type, identifier):
+    output = run(f"{obj_type} inspect {identifier}")
+    output = "".join(output)
+    try:
+        return json.loads(output)
+    except json.decoder.JSONDecodeError:
+        return output
+
+
 def container_get_netstat_info(container_id, driver):
     output = run(f"container start --attach {container_id}")
     if driver == "vnet":

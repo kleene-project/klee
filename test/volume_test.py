@@ -7,6 +7,8 @@ from testutils import (
     remove_all_containers,
     remove_container,
     remove_image,
+    inspect,
+    prune,
     run,
     container_stopped_msg,
 )
@@ -28,10 +30,25 @@ class TestVolumeSubcommand:
     def test_add_remove_and_listing_volumes(self):
         name = "test_arl_volumes"
         assert empty_volume_list()
-        assert [name, ""] == create_volume(name)
+        assert name == create_volume(name)
         assert [name] == list_volumes()
         assert name == remove_volume(name)
         assert empty_volume_list()
+
+    def test_inspect_volume(self):
+        name = "test_volume_inspect"
+        volume_name = create_volume(name=name)
+        assert inspect("volume", "notexist") == "No such volume"
+        volume_mountpoints = inspect("volume", volume_name)
+        assert volume_mountpoints["volume"]["name"] == name
+        remove_volume(volume_name)
+
+    def test_prune_volume(self):
+        name1 = "test_volume_prune1"
+        name2 = "test_volume_prune2"
+        create_volume(name=name1)
+        create_volume(name=name2)
+        assert prune("volume") == [name1, name2]
 
     def test_creating_a_container_with_writable_volume(self):
         volume_name = "cont_rw_vol1"
@@ -93,7 +110,7 @@ class TestVolumeSubcommand:
 
 def create_volume(name):
     output = run(f"volume create {name}")
-    return output
+    return output[0]
 
 
 def empty_volume_list():

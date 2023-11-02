@@ -7,9 +7,14 @@ import websockets
 
 from .client.api.default.image_list import sync_detailed as image_list_endpoint
 from .client.api.default.image_remove import sync_detailed as image_remove_endpoint
+from .client.api.default.image_tag import sync_detailed as image_tag_endpoint
+from .client.api.default.image_inspect import sync_detailed as image_inspect_endpoint
+from .client.api.default.image_prune import sync_detailed as image_prune_endpoint
+
 from .connection import create_websocket
-from .richclick import console, print_table, RichCommand, RichGroup
+from .richclick import console, print_table, print_json, print_id_list
 from .config import config
+from .inspect import inspect_command
 from .utils import (
     print_closing,
     KLEE_MSG,
@@ -255,7 +260,7 @@ def image_list(name, hidden=False):
             image_list_endpoint,
             kwargs={},
             statuscode2messsage={
-                200: lambda response: _print_images(response.parsed),
+                200: lambda response: _print_image_list(response.parsed),
                 500: "kleened backend error",
             },
         )
@@ -266,12 +271,24 @@ def image_list(name, hidden=False):
 root.add_command(image_list("ls"), name="ls")
 
 
-def _print_images(images):
+def _print_image_list(images):
     images = [
         [img.id, img.name, img.tag, human_duration(img.created) + " ago"]
         for img in images
     ]
     print_table(images, IMAGE_LIST_COLUMNS)
+
+
+root.add_command(
+    inspect_command(
+        name="inspect",
+        argument="image",
+        id_var="image_id",
+        docs="Display detailed information on an image.",
+        endpoint=image_inspect_endpoint,
+    ),
+    name="inspect",
+)
 
 
 def image_remove(name, hidden=False):
@@ -296,3 +313,58 @@ def image_remove(name, hidden=False):
 
 
 root.add_command(image_remove("rm"), name="rm")
+
+
+def image_prune(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.option(
+        "--all", "-a", default=False, help="Remove tagged containers as well."
+    )
+    @click.option(
+        "--force",
+        "-f",
+        default=False,
+        is_flag=True,
+        help="Do not prompt for confirmation",
+    )
+    def prune(**kwargs):
+        """Remove images that are not being used by containers."""
+        if not kwargs["force"]:
+            click.echo("WARNING! This will remove all unused images.")
+            click.confirm("Are you sure you want to continue?", abort=True)
+        request_and_validate_response(
+            image_prune_endpoint,
+            kwargs={"all_": kwargs["all"]},
+            statuscode2messsage={200: lambda response: print_id_list(response.parsed)},
+        )
+
+    return prune
+
+
+root.add_command(image_prune("prune"), name="prune")
+
+
+def image_tag(name, hidden=False):
+    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.argument("source_image", nargs=1)
+    @click.argument("nametag", nargs=1)
+    def tag(source_image, nametag):
+        """
+        Update the tag of image **SOURCE_IMAGE** to **NAMETAG**.
+
+        **NAMETAG** uses the `name:tag` format. If `:tag` is omitted, `:latest` is used.
+        """
+        request_and_validate_response(
+            image_tag_endpoint,
+            kwargs={"image_id": source_image, "nametag": nametag},
+            statuscode2messsage={
+                200: lambda response: response.parsed.id,
+                404: lambda response: response.parsed.message,
+                500: "kleened backend error",
+            },
+        )
+
+    return tag
+
+
+root.add_command(image_tag("tag"), name="tag")

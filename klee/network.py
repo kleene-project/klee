@@ -4,11 +4,18 @@ from .client.api.default.network_connect import sync_detailed as network_connect
 from .client.api.default.network_create import sync_detailed as network_create
 from .client.api.default.network_disconnect import sync_detailed as network_disconnect
 from .client.api.default.network_list import sync_detailed as network_list
+from .client.api.default.network_inspect import (
+    sync_detailed as network_inspect_endpoint,
+)
 from .client.api.default.network_remove import sync_detailed as network_remove
+from .client.api.default.network_prune import sync_detailed as network_prune_endpoint
+
 from .client.models.end_point_config import EndPointConfig
 from .client.models.network_config import NetworkConfig
 
-from .richclick import console, print_table, RichCommand, RichGroup
+from .richclick import console, RichCommand, RichGroup, print_table, print_json
+from .prune import prune_command
+from .inspect import inspect_command
 from .config import config
 from .utils import (
     request_and_validate_response,
@@ -92,6 +99,16 @@ def remove(networks):
             break
 
 
+root.add_command(
+    prune_command(
+        name="prune",
+        docs="Remove all networks that are not being used by any containers.",
+        warning="WARNING! This will remove all unused networks.",
+        endpoint=network_prune_endpoint,
+    )
+)
+
+
 @root.command(cls=config.command_cls, name="ls")
 def list_networks():
     """List networks"""
@@ -108,6 +125,18 @@ def list_networks():
 def _print_networks(networks):
     networks = [[nw.id, nw.name, nw.driver, nw.subnet] for nw in networks]
     print_table(networks, NETWORK_LIST_COLUMNS)
+
+
+root.add_command(
+    inspect_command(
+        name="inspect",
+        argument="network",
+        id_var="network_id",
+        docs="Display detailed information on a network.",
+        endpoint=network_inspect_endpoint,
+    ),
+    name="inspect",
+)
 
 
 @root.command(cls=config.command_cls, name="connect")

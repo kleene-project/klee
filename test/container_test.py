@@ -6,6 +6,8 @@ from testutils import (
     remove_all_containers,
     container_stopped_msg,
     remove_container,
+    inspect,
+    prune,
     run,
 )
 
@@ -33,6 +35,37 @@ class TestContainerSubcommand:
         assert container_id2 == container_id
 
         assert empty_container_list()
+
+    def test_inspect_container(self):
+        name = "test_container_inspect"
+        container_id = create_container(name=name)
+        assert inspect("container", "notexist") == "container not found"
+        container_endpoints = inspect("container", container_id)
+        assert container_endpoints["container"]["name"] == name
+        remove_container(container_id)
+
+    def test_rename_container(self):
+        name = "test_container_rename"
+        container_id = create_container(name=name)
+        container_id, _ = run(f"container rename {container_id} renamed")
+        container_endpoints = inspect("container", container_id)
+        assert container_endpoints["container"]["name"] == "renamed"
+
+    def test_update_container(self):
+        name = "test_container_update"
+        container_id = create_container(name=name)
+        run(f"container update --env TEST=lol {container_id} /bin/sleep 10")
+        container_endpoints = inspect("container", container_id)
+        assert container_endpoints["container"]["env"] == ["TEST=lol"]
+        assert container_endpoints["container"]["command"] == ["/bin/sleep", "10"]
+
+    def test_prune_container(self):
+        remove_all_containers()
+        name1 = "test_container_prune1"
+        name2 = "test_container_prune1"
+        container_id1 = create_container(name=name1)
+        container_id2 = create_container(name=name2)
+        assert prune("container") == [container_id1, container_id2]
 
     def test_remove_container_by_id(self):
         name = "test_remove"
