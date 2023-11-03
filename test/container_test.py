@@ -1,6 +1,8 @@
 import subprocess
+import time
 
 from testutils import (
+    jail_info,
     create_container,
     extract_exec_id,
     remove_all_containers,
@@ -43,6 +45,19 @@ class TestContainerSubcommand:
         container_endpoints = inspect("container", container_id)
         assert container_endpoints["container"]["name"] == name
         remove_container(container_id)
+
+    def test_restarting_container(self):
+        container_id = create_container(name="test_restart", command="/bin/sleep 5")
+        run(f"container start {container_id}")
+        time.sleep(0.5)
+        jails = jail_info()
+        first_jid = jails["jail-information"]["jail"][0]["jid"]
+        result = run(f"container restart {container_id}")
+        assert result[0] == container_id
+        jails = jail_info()
+        after_jid = jails["jail-information"]["jail"][0]["jid"]
+        assert first_jid + 1 == after_jid
+        run(f"container stop {container_id}")
 
     def test_rename_container(self):
         name = "test_container_rename"

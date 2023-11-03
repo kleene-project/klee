@@ -52,7 +52,7 @@ class TestNetworkSubcommand:
         network_id2 = create_network(
             name=name2, ifname="testif2", subnet="10.13.38.0/24"
         )
-        assert prune("network") == [network_id1, network_id2]
+        assert set(prune("network")) == set([network_id1, network_id2])
 
     def test_remove_network_by_id(self):
         name1 = "test_network_rm1"

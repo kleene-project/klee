@@ -1,3 +1,4 @@
+import subprocess
 import json
 import os
 
@@ -6,6 +7,13 @@ from rich.console import Console
 
 from klee.main import cli
 from klee.image import BUILD_START_MESSAGE
+
+
+def jail_info():
+    result = subprocess.run(
+        args=["/usr/sbin/jls", "--libxo", "json"], capture_output=True
+    )
+    return json.loads(result.stdout)
 
 
 def container_stopped_msg(exec_id, exit_code=0):
