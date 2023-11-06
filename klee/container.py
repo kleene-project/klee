@@ -102,14 +102,14 @@ def container_create(name, hidden=False):
         "-v",
         multiple=True,
         default=None,
-        help="Bind mount a volume to the container",
+        help="Mount a volume to the container",
     )
     @click.option(
         "--env",
         "-e",
         multiple=True,
         default=None,
-        help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
+        help="Set environment variables (e.g. --env FIRST=SomeValue --env SECOND=AnotherValue)",
     )
     @click.option(
         "--jailparam",
@@ -575,7 +575,7 @@ def container_run(name, hidden=False):
         command,
     ):
         """
-        Create and start a command in a new container.
+        Run a command in a new container.
 
         The IMAGE parameter syntax is: (**IMAGE_ID**|**IMAGE_NAME**[:**TAG**])[:**@SNAPSHOT**]
         """

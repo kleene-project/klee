@@ -1,81 +1,93 @@
 ## Description
-The `docker container create` (or shorthand: `docker create`) command creates a
+The `klee container create` (or shorthand: `klee create`) command creates a
 new container from the specified image, without starting it.
 
-When creating a container, the docker daemon creates a writeable container layer
-over the specified image and prepares it for running the specified command.  The
-container ID is then printed to `STDOUT`.  This is similar to `docker run -d`
-except the container is never started. You can then use the `docker container start`
-(or shorthand: `docker start`) command to start the container at any point.
+This command is useful when you want to set up a container configuration ahead of time
+so that it is ready to start when you need it.
 
-This is useful when you want to set up a container configuration ahead of time
-so that it is ready to start when you need it. The initial status of the
-new container is `created`.
+When creating a container, Kleened creates a ZFS dataset based
+on the image and prepares it for running the specified command.
+If no command is specified, Kleened uses the `CMD` specified in the image.
+The container ID is then printed to `STDOUT`.
 
-The `docker create` command shares most of its options with the `docker run`
-command (which performs a `docker create` before starting it). Refer to the
-[`docker run` command](run.md) section and the [Docker run reference](../run.md)
+### Specifying IMAGE
+The `IMAGE` argument takes the following two forms:
+
+- `<image_id>[:@<snapshot_id>]`
+- `<image_name>[:<tag>][:@<snapshot_id>]`
+
+If `<tag>` is omitted `latest` is assumed. For example,
+
+- `FreeBSD` means the image `FreeBSD` with tag `latest`
+- `FreeBSD:13.2-STABLE` means the image `FreeBSD` with tag `13.2-STABLE`
+- `FreeBSD:base:@6b3c821605d4` means the `FreeBSD:base` image but create the container from the snapshot `6b3c821605d4`
+- `48fa55889b0f` use the image having ID `48fa55889b0f`
+- `48fa55889b0f:@2028818d6f06` use the image as above but create the container from the snapshot `2028818d6f06`
+
+For more information about snapshots see the [Build snapshots](/build/building/snapshots/) section.
+
+### Specifying volumes
+When creating containers it is also possible to mount one or more volumes using one or
+more instances of the `--volume/-v` option following the syntax `[name:]location[:ro]`.
+If `name` is supplied it implies that a volume with `name` has previously been created, otherwise
+a new nameless volume is created on-the-fly. If `:ro` is supplied, the volume is mounted read-only
+into the newly created container. For example:
+
+- `klee container create -v /storage:ro ...` create a read-only `storage` mountpoint in the container root.
+- `klee container create -v logs:/var/log/db ...` mount the volume named `logs` into the container at `/var/log/db`.
+
+### Starting the container
+You can then use the `klee container start`
+(or shorthand: `klee start`) command to start the container at any point.
+Combinining `klee container create` and `klee container start` is equivalent to
+`klee container run`.
+
+The `klee create` command shares most of its options with the `klee run`
+command. Refer to the [`klee container run` command](container_run.md) section
 for details on the available flags and options.
 
 ## Examples
+
+More examples available at the [`klee container run` command](container_run.md) documentation.
+
 ### Create and start a container
 
 The following example creates an interactive container with a pseudo-TTY attached,
 then starts the container and attaches to it:
 
 ```console
-$ docker container create -i -t --name mycontainer alpine
-6d8af538ec541dd581ebc2a24153a28329acb5268abe5ef868c1f1a261221752
+$ klee container create --name mycontainer hello-world:latest
+4d9d4e72a07f
 
-$ docker container start --attach -i mycontainer
-/ # echo hello world
-hello world
+$ klee container start -ait mycontainer
+created execution instance 71c359af03f7
+Hello World
+
+executable 71c359af03f7 and its container exited with exit-code 0
 ```
 
-The above is the equivalent of a `docker run`:
+The above is the equivalent of a `klee run`:
 
 ```console
-$ docker run -it --name mycontainer2 alpine
-/ # echo hello world
-hello world
+$ klee container run -ait --name mycontainer hello-world:latest
+6e33dbacde70
+created execution instance 4eb13ad4c3a4
+Hello World
+
+executable 4eb13ad4c3a4 and its container exited with exit-code 0
 ```
 
 ### Initialize volumes
 
-Container volumes are initialized during the `docker create` phase
-(i.e., `docker run` too). For example, this allows you to `create` the `data`
-volume container, and then use it from another container:
+Container volumes can be automatically created during the `klee container create`
+phase (and `klee container run` too):
 
 ```console
-$ docker create -v /data --name data ubuntu
+$ klee container create -v /data --name storage FreeBSD13.2-STABLE
+5f8e437e5c95
 
-240633dfbb98128fa77473d3d9018f6123b99c454b3251427ae190a7d951ad57
-
-$ docker run --rm --volumes-from data ubuntu ls -la /data
-
-total 8
-drwxr-xr-x  2 root root 4096 Dec  5 04:10 .
-drwxr-xr-x 48 root root 4096 Dec  5 04:11 ..
-```
-
-Similarly, `create` a host directory bind mounted volume container, which can
-then be used from the subsequent container:
-
-```console
-$ docker create -v /home/docker:/docker --name docker ubuntu
-
-9aa88c08f319cd1e4515c3c46b0de7cc9aa75e878357b1e96f91e2c773029f03
-
-$ docker run --rm --volumes-from docker ubuntu ls -la /docker
-
-total 20
-drwxr-sr-x  5 1000 staff  180 Dec  5 04:00 .
-drwxr-xr-x 48 root root  4096 Dec  5 04:13 ..
--rw-rw-r--  1 1000 staff 3833 Dec  5 04:01 .ash_history
--rw-r--r--  1 1000 staff  446 Nov 28 11:51 .ashrc
--rw-r--r--  1 1000 staff   25 Dec  5 04:00 .gitconfig
-drwxr-sr-x  3 1000 staff   60 Dec  1 03:28 .local
--rw-r--r--  1 1000 staff  920 Nov 28 11:51 .profile
-drwx--S---  2 1000 staff  460 Dec  5 00:51 .ssh
-drwxr-xr-x 32 1000 staff 1140 Dec  5 04:01 docker
+$ klee volume ls
+ VOLUME NAME    CREATED
+──────────────────────────────
+ 6dedc1df7b42   10 secondsago
 ```

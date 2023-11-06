@@ -1,10 +1,11 @@
 ## Description
-The main process inside the container will receive `SIGTERM`, and after a grace
-period, `SIGKILL`. The first signal can be changed with the `STOPSIGNAL`
-instruction in the container's Dockerfile, or the `--stop-signal` option to
-`docker run`.
+Stop one or more containers using `jail -r`. See the [`jails(8) manual pages`](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
 
 ## Examples
 ```console
-$ docker stop my_container
+$ klee stop my_container1 6e33 my_container3 2d6d265811f4
+f41d1fabb009
+6e33265811f4
+27363da77910
+2d6d265811f4
 ```

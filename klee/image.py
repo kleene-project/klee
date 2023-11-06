@@ -36,7 +36,7 @@ IMAGE_LIST_COLUMNS = [
     ("CREATED", {"style": "bright_white"}),
 ]
 
-BUILD_START_MESSAGE = "[bold]Started building image with ID {image_id}[/bold]"
+BUILD_START_MESSAGE = "[bold]Started to build image with ID {image_id}[/bold]"
 BUILD_FAILED = "Failed to build image {image_id}. Last valid snapshot is {snapshot}"
 
 
