@@ -377,7 +377,13 @@ def start_(attach, interactive, tty, containers):
 
 
 def container_exec(name, hidden=False):
-    @click.command(cls=config.command_cls, name="exec", hidden=hidden)
+    @click.command(
+        cls=config.command_cls,
+        name="exec",
+        hidden=hidden,
+        # We use this to avoid problems option-parts of the "command" argument, i.e., 'klee container exec -a /bin/sh -c echo lol
+        context_settings={"ignore_unknown_options": True},
+    )
     @click.option(
         "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
     )

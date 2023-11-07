@@ -318,7 +318,11 @@ root.add_command(image_remove("rm"), name="rm")
 def image_prune(name, hidden=False):
     @click.command(cls=config.command_cls, name=name, hidden=hidden)
     @click.option(
-        "--all", "-a", default=False, help="Remove tagged containers as well."
+        "--all",
+        "-a",
+        default=False,
+        is_flag=True,
+        help="Remove tagged containers as well.",
     )
     @click.option(
         "--force",

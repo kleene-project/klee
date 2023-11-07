@@ -14,7 +14,7 @@ console = Console()
 
 
 def print_id_list(id_list):
-    id_list = " ".join(id_list)
+    id_list = "\n".join(id_list)
     console.print(id_list)
 
 

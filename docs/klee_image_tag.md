@@ -1,56 +1,38 @@
 ## Description
-An image name is made up of slash-separated name components, optionally prefixed
-by a registry hostname. The hostname must comply with standard DNS rules, but
-may not contain underscores. If a hostname is present, it may optionally be
-followed by a port number in the format `:8080`. If not present, the command
-uses Docker's public registry located at `registry-1.docker.io` by default. Name
-components may contain lowercase letters, digits and separators. A separator
-is defined as a period, one or two underscores, or one or more dashes. A name
-component may not start or end with a separator.
+Redefine the nametag of an image.
 
-A tag name must be valid ASCII and may contain lowercase and uppercase letters,
-digits, underscores, periods and dashes. A tag name may not start with a
-period or a dash and may contain a maximum of 128 characters.
-
-You can group your images together using names and tags, and then upload them
-to [*Share images on Docker Hub*](https://docs.docker.com/get-started/part3/).
+A nametag must be valid ASCII and may contain lowercase and uppercase letters,
+digits, underscores, periods and dashes. A nametag may not start with a
+period or a dash and may contain a maximum of 128 characters. The `name` and
+`tag` components are seperated by `:`.
 
 ## Examples
+
 ### Tag an image referenced by ID
 
-To tag a local image with ID "0e5574283393" into the "fedora" repository with
-"version1.0":
+To tag an image with ID "2e91f95bf959":
 
 ```console
-$ docker tag 0e5574283393 fedora/httpd:version1.0
+$ klee tag 0e5574283393 13.2-STABLE/base
 ```
 
-### Tag an image referenced by Name
+Note that since a `tag` is not specified Kleened sets it to `latest`,
+i.e., `13.2-STABLE/base:latest`.
 
-To tag a local image with name "httpd" into the "fedora" repository with
-"version1.0":
+### Tag an image referenced by name
+
+To tag a local image with FreeBSD additional releng `REVISION` information:
 
 ```console
-$ docker tag httpd fedora/httpd:version1.0
+$ klee tag FreeBSD-13.1-RELEASE FreeBSD-13.1-RELEASE:fc952ac2212
 ```
 
-Note that since the tag name is not specified, the alias is created for an
-existing local version `httpd:latest`.
+Note that since a `tag` is not specified Kleened sets it to `latest`.
 
-### Tag an image referenced by Name and Tag
+### Tag an image referenced by nametag
 
-To tag a local image with name "httpd" and tag "test" into the "fedora"
-repository with "version1.0.test":
+Re-tag an image and replace tag "test" with "version1.0.test":
 
 ```console
-$ docker tag httpd:test fedora/httpd:version1.0.test
-```
-
-### Tag an image for a private repository
-
-To push an image to a private registry and not the central Docker
-registry you must tag it with the registry hostname and port (if needed).
-
-```console
-$ docker tag 0e5574283393 myregistryhost:5000/fedora/httpd:version1.0
+$ docker tag nginx:test nginx:version1.0.test
 ```

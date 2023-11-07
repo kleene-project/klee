@@ -130,4 +130,39 @@ executable 29096db4ca54 and its container exited with exit-code 0
 ```
 
 ### <a name="jailparam"></a> Specifying Jail parameters (-J, --jailparam)
-FIXME
+
+It is also possible to set jail-parameters when creating a container.
+Using jail-parameters it is possible to imposing or remove restrictions on the container/jail
+and generally modify the runtime environment in various ways.
+See the [`jails(8) manual pages`](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
+
+For instance, opening raw sockets is not permitted by default in jails, which is required
+by, e.g., `ping(8)`:
+
+```console
+klee run -a FreeBSD-13.2-STABLE --network host /sbin/ping 1.1.1.1
+56dd7945704e
+created execution instance a7e01343d836
+ping: ssend socket: Operation not permitted
+jail: /usr/bin/env -i /sbin/ping 1.1.1.1: failed
+
+executable a7e01343d836 and its container exited with exit-code 1
+```
+
+This can be allowed using jail-parameters:
+
+```console
+klee run -a FreeBSD-13.2-STABLE -J mount.devfs -J allow.raw_sockets --network host /sbin/ping 1.1.1.1
+0efca150e755
+created execution instance 1c0b446fac16
+PING 1.1.1.1 (1.1.1.1): 56 data bytes
+64 bytes from 1.1.1.1: icmp_seq=0 ttl=63 time=14.737 ms
+64 bytes from 1.1.1.1: icmp_seq=1 ttl=63 time=16.880 ms
+64 bytes from 1.1.1.1: icmp_seq=2 ttl=63 time=17.589 ms
+```
+
+> **Note**
+>
+> Manually setting jail parameters overrides the default configuration, which is to
+> enable `devfs(5)` (kernel's device namespace) mounts. Thus, it was explicitly enabled in the
+> previous example using `-J mount.devfs`.
