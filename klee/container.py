@@ -451,8 +451,7 @@ def container_update(name, hidden=False):
         "-J",
         multiple=True,
         default=None,
-        show_default=True,
-        help="Specify a jail parameters, see jail(8) for details",
+        help="Specify one or more jail parameters, see jail(8) for details",
     )
     @click.argument("container", nargs=1)
     @click.argument("command", nargs=-1)
@@ -464,10 +463,9 @@ def container_update(name, hidden=False):
             "name": name,
             "user": user,
             "env": env,
-            "jailparam": jailparam,
+            "jail_param": jailparam,
             "container": container,
         }
-
         config["cmd"] = None if len(command) == 0 else list(command)
         config = ContainerConfig.from_dict(config)
         request_and_validate_response(
@@ -534,7 +532,7 @@ def container_run(name, hidden=False):
         "-v",
         multiple=True,
         default=None,
-        help="Bind mount a volume to the container",
+        help="Mount a volume within a container. The syntax is `-v [volume-name]:/mountpoint/path[:ro]`.",
     )
     @click.option(
         "--env",

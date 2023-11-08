@@ -1,91 +1,63 @@
 ## Description
-The `docker update` command dynamically updates container configuration.
-You can use this command to prevent containers from consuming too many
-resources from their Docker host.  With a single command, you can place
-limits on a single container or on many. To specify more than one container,
-provide space-separated list of container names or IDs.
+The `klee container update` command dynamically updates a container configuration.
+You can use this command to modify jail behaviour by changing jail parameters,
+or changing the container configuration such as default environment variables,
+execution user, command or the name of the container.
 
-With the exception of the `--kernel-memory` option, you can specify these
-options on a running or a stopped container. On kernel version older than
-4.6, you can only update `--kernel-memory` on a stopped container or on
-a running container with kernel memory initialized.
+Changing the container configurations, such as the default user, requires a
+restart of the container for changes to take effect. However, many jail parameters
+can be modified on a running container as well. If one or more jail parameters
+cannot be modified and error will occur and a restart is required for the changes
+to take effect.
 
 > **Warning**
 >
-> The `docker update` and `docker container update` commands are not supported
-> for Windows containers.
+> Updating system jail parameters on a running container can cause unpredictable
+> behaviour of the applications running in the container. Use this feature with
+> care.
 {: .warning }
 
-## Examples
-The following sections illustrate ways to use this command.
+Connecting/disconnecting a container to networks can be done using the
+[`klee network` subcommands](klee_network.md).
+Mounting/unmount a volume inside a container can be done using the
+[`klee volume` subcommands](klee_volume.md).
 
-### <a name="cpu-shares"></a> Update a container's cpu-shares (--cpu-shares)
 
-To limit a container's cpu-shares to 512, first identify the container
-name or ID. You can use `docker ps` to find these values. You can also
-use the ID returned from the `docker run` command.  Then, do the following:
-
-```console
-$ docker update --cpu-shares 512 abebf7571666
-```
-
-### <a name="memory"></a> Update a container with cpu-shares and memory (-m, --memory)
-
-To update multiple resource configurations for multiple containers:
-
-```console
-$ docker update --cpu-shares 512 -m 300M abebf7571666 hopeful_morse
-```
-
-### <a name="kernel-memory"></a> Update a container's kernel memory constraints (--kernel-memory)
-
-You can update a container's kernel memory limit using the `--kernel-memory`
-option. On kernel version older than 4.6, this option can be updated on a
-running container only if the container was started with `--kernel-memory`.
-If the container was started *without* `--kernel-memory` you need to stop
-the container before updating kernel memory.
-
-> **Note**
+> **Hint**
+> It is not possible to manage ressource contrains in Kleene atm.
+> However, FreeBSD does support ressource limiting jails/containers
+> using `rctl(8)` which can be done manually until it is integrated
+> into Kleene.
 >
-> The `--kernel-memory` option has been deprecated since Docker 20.10.
+> See the [`rctl(8) manual pages`](https://man.freebsd.org/cgi/man.cgi?query=rctl)
+> for details.
 
-For example, if you started a container with this command:
+## Examples
 
-```console
-$ docker run -dit --name test --kernel-memory 50M ubuntu bash
-```
+### <a name="user-env"></a> Update user and environment variables (--user/--env)
 
-You can update kernel memory while the container is running:
-
-```console
-$ docker update --kernel-memory 80M test
-```
-
-If you started a container *without* kernel memory initialized:
+Updating the user and environment variables of `my-container`:
 
 ```console
-$ docker run -dit --name test2 --memory 300M ubuntu bash
+$ klee container update --user myuser --env VAR1=1 --env VAR2=2 my-container
+ad813478a0ec
 ```
 
-Update kernel memory of running container `test2` will fail. You need to stop
-the container before updating the `--kernel-memory` setting. The next time you
-start it, the container uses the new value.
+### <a name="jail-param"></a> Update a container's jail parameters (--jailparam)
 
-Kernel version newer than (include) 4.6 does not have this limitation, you
-can use `--kernel-memory` the same way as other options.
-
-### <a name="restart"></a> Update a container's restart policy (--restart)
-
-You can change a container's restart policy on a running container. The new
-restart policy takes effect instantly after you run `docker update` on a
-container.
-
-To update restart policy for one or more containers:
+Updating the jail parameters of the running container `my-container`:
 
 ```console
-$ docker update --restart=on-failure:3 abebf7571666 hopeful_morse
+$ klee container update -J mount.devfs -J allow.raw_sockets my-container
+ad813478a0ec
 ```
 
-Note that if the container is started with "--rm" flag, you cannot update the restart
-policy for it. The `AutoRemove` and `RestartPolicy` are mutually exclusive for the
-container.
+Note that not all parameters can be updated while the container is running:
+
+```console
+$ klee container update -J mount.devfs -J vnet my-container
+an error ocurred while updating the container: '/usr/sbin/jail' returned non-zero exitcode 139 when attempting to modify the container ''
+```
+
+When an error occurs the container needs to be restarted for the changes
+to take effect.

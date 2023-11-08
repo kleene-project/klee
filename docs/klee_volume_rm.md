@@ -1,6 +1,5 @@
 ## Examples
 ```console
-$ klee volume rm hello
-
-hello
+$ klee volume rm testvol
+testvol
 ```

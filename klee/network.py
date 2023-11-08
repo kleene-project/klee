@@ -102,7 +102,7 @@ def remove(networks):
 root.add_command(
     prune_command(
         name="prune",
-        docs="Remove all networks that are not being used by any containers.",
+        docs="Remove all unused vnet/loopback networks, i.e., networks not used by any containers.",
         warning="WARNING! This will remove all unused networks.",
         endpoint=network_prune_endpoint,
     )

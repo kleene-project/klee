@@ -1,17 +1,45 @@
+## Description
+This command is used to provide access for containers to one og more networks.
+Once connected, the container can communicate with other containers in the same network.
+For a discussion of the different types of network drivers, see
+[the container networking section](/run/networkingcontainers/).
+
+> **Note**
+> Since the network drivers represent fundamentally different approaches to
+> connectivity in FreeBSD, they are incompatible.
+> Therefore, a container can only be connected to networks using the same kind of
+> driver.
+
+When a container connects to a network, an IP-address from the network's subnet
+is allocated for the container. The IP-address is reserved for the container
+until it is removed or disconnected from the network. Keep this in mind when
+defining the networks subnet. If a network runs out of IP-addresses, connecting
+a container will result in an error.
+
+It is possible to pick a specific IP-address when connecting a container using
+the `--ip` option. If the given address is already taken, the connection fails
+with an error.
+
+To verify if a container is connected, and by which IP-address, use the
+`klee network inspect` command. The `network_endpoints` section lists
+all the networks that a container is connected to.
+
+Use `klee network disconnect` to remove a container from the network.
+
 ## Examples
 ### Connect a running container to a network
 
 ```console
-$ docker network connect multi-host-network container1
+$ klee network connect multi-container-net container1
 ```
 
 ### Connect a container to a network when it starts
 
-You can also use the `docker run --network=<network-name>` option to start a
+You can also use the `klee run --network=<network-name>` option to start a
 container and immediately connect it to a network.
 
 ```console
-$ docker run -itd --network=multi-host-network busybox
+$ klee run -a --network=multi-container-net FreeBSD-13.2-RELEASE
 ```
 
 ### <a name="ip"></a> Specify the IP address a container will use on a given network (--ip)
@@ -19,54 +47,5 @@ $ docker run -itd --network=multi-host-network busybox
 You can specify the IP address you want to be assigned to the container's interface.
 
 ```console
-$ docker network connect --ip 10.10.36.122 multi-host-network container2
+$ klee network connect --ip 10.10.36.122 multi-host-network container2
 ```
-
-### <a name="link"></a> Use the legacy `--link` option (--link)
-
-You can use `--link` option to link another container with a preferred alias
-
-```console
-$ docker network connect --link container1:c1 multi-host-network container2
-```
-
-### <a name="alias"></a> Create a network alias for a container (--alias)
-
-`--alias` option can be used to resolve the container by another name in the network
-being connected to.
-
-```console
-$ docker network connect --alias db --alias mysql multi-host-network container2
-```
-
-### Network implications of stopping, pausing, or restarting containers
-
-You can pause, restart, and stop containers that are connected to a network.
-A container connects to its configured networks when it runs.
-
-If specified, the container's IP address(es) is reapplied when a stopped
-container is restarted. If the IP address is no longer available, the container
-fails to start. One way to guarantee that the IP address is available is
-to specify an `--ip-range` when creating the network, and choose the static IP
-address(es) from outside that range. This ensures that the IP address is not
-given to another container while this container is not on the network.
-
-```console
-$ docker network create --subnet 172.20.0.0/16 --ip-range 172.20.240.0/20 multi-host-network
-```
-
-```console
-$ docker network connect --ip 172.20.128.2 multi-host-network container2
-```
-
-To verify the container is connected, use the `docker network inspect` command.
-Use `docker network disconnect` to remove a container from the network.
-
-Once connected in network, containers can communicate using only another
-container's IP address or name. For `overlay` networks or custom plugins that
-support multi-host connectivity, containers connected to the same multi-host
-network but launched from different Engines can also communicate in this way.
-
-You can connect a container to one or more networks. The networks need not be
-the same type. For example, you can connect a single container bridge and overlay
-networks.

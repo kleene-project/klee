@@ -4,20 +4,21 @@
 To remove the network named 'my-network':
 
 ```console
-$ docker network rm my-network
+$ klee network rm my-net
+422aec867d4e
 ```
 
 ### Remove multiple networks
 
-To delete multiple networks in a single `docker network rm` command, provide
-multiple network names or ids. The following example deletes a network with id
-`3695c422697f` and a network named `my-network`:
+To delete multiple networks in a single `klee network rm` command, provide
+multiple network names, IDs, or initial segments of IDs:
 
 ```console
-$ docker network rm 3695c422697f my-network
+$ klee network rm my-net2 f4c88f269007 ec03
+6129eb13a227
+f4c88f269007
+ec033436e65e
 ```
 
-When you specify multiple networks, the command attempts to delete each in turn.
-If the deletion of one network fails, the command continues to the next on the
-list and tries to delete that. The command reports success or failure for each
-deletion.
+When you specify multiple networks, Klee attempts to delete each in turn.
+If the deletion of one network fails, Klee stops deleting the remaining networks.
