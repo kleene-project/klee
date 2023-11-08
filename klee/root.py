@@ -72,7 +72,7 @@ def create_cli():
     @click.pass_context
     def cli(ctx, host, tlsverify, tlscert, tlskey, tlscacert):
         """
-        Command line interface to interact with Kleened.
+        CLI to interact with Kleened.
         """
         host = urlparse(host)
         if host.query != "" or host.params != "" or host.fragment != "":

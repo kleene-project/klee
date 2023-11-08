@@ -27,7 +27,15 @@ def iter_commands(cli):
             print("This should not happen")
 
 
+def save_file(yaml_data, filename):
+    with open(os.path.join(args.outdir, filename), "w", encoding="utf8") as f:
+        f.write(yaml_data)
+
+
 def create_yaml_data(cmd, obj):
+    # # Use this if debugging Klee:
+    # output = runner.invoke(cli, cmd + ["--help"])
+    # print("Output from Klee:", output.stdout)
     runner.invoke(cli, cmd + ["--help"])
     return yaml.dump(obj.docs)
 
@@ -43,10 +51,11 @@ if __name__ == "__main__":
     args = parser.parse_args()
     runner = CliRunner()
     cli = create_cli()
+    yaml_data = create_yaml_data([], cli)
+    save_file(yaml_data, "klee.yaml")
+
     for cmd, obj in iter_commands(cli):
         print("Running: ", cmd, obj)
         yaml_data = create_yaml_data(cmd, obj)
         filename = "_".join(["klee"] + cmd) + ".yaml"
-        # print(yaml_data)
-        with open(os.path.join(args.outdir, filename), "w", encoding="utf8") as f:
-            f.write(yaml_data)
+        save_file(yaml_data, filename)

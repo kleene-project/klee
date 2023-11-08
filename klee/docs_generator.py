@@ -41,8 +41,6 @@ class DocsCommand(click.Command):
 def _commands(self, ctx):
     cnames = []
     clinks = []
-    cname_template = "{root_cmd} {subcmd}"
-    clink_template = "klee_{root_cmd}_{subcmd}.yaml"
     for subcommand, cmd in self.commands.items():
         # What is this, the tool lied about a command. Ignore it
         if cmd is None:
@@ -53,8 +51,10 @@ def _commands(self, ctx):
 
         # cmd_help = cmd.get_short_help_str(limit=200)
         root_cmd = ctx.command_path
-        cnames.append(cname_template.format(root_cmd=root_cmd, subcmd=subcommand))
-        clinks.append(clink_template.format(root_cmd=root_cmd[5:], subcmd=subcommand))
+        cnames.append(f"{root_cmd} {subcommand}")
+
+        root_cmd = root_cmd.replace(" ", "_")
+        clinks.append(f"{root_cmd}_{subcommand}.yaml")
     return cnames, clinks
 
 
