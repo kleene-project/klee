@@ -75,11 +75,15 @@ def decode_valid_image_build(result):
 
 def create_image(method, tag=None, url=None, dataset=None):
     tag = "" if tag is None else f"--tag={tag} "
-    dataset = "" if dataset is None else f"{dataset}"
-    url = "" if url is None else f"--url={url}"
+    if method == "zfs":
+        dataset = "" if dataset is None else f"{dataset}"
+        return run(f"image create {method} {tag}{dataset}")
 
-    result = run(f"image create {method} {tag}{url}{dataset}")
-    return result
+    if method == "fetch":
+        fetch_method = "auto" if url is None else url
+        return run(f"image create {method} {tag}{fetch_method}")
+
+    return f"unknown method type {method}"
 
 
 def remove_image(image_id):
@@ -165,7 +169,7 @@ def rich_render(message):
 
 def prune(obj_type):
     output = run(f"{obj_type} prune -f")
-    return output[0].split(" ")
+    return output[:-1]
 
 
 def inspect(obj_type, identifier):

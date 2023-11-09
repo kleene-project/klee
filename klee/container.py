@@ -79,6 +79,7 @@ def container_create(name, hidden=False):
         cls=config.command_cls,
         name=name,
         hidden=hidden,
+        no_args_is_help=True,
         context_settings={"ignore_unknown_options": True},
     )
     @click.option("--name", default="", help="Assign a name to the container")
@@ -246,7 +247,9 @@ root.add_command(
 
 
 def container_remove(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     @click.argument("containers", required=True, nargs=-1)
     def remove(containers):
         """Remove one or more containers"""
@@ -280,7 +283,9 @@ root.add_command(
 
 
 def container_start(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     @click.option(
         "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
     )
@@ -308,7 +313,9 @@ root.add_command(container_start("start"), name="start")
 
 
 def container_stop(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     @click.argument("containers", nargs=-1)
     def stop(containers):
         """Stop one or more running containers"""
@@ -333,7 +340,9 @@ root.add_command(container_stop("stop"), name="stop")
 
 
 def container_restart(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     @click.argument("containers", nargs=-1)
     def restart(containers):
         """Restart one or more containers"""
@@ -381,6 +390,7 @@ def container_exec(name, hidden=False):
         cls=config.command_cls,
         name="exec",
         hidden=hidden,
+        no_args_is_help=True,
         # We use this to avoid problems option-parts of the "command" argument, i.e., 'klee container exec -a /bin/sh -c echo lol
         context_settings={"ignore_unknown_options": True},
     )
@@ -429,6 +439,7 @@ def container_update(name, hidden=False):
         cls=config.command_cls,
         name=name,
         hidden=hidden,
+        no_args_is_help=True,
         # context_settings={"ignore_unknown_options": True},
     )
     @click.option("--name", default=None, help="Assign a new name to the container")
@@ -485,7 +496,9 @@ root.add_command(container_update("update"), name="update")
 
 
 def container_rename(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     @click.argument("container", nargs=1)
     @click.argument("name", nargs=1)
     def rename(container, name):
@@ -510,7 +523,9 @@ root.add_command(container_rename("rename"), name="rename")
 
 
 def container_run(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     # what is this used for? context_settings={"ignore_unknown_options": True},
     @click.option("--name", default="", help="Assign a name to the container")
     @click.option(

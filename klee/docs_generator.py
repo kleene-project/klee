@@ -34,6 +34,7 @@ class DocsCommand(click.Command):
             "short": self.get_short_help_str(),
             "options": _options(self, ctx),
         }
+        _shortcut(self.docs, ctx)
         _examples(self.docs, ctx)
         _additional_fields(self.docs, ctx)
 
@@ -56,6 +57,14 @@ def _commands(self, ctx):
         root_cmd = root_cmd.replace(" ", "_")
         clinks.append(f"{root_cmd}_{subcommand}.yaml")
     return cnames, clinks
+
+
+def _shortcut(docs, ctx):
+    command_list = ctx.command_path.split(" ")
+    # Remove the 'klee' root command:
+    command = " ".join(command_list[1:])
+    if command in SHORTCUTS:
+        docs["shortcut"] = SHORTCUTS[command]
 
 
 def _additional_fields(docs, ctx):

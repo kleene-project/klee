@@ -12,7 +12,7 @@ from .client.api.default.image_inspect import sync_detailed as image_inspect_end
 from .client.api.default.image_prune import sync_detailed as image_prune_endpoint
 
 from .connection import create_websocket
-from .richclick import console, print_table, print_json, print_id_list
+from .richclick import console, print_table, print_id_list
 from .config import config
 from .inspect import inspect_command
 from .utils import (
@@ -57,15 +57,13 @@ def create(name="create"):
     """
 
 
-@create.command(cls=config.command_cls)
-@click.option(
-    "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
+@create.command(
+    cls=config.command_cls,
+    no_args_is_help=True,
+    short_help="Create a base image from a local or remote tar-archive.",
 )
 @click.option(
-    "--url",
-    "-u",
-    default="",
-    help="URL to a tar-archive of the userland that the image should be created from. If no url is supplied kleened will try and fetch the userland from a FreeBSD mirror.",
+    "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
 @click.option(
     "--force",
@@ -74,21 +72,26 @@ def create(name="create"):
     default=False,
     help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the kleened host.",
 )
-def fetch(tag, url, force):
+@click.argument("method", nargs=1)
+def fetch(tag, force, method):
     """
-    Create a base image from a tar-archive fetched using `fetch(1)`.
-
     Fetch and create a base image from a tar-archive downloaded with `fetch(1)`.
-    If no url is provided, kleened will download a base system from the official FreeBSD
-    repositories based on host OS information from the `uname(1)` utility.
+
+    If `METHOD` is set to `auto`, Kleene will try to create the image from a userland (`base.txz`) fetched
+    from the official FreeBSD repositories, based on the host OS information from `uname(1)`.
+
+    Otherwise, `METHOD` should be an URL pointing to a tar-archive of the userland.
     """
 
-    method = "fetch"
+    url = "" if method == "auto" else method
+    fetching_method = "fetch"
     dataset = ""
-    asyncio.run(_create_image_and_listen_for_messages(tag, dataset, url, force, method))
+    asyncio.run(
+        _create_image_and_listen_for_messages(tag, dataset, url, force, fetching_method)
+    )
 
 
-@create.command(cls=config.command_cls)
+@create.command(cls=config.command_cls, no_args_is_help=True)
 @click.option(
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
@@ -146,7 +149,11 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
 
 def image_build(name, hidden=False):
     @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, short_help="Build a new image"
+        cls=config.command_cls,
+        name=name,
+        hidden=hidden,
+        no_args_is_help=True,
+        short_help="Build a new image",
     )
     @click.option(
         "--file",
@@ -292,7 +299,9 @@ root.add_command(
 
 
 def image_remove(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     @click.argument("images", required=True, nargs=-1)
     def remove(images):
         """Remove one or more images"""
@@ -349,7 +358,9 @@ root.add_command(image_prune("prune"), name="prune")
 
 
 def image_tag(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(
+        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+    )
     @click.argument("source_image", nargs=1)
     @click.argument("nametag", nargs=1)
     def tag(source_image, nametag):

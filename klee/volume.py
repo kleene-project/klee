@@ -19,7 +19,7 @@ def root(name="volume"):
     """Manage volumes"""
 
 
-@root.command(cls=config.command_cls)
+@root.command(cls=config.command_cls, no_args_is_help=True)
 @click.argument("volume_name", nargs=1)
 def create(volume_name):
     """
@@ -72,7 +72,7 @@ root.add_command(
 )
 
 
-@root.command(cls=config.command_cls, name="rm")
+@root.command(cls=config.command_cls, name="rm", no_args_is_help=True)
 @click.argument("volumes", required=True, nargs=-1)
 def remove(volumes):
     """Remove one or more volumes. You cannot remove a volume that is in use by a container."""

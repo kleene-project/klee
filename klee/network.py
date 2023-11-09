@@ -39,7 +39,7 @@ def root(name="network"):
     """Manage networks using the following subcommands."""
 
 
-@root.command(cls=config.command_cls, name="create")
+@root.command(cls=config.command_cls, name="create", no_args_is_help=True)
 @click.option(
     "--driver",
     "-d",
@@ -79,7 +79,7 @@ def create(driver, ifname, subnet, network_name):
         )
 
 
-@root.command(cls=config.command_cls, name="rm")
+@root.command(cls=config.command_cls, name="rm", no_args_is_help=True)
 @click.argument("networks", required=True, nargs=-1)
 def remove(networks):
     """
@@ -139,7 +139,7 @@ root.add_command(
 )
 
 
-@root.command(cls=config.command_cls, name="connect")
+@root.command(cls=config.command_cls, name="connect", no_args_is_help=True)
 @click.option(
     "--ip",
     default=None,
@@ -178,7 +178,7 @@ def connect_(ip, network, container):
     )
 
 
-@root.command(cls=config.command_cls, name="disconnect")
+@root.command(cls=config.command_cls, name="disconnect", no_args_is_help=True)
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
 def disconnect(network, container):
