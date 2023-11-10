@@ -1,14 +1,11 @@
-from testutils import run
+from testutils import run, CERTIFICATE_REQUIRED_ERROR, SELF_SIGNED_ERROR
+from klee.config import config
 
 EMPTY_LIST = [
     " CONTAINER ID    NAME   IMAGE   TAG   COMMAND   CREATED   STATUS ",
     "─────────────────────────────────────────────────────────────────",
     "",
 ]
-
-SELF_SIGNED_ERROR = "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1134)"
-
-CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required (_ssl.c:2638)"
 
 
 class TestHTTPConnections:

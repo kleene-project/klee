@@ -37,11 +37,21 @@ async def listen_for_messages(websocket):
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
     try:
         response = request(endpoint, kwargs)
+
     except httpx.ConnectError as e:
         console.print(UNABLE_TO_CONNECT.format(e=e))
         return None
+
     except httpx.ReadError as e:
         console.print(UNABLE_TO_CONNECT.format(e=e))
+        return None
+
+    except httpx.UnsupportedProtocol as e:
+        # Request URL has an unsupported protocol 'unix://' as e:
+        console.print(UNABLE_TO_CONNECT.format(e=e))
+        return None
+
+    if response is None:
         return None
 
     # Try validating the response

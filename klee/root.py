@@ -35,57 +35,53 @@ shortcuts2command_obj = {
     "stop": container_stop("stop", hidden=True),
 }
 
+DEFAULT_HOST = "http:///var/run/kleened.sock"
+
 
 def create_cli():
     @click.group(cls=config.root_cls, name="klee")
     @click.version_option(version="0.0.1")
     @click.option(
         "--host",
-        default="http:///var/run/kleened.sock",
-        show_default=True,
+        default=None,
         help="Host address and protocol to use. See the docs for details.",
     )
     @click.option(
         "--tlsverify/--no-tlsverify",
         default=True,
-        show_default=True,
         help="Verify the server cert. Uses the CA bundle provided by Certifi unless the '--cacert' is set.",
     )
     @click.option(
         "--tlscert",
         default=None,
-        show_default=True,
         help="Path to TLS certificate file used for client authentication (PEM encoded)",
     )
     @click.option(
         "--tlskey",
         default=None,
-        show_default=True,
         help="Path to TLS key file used for the '--tlscert' certificate (PEM encoded)",
     )
     @click.option(
         "--tlscacert",
         default=None,
-        show_default=True,
         help="Trust certs signed only by this CA (PEM encoded). Implies '--tlsverify'.",
     )
     @click.pass_context
-    def cli(ctx, host, tlsverify, tlscert, tlskey, tlscacert):
+    def cli(ctx, **kwargs):
         """
         CLI to interact with Kleened.
         """
-        host = urlparse(host)
-        if host.query != "" or host.params != "" or host.fragment != "":
-            ctx.fail("Could not parse the '--host' parameter")
+        config.load_config(ctx)
 
-        if tlscert is not None and tlskey is None:
-            ctx.fail("When '--tlscert' is set you must also provide the '--tlskey'")
+        if kwargs["host"] is None and config.host is None:
+            config.host = DEFAULT_HOST
 
-        config.host = host
-        config.tlsverify = tlsverify
-        config.tlscert = tlscert
-        config.tlskey = tlskey
-        config.tlscacert = tlscacert
+        parameters_to_merge = ["host", "tlsverify", "tlscacert", "tlscert", "tlskey"]
+        for param in parameters_to_merge:
+            if getattr(config, param) is None:
+                setattr(config, param, kwargs[param])
+
+        config.host = urlparse(config.host)
 
     cli.add_command(container_root, name="container")
     cli.add_command(image_root, name="image")

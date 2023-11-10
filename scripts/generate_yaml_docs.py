@@ -34,9 +34,9 @@ def save_file(yaml_data, filename):
 
 def create_yaml_data(cmd, obj):
     # # Use this if debugging Klee:
-    output = runner.invoke(cli, cmd + ["--help"])
-    print("Output from Klee:", output.stdout)
-    # runner.invoke(cli, cmd + ["--help"])
+    # output = runner.invoke(cli, cmd + ["--help"])
+    # print("Output from Klee:", output.stdout)
+    runner.invoke(cli, cmd + ["--help"])
     return yaml.dump(obj.docs)
 
 

@@ -8,6 +8,10 @@ from rich.console import Console
 from klee.main import cli
 from klee.image import BUILD_START_MESSAGE
 
+SELF_SIGNED_ERROR = "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1134)"
+
+CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required (_ssl.c:2638)"
+
 
 def jail_info():
     result = subprocess.run(
@@ -202,7 +206,7 @@ def remove_container(name_or_id):
 
 def run(command, exit_code=0):
     runner = CliRunner()
-    result = runner.invoke(cli, command.split(" "))
+    result = runner.invoke(cli, command.split(" "), catch_exceptions=False)
     print(f'ran "{command}":{result.exit_code}: {result.output}')
     assert result.exit_code == exit_code
     return result.output.split("\n")
