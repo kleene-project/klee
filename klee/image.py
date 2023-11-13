@@ -159,13 +159,13 @@ def image_build(name, hidden=False):
         "--file",
         "-f",
         default="Dockerfile",
-        help="Alternative location of the Dockerfile. The location should be relative to `PATH` (default: 'Dockerfile')",
+        help="Alternative location of the `Dockerfile`. The location should be relative to `PATH` (default: 'Dockerfile')",
     )
     @click.option(
         "--tag",
         "-t",
         default="",
-        help="Name and optionally a tag in the 'name:tag' format",
+        help="Name and optionally a tag in the `name:tag` format",
     )
     @click.option(
         "--quiet",

@@ -123,26 +123,21 @@ class RootGroup(click.Group):
 
 class RichGroup(click.Group):
     def format_help(self, ctx, _formatter):
-        highlighter = create_highlighter()
-        console = create_help_console(highlighter)
-        print_usage_line(self, ctx, console)
-        print_help_section(self, console)
-        print_options_section(self, console, highlighter, ctx)
-        print_commands_section(self, console, highlighter, ctx)
+        print_usage_line(self, ctx)
+        print_help_section(self)
+        print_options_section(self, ctx)
+        print_commands_section(self, ctx)
         if ctx.command_path == "klee":
-            print_shortcuts_section(self, console, highlighter)
+            print_shortcuts_section(self)
 
 
 class RichCommand(click.Command):
     """Override Clicks help with a Richer version."""
 
     def format_help(self, ctx, _formatter):
-        highlighter = create_highlighter()
-        console = create_help_console(highlighter)
-
-        print_usage_line(self, ctx, console)
-        print_help_section(self, console)
-        print_options_section(self, console, highlighter, ctx)
+        print_usage_line(self, ctx)
+        print_help_section(self)
+        print_options_section(self, ctx)
 
 
 def command_cls():
@@ -184,16 +179,16 @@ def root_cls():
     raise Exception(f"cli theme '{config.theme}' not known")
 
 
-def print_shortcuts_section(self, console, highlighter):
+def print_shortcuts_section(self):
     commands_table = Table(highlight=True, box=None, show_header=False)
 
-    commands = []
+    # commands = []
     for name, command in self.commands.items():
         # Hidden commands are the shortcuts
         if command.hidden:
-            commands.append((name, command))
+            # commands.append((name, command))
             cmd_help = command.get_short_help_str(limit=200)
-            commands_table.add_row(name, highlighter(cmd_help))
+            commands_table.add_row(f"[yellow]{name}[/yellow]", Markdown(cmd_help))
 
     console.print(
         Panel(
@@ -206,7 +201,7 @@ def print_shortcuts_section(self, console, highlighter):
     )
 
 
-def print_commands_section(self, console, highlighter, ctx):
+def print_commands_section(self, ctx):
     commands_table = Table(highlight=True, box=None, show_header=False)
 
     commands = []
@@ -221,8 +216,9 @@ def print_commands_section(self, console, highlighter, ctx):
         commands.append((subcommand, cmd))
 
     for subcommand, cmd in commands:
-        cmd_help = cmd.get_short_help_str(limit=200)
-        commands_table.add_row(subcommand, highlighter(cmd_help))
+        cmd_help = Markdown(cmd.get_short_help_str(limit=200))
+        subcommand = f"[green]{subcommand}[/green]"
+        commands_table.add_row(subcommand, cmd_help)
 
     console.print(
         Panel(
@@ -235,7 +231,7 @@ def print_commands_section(self, console, highlighter, ctx):
     )
 
 
-def print_usage_line(self, ctx, console):
+def print_usage_line(self, ctx):
     pieces = []
     pieces.append(f"[b]{ctx.command_path}[/b]")
     for piece in self.collect_usage_pieces(ctx):
@@ -244,7 +240,10 @@ def print_usage_line(self, ctx, console):
     console.print("Usage: " + " ".join(pieces))
 
 
-def print_help_section(self, console):
+from rich.markdown import Markdown
+
+
+def print_help_section(self):
     if self.help is not None:
         # truncate the help text to the first form feed
         # text = inspect.cleandoc(self.help).partition("\f")[0]
@@ -253,14 +252,12 @@ def print_help_section(self, console):
         text = ""
 
     if text:
-        from rich.markdown import Markdown
-
         help_table = Table(highlight=True, box=None, show_header=False, padding=(1, 2))
         help_table.add_row(Markdown(text))
         console.print(help_table)
 
 
-def print_options_section(self, console, highlighter, ctx):
+def print_options_section(self, ctx):
     # Building options section
     options_table = Table(highlight=True, box=None, show_header=False)
 
@@ -270,22 +267,22 @@ def print_options_section(self, console, highlighter, ctx):
             continue
 
         if len(param.opts) == 2:
-            opt1 = highlighter(param.opts[1])
-            opt2 = highlighter(param.opts[0])
+            opt1 = f"[green]{param.opts[1]}[/green]"
+            opt2 = f"[cyan]{param.opts[0]}[/cyan]"
         else:
-            opt2 = highlighter(param.opts[0])
-            opt1 = Text("")
+            opt2 = f"[cyan]{param.opts[0]}[/cyan]"
+            opt1 = ""
 
         if param.metavar:
-            opt2 += Text(f" {param.metavar}", style="bold yellow")
+            opt2 += f" [bold yellow]{param.metavar}[/bold yellow]"
 
         help_record = param.get_help_record(ctx)
         if help_record is None:
             help_ = ""
         else:
-            help_ = Text.from_markup(param.get_help_record(ctx)[-1], emoji=False)
+            help_ = param.get_help_record(ctx)[-1]
 
-        options_table.add_row(opt1, opt2, highlighter(help_))
+        options_table.add_row(opt1, opt2, Markdown(help_))
 
     console.print(
         Panel(
@@ -296,23 +293,3 @@ def print_options_section(self, console, highlighter, ctx):
             title_align="left",
         )
     )
-
-
-# FIXME: Consider factoring these out - use markdown instead
-def create_help_console(highlighter):
-    from rich.theme import Theme
-
-    console = Console(
-        theme=Theme({"option": "bold cyan", "switch": "bold green"}),
-        highlighter=highlighter,
-    )
-    return console
-
-
-def create_highlighter():
-    from rich.highlighter import RegexHighlighter
-
-    class OptionHighlighter(RegexHighlighter):
-        highlights = [r"(?P<switch>\-\w)", r"(?P<option>\-\-[\w\-]+)"]
-
-    return OptionHighlighter()
