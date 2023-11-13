@@ -7,7 +7,7 @@ import httpx
 import websockets
 
 from .client.client import Client
-from .richclick import console
+from .printing import echo_bold
 from .config import config
 
 URL_TEMPLATE = "{scheme}://{host}{endpoint}"
@@ -25,11 +25,11 @@ def valid_connection_params():
         or config.host.params != ""
         or config.host.fragment != ""
     ):
-        console.print("[bold]Could not parse the '--host' parameter[/bold]")
+        echo_bold("Could not parse the '--host' parameter")
         valid = False
 
     if config.tlscert is not None and config.tlskey is None:
-        console.print(f"[bold]{ERROR_TLSKEY_WITH_TLSCERT}[/bold]")
+        echo_bold(ERROR_TLSKEY_WITH_TLSCERT)
         valid = False
 
     return valid
@@ -38,6 +38,7 @@ def valid_connection_params():
 def request(endpoint, kwargs):
     if not valid_connection_params():
         return
+
     transport_kwargs = {}
     if config.host.scheme == "https":
         # Configuring TLS if it is used

@@ -5,7 +5,7 @@ import os
 from click.testing import CliRunner
 from rich.console import Console
 
-from klee.main import cli
+from klee.root import create_cli
 from klee.image import BUILD_START_MESSAGE
 
 SELF_SIGNED_ERROR = "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1134)"
@@ -188,10 +188,10 @@ def inspect(obj_type, identifier):
 def container_get_netstat_info(container_id, driver):
     output = run(f"container start --attach {container_id}")
     if driver == "vnet":
-        _, _, netstat_info, *_ = output
+        netstat_info = "".join(output[2:-3])
 
     elif driver == "loopback":
-        _, netstat_info, *_ = output
+        netstat_info = "".join(output[1:-3])
 
     netstat_info = json.loads(netstat_info)
     interface_info = netstat_info["statistics"]["interface"]
@@ -205,8 +205,26 @@ def remove_container(name_or_id):
 
 
 def run(command, exit_code=0):
+    clear_config()
     runner = CliRunner()
+    cli = create_cli()
     result = runner.invoke(cli, command.split(" "), catch_exceptions=False)
     print(f'ran "{command}":{result.exit_code}: {result.output}')
     assert result.exit_code == exit_code
     return result.output.split("\n")
+
+
+def clear_config():
+    from klee.config import config
+
+    # To be sure, we clean the configuration parameters, because
+    # during testing the config singleton object persists across several CLI invocations
+    for param in config._config_params + [
+        "invalid_file",
+        "invalid_param",
+        "config_filepath",
+    ]:
+        if param == "theme":
+            continue
+
+        setattr(config, param, None)

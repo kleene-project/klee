@@ -1,11 +1,10 @@
 import click
 from .utils import request_and_validate_response
-from .config import config
-from .richclick import print_id_list
+from .printing import command_cls, print_id_list
 
 
 def prune_command(docs, warning, endpoint, name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden, help=docs)
+    @click.command(cls=command_cls(), name=name, hidden=hidden, help=docs)
     @click.option(
         "--force",
         "-f",

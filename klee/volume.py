@@ -7,19 +7,18 @@ from .client.api.default.volume_remove import sync_detailed as volume_remove
 from .client.api.default.volume_prune import sync_detailed as volume_prune_endpoint
 
 from .client.models.volume_config import VolumeConfig
-from .richclick import print_table, print_json, RichCommand, RichGroup
-from .config import config
+from .printing import print_table, command_cls, group_cls
 from .prune import prune_command
 from .inspect import inspect_command
 from .utils import human_duration, request_and_validate_response
 
 # pylint: disable=unused-argument
-@click.group(cls=config.group_cls)
+@click.group(cls=group_cls())
 def root(name="volume"):
     """Manage volumes"""
 
 
-@root.command(cls=config.command_cls, no_args_is_help=True)
+@root.command(cls=command_cls(), no_args_is_help=True)
 @click.argument("volume_name", nargs=1)
 def create(volume_name):
     """
@@ -36,7 +35,7 @@ def create(volume_name):
     )
 
 
-@root.command(cls=config.command_cls, name="ls")
+@root.command(cls=command_cls(), name="ls")
 def list_volumes():
     """List volumes"""
     request_and_validate_response(
@@ -72,7 +71,7 @@ root.add_command(
 )
 
 
-@root.command(cls=config.command_cls, name="rm", no_args_is_help=True)
+@root.command(cls=command_cls(), name="rm", no_args_is_help=True)
 @click.argument("volumes", required=True, nargs=-1)
 def remove(volumes):
     """Remove one or more volumes. You cannot remove a volume that is in use by a container."""

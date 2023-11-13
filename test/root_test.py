@@ -5,8 +5,8 @@ import yaml
 
 from testutils import run, CERTIFICATE_REQUIRED_ERROR
 
-from klee.config import create_file_locations, ERROR_INVALID_CONFIG
-from klee.root import DEFAULT_HOST
+from klee.config import create_file_locations
+from klee.root import DEFAULT_HOST, ERROR_INVALID_CONFIG
 from klee.connection import ERROR_TLSKEY_WITH_TLSCERT
 
 config_filepaths = create_file_locations()

@@ -6,20 +6,13 @@ import websockets
 import httpx
 
 from .connection import request
-from .richclick import console
-
-KLEE_MSG = "[bold]{msg}[/bold]"
-CONNECTION_CLOSED_UNEXPECTEDLY = "ERROR! Connection closed unexpectedly."
-UNEXPECTED_ERROR = "\n[bold]klee[/bold]: ERROR! Some unexpected error occured"
-UNABLE_TO_CONNECT = KLEE_MSG.format(msg="unable to connect to kleened: {e}")
-UNRECOGNIZED_STATUS_CODE = KLEE_MSG.format(
-    msg="unrecognized status-code received from kleened: {status_code}"
+from .printing import (
+    echo,
+    echo_bold,
+    print_unable_to_connect,  # Message
+    unexpected_error,  # Message
+    unrecognized_status_code,  # Message
 )
-
-
-def print_closing(msg, attributes):
-    for attrib in attributes:
-        console.print(KLEE_MSG.format(msg=msg[attrib]))
 
 
 async def listen_for_messages(websocket):
@@ -28,10 +21,10 @@ async def listen_for_messages(websocket):
             message = await websocket.recv()
         except websockets.exceptions.ConnectionClosed:
             closing_message = json.loads(websocket.close_reason)
-            console.out("")
+            echo("")
             return closing_message
 
-        console.out(message, end="")
+        echo(message, end="")
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
@@ -39,16 +32,16 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
         response = request(endpoint, kwargs)
 
     except httpx.ConnectError as e:
-        console.print(UNABLE_TO_CONNECT.format(e=e))
+        print_unable_to_connect(e)
         return None
 
     except httpx.ReadError as e:
-        console.print(UNABLE_TO_CONNECT.format(e=e))
+        print_unable_to_connect(e)
         return None
 
     except httpx.UnsupportedProtocol as e:
         # Request URL has an unsupported protocol 'unix://' as e:
-        console.print(UNABLE_TO_CONNECT.format(e=e))
+        print_unable_to_connect(e)
         return None
 
     if response is None:
@@ -58,17 +51,17 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
     try:
         return_message = statuscode2messsage[response.status_code]
     except KeyError:
-        console.print(UNRECOGNIZED_STATUS_CODE.format(status_code=response.status_code))
+        unrecognized_status_code(status_code=response.status_code)
         return response
 
     if callable(return_message):
         return_message = return_message(response)
         if return_message != "" and return_message is not None:
-            console.print(KLEE_MSG.format(msg=return_message))
+            echo_bold(return_message)
         return response
 
     if not isinstance(return_message, str):
-        console.print(UNEXPECTED_ERROR)
+        unexpected_error()
 
     return response
 

@@ -13,18 +13,13 @@ from .client.api.default.network_prune import sync_detailed as network_prune_end
 from .client.models.end_point_config import EndPointConfig
 from .client.models.network_config import NetworkConfig
 
-from .richclick import console, RichCommand, RichGroup, print_table, print_json
+from .printing import echo_bold, print_table, group_cls, command_cls
 from .prune import prune_command
 from .inspect import inspect_command
-from .config import config
-from .utils import (
-    request_and_validate_response,
-    KLEE_MSG,
-    CONNECTION_CLOSED_UNEXPECTEDLY,
-)
+from .utils import request_and_validate_response
 
-IFNAME_NEEDED_FOR_LOOPBACK_DRIVER = KLEE_MSG.format(
-    msg="Option 'ifname' is needed when the network driver 'loopback' is used"
+IFNAME_NEEDED_FOR_LOOPBACK_DRIVER = (
+    "Option 'ifname' is needed when the network driver 'loopback' is used"
 )
 NETWORK_LIST_COLUMNS = [
     ("ID", {"style": "cyan"}),
@@ -34,12 +29,12 @@ NETWORK_LIST_COLUMNS = [
 ]
 
 # pylint: disable=unused-argument
-@click.group(cls=config.group_cls, add_help_option=True, short_help="Manage networks")
+@click.group(cls=group_cls(), add_help_option=True, short_help="Manage networks")
 def root(name="network"):
     """Manage networks using the following subcommands."""
 
 
-@root.command(cls=config.command_cls, name="create", no_args_is_help=True)
+@root.command(cls=command_cls(), name="create", no_args_is_help=True)
 @click.option(
     "--driver",
     "-d",
@@ -63,7 +58,7 @@ def create(driver, ifname, subnet, network_name):
         "driver": driver,
     }
     if driver == "loopback" and ifname is None:
-        console.print(IFNAME_NEEDED_FOR_LOOPBACK_DRIVER)
+        echo_bold(IFNAME_NEEDED_FOR_LOOPBACK_DRIVER)
 
     else:
         network_config = NetworkConfig.from_dict(network_config)
@@ -79,7 +74,7 @@ def create(driver, ifname, subnet, network_name):
         )
 
 
-@root.command(cls=config.command_cls, name="rm", no_args_is_help=True)
+@root.command(cls=command_cls(), name="rm", no_args_is_help=True)
 @click.argument("networks", required=True, nargs=-1)
 def remove(networks):
     """
@@ -109,7 +104,7 @@ root.add_command(
 )
 
 
-@root.command(cls=config.command_cls, name="ls")
+@root.command(cls=command_cls(), name="ls")
 def list_networks():
     """List networks"""
     request_and_validate_response(
@@ -139,7 +134,7 @@ root.add_command(
 )
 
 
-@root.command(cls=config.command_cls, name="connect", no_args_is_help=True)
+@root.command(cls=command_cls(), name="connect", no_args_is_help=True)
 @click.option(
     "--ip",
     default=None,
@@ -178,7 +173,7 @@ def connect_(ip, network, container):
     )
 
 
-@root.command(cls=config.command_cls, name="disconnect", no_args_is_help=True)
+@root.command(cls=command_cls(), name="disconnect", no_args_is_help=True)
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
 def disconnect(network, container):

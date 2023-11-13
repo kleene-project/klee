@@ -12,18 +12,19 @@ from .client.api.default.image_inspect import sync_detailed as image_inspect_end
 from .client.api.default.image_prune import sync_detailed as image_prune_endpoint
 
 from .connection import create_websocket
-from .richclick import console, print_table, print_id_list
-from .config import config
-from .inspect import inspect_command
-from .utils import (
-    print_closing,
-    KLEE_MSG,
-    CONNECTION_CLOSED_UNEXPECTEDLY,
-    UNEXPECTED_ERROR,
-    human_duration,
-    listen_for_messages,
-    request_and_validate_response,
+from .printing import (
+    echo,
+    echo_bold,
+    group_cls,
+    command_cls,
+    print_table,
+    print_websocket_closing,
+    print_id_list,
+    connection_closed_unexpectedly,
+    unexpected_error,
 )
+from .inspect import inspect_command
+from .utils import human_duration, listen_for_messages, request_and_validate_response
 
 
 WS_IMAGE_BUILD_ENDPOINT = "/images/build"
@@ -36,18 +37,17 @@ IMAGE_LIST_COLUMNS = [
     ("CREATED", {"style": "bright_white"}),
 ]
 
-BUILD_START_MESSAGE = "[bold]Started to build image with ID {image_id}[/bold]"
+BUILD_START_MESSAGE = "Started to build image with ID {image_id}"
 BUILD_FAILED = "Failed to build image {image_id}. Last valid snapshot is {snapshot}"
 
 
 # pylint: disable=unused-argument
-# @click.group(cls=config.test_cls, name="image")
-@click.group(cls=config.group_cls)
+@click.group(cls=group_cls())
 def root(name="image"):
     """Manage images"""
 
 
-@root.group(cls=config.group_cls)
+@root.group(cls=group_cls())
 def create(name="create"):
     """
     Create a base image from a remote tar-archive or a ZFS dataset using the subcommands
@@ -58,7 +58,7 @@ def create(name="create"):
 
 
 @create.command(
-    cls=config.command_cls,
+    cls=command_cls(),
     no_args_is_help=True,
     short_help="Create a base image from a local or remote tar-archive.",
 )
@@ -91,7 +91,7 @@ def fetch(tag, force, method):
     )
 
 
-@create.command(cls=config.command_cls, no_args_is_help=True)
+@create.command(cls=command_cls(), no_args_is_help=True)
 @click.option(
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
@@ -132,24 +132,24 @@ async def _create_image_and_listen_for_messages(tag, dataset, url, force, method
                 closing_message = await listen_for_messages(websocket)
 
                 if closing_message["data"] == "":
-                    print_closing(closing_message, ["message"])
+                    print_websocket_closing(closing_message, ["message"])
 
                 else:
-                    print_closing(closing_message, ["message", "data"])
+                    print_websocket_closing(closing_message, ["message", "data"])
 
             elif start_msg["msg_type"] == "error":
-                print_closing(closing_message, ["message"])
+                print_websocket_closing(closing_message, ["message"])
 
             else:
-                console.print(UNEXPECTED_ERROR)
+                unexpected_error()
 
     except websockets.exceptions.ConnectionClosedError:
-        console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
+        connection_closed_unexpectedly()
 
 
 def image_build(name, hidden=False):
     @click.command(
-        cls=config.command_cls,
+        cls=command_cls(),
         name=name,
         hidden=hidden,
         no_args_is_help=True,
@@ -211,7 +211,8 @@ async def _build_image_and_listen_for_messages(
     for buildarg in build_arg:
         var, value = buildarg.split("=", maxsplit=1)
         buildargs[var] = value
-    config = json.dumps(
+
+    build_config = json.dumps(
         {
             "context": path,
             "file": file_,
@@ -223,44 +224,43 @@ async def _build_image_and_listen_for_messages(
     )
     try:
         async with create_websocket(WS_IMAGE_BUILD_ENDPOINT) as websocket:
-            await websocket.send(config)
+            await websocket.send(build_config)
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
             if start_msg["msg_type"] == "starting":
                 if start_msg["data"] != "":
                     image_id = start_msg["data"]
-                    msg = BUILD_START_MESSAGE.format(image_id=image_id)
-                    console.print(msg)
+                    echo_bold(BUILD_START_MESSAGE.format(image_id=image_id))
                 try:
                     closing_message = await listen_for_messages(websocket)
                 except json.JSONDecodeError:
-                    console.print(UNEXPECTED_ERROR)
+                    unexpected_error()
 
                 if closing_message["msg_type"] == "error":
                     if closing_message["data"] != "":
                         snapshot = closing_message["data"]
-                        console.print(
+                        echo_bold(
                             BUILD_FAILED.format(snapshot=snapshot, image_id=image_id)
                         )
 
                 elif closing_message["data"] == "":
-                    console.print(KLEE_MSG.format(msg=closing_message["message"]))
+                    echo_bold(closing_message["message"])
 
                 else:
-                    console.print(KLEE_MSG.format(msg=closing_message["message"]))
-                    console.print(KLEE_MSG.format(msg=closing_message["data"]))
+                    echo_bold(closing_message["message"])
+                    echo_bold(closing_message["data"])
 
             elif start_msg["msg_type"] == "error":
-                console.print(KLEE_MSG.format(msg=start_msg["message"]))
+                echo_bold(start_msg["message"])
             else:
-                console.print(UNEXPECTED_ERROR)
+                unexpected_error()
 
     except websockets.exceptions.ConnectionClosedError:
-        console.print(CONNECTION_CLOSED_UNEXPECTEDLY)
+        connection_closed_unexpectedly()
 
 
 def image_list(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(cls=command_cls(), name=name, hidden=hidden)
     def _image_list():
         """List images"""
         request_and_validate_response(
@@ -299,9 +299,7 @@ root.add_command(
 
 
 def image_remove(name, hidden=False):
-    @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
-    )
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("images", required=True, nargs=-1)
     def remove(images):
         """Remove one or more images"""
@@ -325,7 +323,7 @@ root.add_command(image_remove("rm"), name="rm")
 
 
 def image_prune(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(cls=command_cls(), name=name, hidden=hidden)
     @click.option(
         "--all",
         "-a",
@@ -358,9 +356,7 @@ root.add_command(image_prune("prune"), name="prune")
 
 
 def image_tag(name, hidden=False):
-    @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
-    )
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("source_image", nargs=1)
     @click.argument("nametag", nargs=1)
     def tag(source_image, nametag):

@@ -30,32 +30,31 @@ from .client.models.container_config import ContainerConfig
 from .client.models.exec_config import ExecConfig
 from .name_generator import random_name
 from .network import connect_
-from .richclick import console, print_table
-from .connection import create_websocket
-from .utils import (
-    KLEE_MSG,
-    UNEXPECTED_ERROR,
-    human_duration,
-    request_and_validate_response,
-    listen_for_messages,
-    print_closing,
+from .printing import (
+    echo_bold,
+    command_cls,
+    group_cls,
+    print_websocket_closing,
+    print_table,
+    unexpected_error,
 )
+from .connection import create_websocket
+from .utils import human_duration, request_and_validate_response, listen_for_messages
 from .prune import prune_command
 from .inspect import inspect_command
-from .config import config
 
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
-EXEC_INSTANCE_CREATED = KLEE_MSG.format(msg="created execution instance {exec_id}")
-EXEC_INSTANCE_CREATE_ERROR = KLEE_MSG.format(
-    msg="{container_id}: error creating execution instance: {exec_id}"
+EXEC_INSTANCE_CREATED = "created execution instance {exec_id}"
+EXEC_INSTANCE_CREATE_ERROR = (
+    "{container_id}: error creating execution instance: {exec_id}"
 )
-EXEC_START_ERROR = KLEE_MSG.format(msg="error starting container")
+EXEC_START_ERROR = "error starting container"
 
 
-START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = KLEE_MSG.format(
-    msg="only one container can be started when setting the 'attach' flag."
+START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = (
+    "only one container can be started when setting the 'attach' flag."
 )
 
 CONTAINER_LIST_COLUMNS = [
@@ -69,14 +68,14 @@ CONTAINER_LIST_COLUMNS = [
 ]
 
 # pylint: disable=unused-argument
-@click.group(cls=config.group_cls)
+@click.group(cls=group_cls())
 def root(name="container"):
     """Manage containers"""
 
 
 def container_create(name, hidden=False):
     @click.command(
-        cls=config.command_cls,
+        cls=command_cls(),
         name=name,
         hidden=hidden,
         no_args_is_help=True,
@@ -185,7 +184,7 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
 
 
 def container_list(name, hidden=False):
-    @click.command(cls=config.command_cls, name=name, hidden=hidden)
+    @click.command(cls=command_cls(), name=name, hidden=hidden)
     @click.option(
         "--all",
         "-a",
@@ -247,9 +246,7 @@ root.add_command(
 
 
 def container_remove(name, hidden=False):
-    @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
-    )
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("containers", required=True, nargs=-1)
     def remove(containers):
         """Remove one or more containers"""
@@ -283,9 +280,7 @@ root.add_command(
 
 
 def container_start(name, hidden=False):
-    @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
-    )
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.option(
         "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
     )
@@ -313,9 +308,7 @@ root.add_command(container_start("start"), name="start")
 
 
 def container_stop(name, hidden=False):
-    @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
-    )
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("containers", nargs=-1)
     def stop(containers):
         """Stop one or more running containers"""
@@ -340,9 +333,7 @@ root.add_command(container_stop("stop"), name="stop")
 
 
 def container_restart(name, hidden=False):
-    @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
-    )
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("containers", nargs=-1)
     def restart(containers):
         """Restart one or more containers"""
@@ -376,7 +367,7 @@ root.add_command(container_restart("restart"), name="restart")
 
 def start_(attach, interactive, tty, containers):
     if attach and len(containers) != 1:
-        console.print(START_ONLY_ONE_CONTAINER_WHEN_ATTACHED)
+        echo_bold(START_ONLY_ONE_CONTAINER_WHEN_ATTACHED)
     else:
         for container in containers:
             start_container = True
@@ -387,7 +378,7 @@ def start_(attach, interactive, tty, containers):
 
 def container_exec(name, hidden=False):
     @click.command(
-        cls=config.command_cls,
+        cls=command_cls(),
         name="exec",
         hidden=hidden,
         no_args_is_help=True,
@@ -436,7 +427,7 @@ root.add_command(container_exec("exec"), name="exec")
 
 def container_update(name, hidden=False):
     @click.command(
-        cls=config.command_cls,
+        cls=command_cls(),
         name=name,
         hidden=hidden,
         no_args_is_help=True,
@@ -496,9 +487,7 @@ root.add_command(container_update("update"), name="update")
 
 
 def container_rename(name, hidden=False):
-    @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
-    )
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("container", nargs=1)
     @click.argument("name", nargs=1)
     def rename(container, name):
@@ -524,9 +513,13 @@ root.add_command(container_rename("rename"), name="rename")
 
 def container_run(name, hidden=False):
     @click.command(
-        cls=config.command_cls, name=name, hidden=hidden, no_args_is_help=True
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        no_args_is_help=True,
+        # 'ignore_unknown_options' because the user can supply an arbitrary command
+        context_settings={"ignore_unknown_options": True},
     )
-    # what is this used for? context_settings={"ignore_unknown_options": True},
     @click.option("--name", default="", help="Assign a name to the container")
     @click.option(
         "--user",
@@ -608,7 +601,7 @@ def container_run(name, hidden=False):
         if network is not None:
             response = connect_(ip, network, container_id)
             if response is None or response.status_code != 204:
-                console.print(KLEE_MSG.format(msg="could not start container"))
+                echo_bold("could not start container")
                 return
 
         start_(attach, interactive, tty, [container_id])
@@ -626,14 +619,14 @@ def execution_create_and_start(
     env = [] if env is None else env
     exec_id = _create_exec_instance(container_id, tty, cmd, env, user)
     if exec_id is not None:
-        config = json.dumps(
+        exec_config = json.dumps(
             {"exec_id": exec_id, "attach": attach, "start_container": start_container}
         )
 
         if attach:
-            asyncio.run(_attached_execute(config, interactive))
+            asyncio.run(_attached_execute(exec_config, interactive))
         else:
-            asyncio.run(_execute(config))
+            asyncio.run(_execute(exec_config))
 
 
 def _create_exec_instance(container_id, tty, cmd, env, user):
@@ -650,10 +643,10 @@ def _create_exec_instance(container_id, tty, cmd, env, user):
         },
     )
     if response.status_code == 201:
-        console.print(EXEC_INSTANCE_CREATED.format(exec_id=response.parsed.id))
+        echo_bold(EXEC_INSTANCE_CREATED.format(exec_id=response.parsed.id))
         return response.parsed.id
 
-    console.print(
+    echo_bold(
         EXEC_INSTANCE_CREATE_ERROR.format(
             container_id=container_id, exec_id=response.parsed
         )
@@ -666,7 +659,7 @@ async def _execute(config):
         await websocket.send(config)
         await websocket.wait_closed()
         if websocket.close_code != 1001:
-            console.print(EXEC_START_ERROR)
+            echo_bold(EXEC_START_ERROR)
 
 
 async def _attached_execute(config, interactive):
@@ -689,16 +682,16 @@ async def _attached_execute(config, interactive):
                 loop.add_reader(sys.stdin, _send_user_input, websocket)
             closing_message = await listen_for_messages(websocket)
             if closing_message["data"] == "":
-                print_closing(closing_message, ["message"])
+                print_websocket_closing(closing_message, ["message"])
 
             else:
-                print_closing(closing_message, ["message", "data"])
+                print_websocket_closing(closing_message, ["message", "data"])
 
         elif start_msg["msg_type"] == "error":
-            print_closing(closing_message, ["message"])
+            print_websocket_closing(closing_message, ["message"])
 
         else:
-            console.print(UNEXPECTED_ERROR)
+            unexpected_error()
 
 
 def _send_user_input(websocket):
