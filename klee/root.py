@@ -1,3 +1,5 @@
+import sys
+import argparse
 from urllib.parse import urlparse
 
 import click
@@ -10,15 +12,22 @@ ERROR_INVALID_CONFIG = (
 )
 
 
+def bootstrap_theme_and_config_args():
+    parser = argparse.ArgumentParser(prog="bootstrap-config-file")
+    parser.add_argument("--theme")
+    parser.add_argument("--config")
+    args, _rest = parser.parse_known_args()
+    return args.config, args.theme
+
+
 def create_cli():
-    # Importing in this order enable us to load the configuration files, and thus
-    # the 'theme' parameter, before it is being used in the creation of commands.
+    # Bootstrap the configuration retrieval before building klee's CLI
     from .config import config
 
-    # FIXME: Load environment variables here.
-    config.load_config()
-    # this changed the default "rich-cli"
-    # config.theme = "click-cli"
+    config.load_environment_variables()
+    config_file, theme = bootstrap_theme_and_config_args()
+    config.update_bootstrap_options(config_file, theme)
+    config.load_config_file()
 
     from .container import (
         root as container_root,
@@ -55,6 +64,12 @@ def create_cli():
 
     @click.group(cls=root_cls(), name="klee")
     @click.version_option(version="0.0.1")
+    @click.option("--config", default=None, help="Location of Klee config file.")
+    @click.option(
+        "--theme",
+        default=None,
+        help="Theme used for Klee's output. Possible values: 'fancy' or 'simple'. Default is 'fancy'.",
+    )
     @click.option(
         "--host",
         default=None,

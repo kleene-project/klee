@@ -1,66 +1,69 @@
 import json
-
 import inspect
 from gettext import gettext
 
 import click
 from click.core import HelpFormatter, Context
 
-
-import click
 from rich.console import Console
 from rich.table import Table
-from rich.text import Text
 from rich.panel import Panel
+from rich.text import Text
+from rich.markdown import Markdown
 from rich import box
+
 
 from .config import config
 
-# from .richclick import RichGroup, RichCommand, RootGroup
 from .docs_generator import DocsGroup, DocsCommand
 
 console = Console()
 
+THEME_FANCY = "fancy"
+THEME_SIMPLE = "simple"
+
 
 def echo_bold(msg):
-    if config.theme == "rich-cli":
-        echo(f"[bold]{msg}[/bold]")
+    style = None
 
-    elif config.theme == "click-cli":
-        echo(msg)
-    else:
-        raise Exception("Should not happen")
+    if config.theme == THEME_FANCY:
+        style = "bold"
+
+    console.print(msg, style=style)
 
 
 def echo(msg, **kwargs):
-    if config.theme == "rich-cli":
-        console.print(msg, **kwargs)
+    console.print(msg, **kwargs)
 
-    elif config.theme == "click-cli":
-        console.print(msg, **kwargs)
-    else:
-        raise Exception("Should not happen")
+
+def echo_error(msg):
+    style = None
+
+    if config.theme == THEME_FANCY:
+        style = "bold red"
+
+    console.print(msg, style=style)
 
 
 def connection_closed_unexpectedly():
-    console.print("ERROR! Connection closed unexpectedly.")
+    echo_error("ERROR! Connection closed unexpectedly.")
 
 
 def unexpected_error():
-    echo_bold("\nERROR! Some unexpected error occured")
+    echo_error("\nERROR! Some unexpected error occured")
 
 
 def unrecognized_status_code(status_code):
-    echo_bold(f"unrecognized status-code received from kleened: {status_code}")
+    echo_error(f"unrecognized status-code received from kleened: {status_code}")
 
 
 def print_unable_to_connect(msg):
-    echo_bold(f"unable to connect to kleened: {msg}")
+    echo_error(f"unable to connect to kleened: {msg}")
 
 
 def print_id_list(id_list):
     id_list = "\n".join(id_list)
-    console.print(id_list)
+    echo_bold(id_list)
 
 
 def print_websocket_closing(msg, attributes):
@@ -69,17 +72,28 @@ def print_websocket_closing(msg, attributes):
 
 
 def print_json(json_obj):
-    console.print_json(json.dumps(json_obj.to_dict()))
+    if config.theme == THEME_FANCY:
+        console.print_json(json.dumps(json_obj.to_dict()))
 
+    elif config.theme == THEME_SIMPLE:
+        click.echo(json.dumps(json_obj.to_dict(), indent=2))
+
+    # # OpenAPI-spec printing
     # from rich.pretty import pprint
     # pprint(json_obj)
 
 
 def print_table(items, columns):
-    table = Table(show_edge=False, box=box.SIMPLE)
+    if config.theme == THEME_FANCY:
+        table = Table(show_edge=False, box=box.SIMPLE)
+    else:
+        table = Table(show_edge=False, header_style=None, box=box.ASCII)
 
     for column_name, kwargs in columns:
-        table.add_column(column_name, **kwargs)
+        if config.theme == THEME_FANCY:
+            table.add_column(column_name, **kwargs)
+        elif config.theme == THEME_SIMPLE:
+            table.add_column(column_name)
 
     for item in items:
         table.add_row(*item)
@@ -141,10 +155,10 @@ class RichCommand(click.Command):
 
 
 def command_cls():
-    if config.theme == "rich-cli":
+    if config.theme == THEME_FANCY:
         return RichCommand
 
-    if config.theme == "click-cli":
+    if config.theme == THEME_SIMPLE:
         return click.Command
 
     if config.theme == "docs-generator":
@@ -154,10 +168,10 @@ def command_cls():
 
 
 def group_cls():
-    if config.theme == "rich-cli":
+    if config.theme == THEME_FANCY:
         return RichGroup
 
-    if config.theme == "click-cli":
+    if config.theme == THEME_SIMPLE:
         return click.Group
 
     if config.theme == "docs-generator":
@@ -167,10 +181,10 @@ def group_cls():
 
 
 def root_cls():
-    if config.theme == "rich-cli":
+    if config.theme == THEME_FANCY:
         return RichGroup
 
-    if config.theme == "click-cli":
+    if config.theme == THEME_SIMPLE:
         return RootGroup
 
     if config.theme == "docs-generator":
@@ -186,18 +200,11 @@ def print_shortcuts_section(self):
     for name, command in self.commands.items():
         # Hidden commands are the shortcuts
         if command.hidden:
-            # commands.append((name, command))
             cmd_help = command.get_short_help_str(limit=200)
-            commands_table.add_row(f"[yellow]{name}[/yellow]", Markdown(cmd_help))
+            commands_table.add_row(Text(name, style="bold yellow"), Markdown(cmd_help))
 
     console.print(
-        Panel(
-            commands_table,
-            border_style="dim",
-            title="Shortcuts",
-            style="bold",
-            title_align="left",
-        )
+        Panel(commands_table, border_style="dim", title="Shortcuts", title_align="left")
     )
 
 
@@ -217,30 +224,21 @@ def print_commands_section(self, ctx):
 
     for subcommand, cmd in commands:
         cmd_help = Markdown(cmd.get_short_help_str(limit=200))
-        subcommand = f"[green]{subcommand}[/green]"
+        subcommand = Text(subcommand, style="bold green")
         commands_table.add_row(subcommand, cmd_help)
 
     console.print(
-        Panel(
-            commands_table,
-            border_style="dim",
-            title="Commands",
-            style="bold",
-            title_align="left",
-        )
+        Panel(commands_table, border_style="dim", title="Commands", title_align="left")
     )
 
 
 def print_usage_line(self, ctx):
     pieces = []
-    pieces.append(f"[b]{ctx.command_path}[/b]")
+    pieces.append(ctx.command_path)
     for piece in self.collect_usage_pieces(ctx):
-        pieces.append(f"[b]{piece}[/b]")
+        pieces.append(piece)
 
-    console.print("Usage: " + " ".join(pieces))
-
-
-from rich.markdown import Markdown
+    console.print(Text("Usage: ") + Text(" ".join(pieces), style="bold"))
 
 
 def print_help_section(self):
@@ -257,9 +255,16 @@ def print_help_section(self):
         console.print(help_table)
 
 
+def no_formatting(text):
+    return text
+
+
 def print_options_section(self, ctx):
     # Building options section
     options_table = Table(highlight=True, box=None, show_header=False)
+    style_opt = "bold cyan"
+    style_opt_short = "bold green"
+    style_metavar = "bold blue"
 
     for param in self.get_params(ctx):
 
@@ -267,14 +272,14 @@ def print_options_section(self, ctx):
             continue
 
         if len(param.opts) == 2:
-            opt1 = f"[green]{param.opts[1]}[/green]"
-            opt2 = f"[cyan]{param.opts[0]}[/cyan]"
+            opt1 = Text(param.opts[1], style=style_opt_short)
+            opt2 = Text(param.opts[0], style=style_opt)
         else:
-            opt2 = f"[cyan]{param.opts[0]}[/cyan]"
-            opt1 = ""
+            opt2 = Text(param.opts[0], style=style_opt)
+            opt1 = Text("", style=style_opt_short)
 
         if param.metavar:
-            opt2 += f" [bold yellow]{param.metavar}[/bold yellow]"
+            opt2 += Text(f" {param.metavar}", style=style_metavar)
 
         help_record = param.get_help_record(ctx)
         if help_record is None:
@@ -285,11 +290,5 @@ def print_options_section(self, ctx):
         options_table.add_row(opt1, opt2, Markdown(help_))
 
     console.print(
-        Panel(
-            options_table,
-            border_style="dim",
-            title="Options",
-            style="bold",
-            title_align="left",
-        )
+        Panel(options_table, border_style="dim", title="Options", title_align="left")
     )
