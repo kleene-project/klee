@@ -32,7 +32,7 @@ class TestImageSubcommand:
         remove_all_images()
 
     def test_empty_listing_of_images(self):
-        assert empty_image_list()
+        assert_empty_image_list()
 
     def test_build_remove_and_list_images(self):
         create_dockerfile(self.instructions)
@@ -41,7 +41,7 @@ class TestImageSubcommand:
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
-        assert empty_image_list()
+        assert_empty_image_list()
 
     def test_inspect_image(self):
         create_dockerfile(self.instructions)
@@ -88,7 +88,7 @@ class TestImageSubcommand:
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert succesfully_remove_image(image_id)
-        assert empty_image_list()
+        assert_empty_image_list()
 
     def test_build_and_remove_and_with_a_tag(self):
         create_dockerfile(self.instructions)
@@ -101,7 +101,7 @@ class TestImageSubcommand:
             == f" {image_id}   testlol   testest   Less than a second ago "
         )
         assert succesfully_remove_image(image_id)
-        assert empty_image_list()
+        assert_empty_image_list()
 
     def test_build_image_with_buildarg(self):
         instructions = ["FROM FreeBSD:testing", "ARG TEST=notthis", 'RUN echo "$TEST"']
@@ -250,13 +250,13 @@ def image_id_from_list(index):
     return image_id
 
 
-def empty_image_list():
+def assert_empty_image_list():
     created = human_duration("2023-09-14T21:21:57.990515Z")
     lines = [
-        " ID     NAME      TAG       CREATED     ",
-        "────────────────────────────────────────",
+        " ID     NAME      TAG       CREATED      ",
+        "─────────────────────────────────────────",
         f" base   FreeBSD   testing   {created} ago ",
         "",
     ]
     output = run("image ls")
-    return output == lines
+    assert output == lines

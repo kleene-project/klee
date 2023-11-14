@@ -31,7 +31,7 @@ NETWORK_LIST_COLUMNS = [
 # pylint: disable=unused-argument
 @click.group(cls=group_cls(), add_help_option=True, short_help="Manage networks")
 def root(name="network"):
-    """Manage networks using the following subcommands."""
+    """Manage networks using the following `subcommands`."""
 
 
 @root.command(cls=command_cls(), name="create", no_args_is_help=True)
