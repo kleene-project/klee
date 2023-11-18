@@ -4,12 +4,13 @@ import os
 import yaml
 
 from click.testing import CliRunner
+from klee.printing import THEME_DOCSGENERATOR
 from klee.config import config
 
-config.cli_type = "docs-generator"
+config.theme = THEME_DOCSGENERATOR
 
 # pylint: disable=wrong-import-position
-from klee.root import create_cli
+from klee.root import create_cli, DEFAULT_HOST
 from klee.docs_generator import DocsGroup, DocsCommand
 
 
@@ -33,10 +34,9 @@ def save_file(yaml_data, filename):
 
 
 def create_yaml_data(cmd, obj):
-    # # Use this if debugging Klee:
-    # output = runner.invoke(cli, cmd + ["--help"])
-    # print("Output from Klee:", output.stdout)
-    runner.invoke(cli, cmd + ["--help"])
+    config.host = DEFAULT_HOST
+    result = runner.invoke(cli, cmd + ["--help"], catch_exceptions=False)
+    print(f"Running: {cmd}: {result}")
     return yaml.dump(obj.docs)
 
 
@@ -55,7 +55,6 @@ if __name__ == "__main__":
     save_file(yaml_data, "klee.yaml")
 
     for cmd, obj in iter_commands(cli):
-        print("Running: ", cmd, obj)
         yaml_data = create_yaml_data(cmd, obj)
         filename = "_".join(["klee"] + cmd) + ".yaml"
         save_file(yaml_data, filename)

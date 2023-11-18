@@ -84,13 +84,20 @@ def _usage(self, ctx):
     return ctx.command_path + " " + " ".join(self.collect_usage_pieces(ctx))
 
 
+EXPERIMENTAL_OPTIONS = {"tty"}
+
+
 def _options(self, ctx):
     options = []
     for param in self.get_params(ctx):
-        option = {"deprecated": False, "experimental": False, "experimentalcli": False}
         # We're only interested in click.Options
         if isinstance(param, click.Argument):
             continue
+
+        option = {"deprecated": False, "experimental": False, "experimentalcli": False}
+
+        if param.human_readable_name in EXPERIMENTAL_OPTIONS:
+            option.update({"experimental": True, "experimentalcli": True})
 
         # [2:] to avoid '--'
         option["option"] = param.opts[0][2:]

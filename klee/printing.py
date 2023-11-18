@@ -21,6 +21,7 @@ console = Console()
 
 THEME_FANCY = "fancy"
 THEME_SIMPLE = "simple"
+THEME_DOCSGENERATOR = "docs-generator"
 
 
 def echo_bold(msg):
@@ -161,7 +162,7 @@ def command_cls():
     if config.theme == THEME_SIMPLE:
         return click.Command
 
-    if config.theme == "docs-generator":
+    if config.theme == THEME_DOCSGENERATOR:
         return DocsCommand
 
     raise Exception(f"cli theme '{config.theme}' not known")
@@ -174,7 +175,7 @@ def group_cls():
     if config.theme == THEME_SIMPLE:
         return click.Group
 
-    if config.theme == "docs-generator":
+    if config.theme == THEME_DOCSGENERATOR:
         return DocsGroup
 
     raise Exception(f"cli theme '{config.theme}' not known")
@@ -187,7 +188,7 @@ def root_cls():
     if config.theme == THEME_SIMPLE:
         return RootGroup
 
-    if config.theme == "docs-generator":
+    if config.theme == THEME_DOCSGENERATOR:
         return DocsGroup
 
     raise Exception(f"cli theme '{config.theme}' not known")
