@@ -13,7 +13,7 @@ ERROR_INVALID_CONFIG = (
 
 
 def bootstrap_theme_and_config_args():
-    parser = argparse.ArgumentParser(prog="bootstrap-config-file")
+    parser = argparse.ArgumentParser(prog="bootstrap-config-file", add_help=False)
     parser.add_argument("--theme")
     parser.add_argument("--config")
     args, _rest = parser.parse_known_args()
@@ -73,7 +73,7 @@ def create_cli():
     @click.option(
         "--host",
         default=None,
-        help="Host address and protocol to use. See the docs for details.",
+        help=f"Host address and protocol to use. See the docs for details. If no host is defined anywhere, Klee uses `{DEFAULT_HOST}`.",
     )
     @click.option(
         "--tlsverify/--no-tlsverify",
@@ -112,7 +112,7 @@ def create_cli():
 
         parameters_to_merge = ["host", "tlsverify", "tlscacert", "tlscert", "tlskey"]
         for param in parameters_to_merge:
-            if getattr(config, param) is None:
+            if kwargs[param] is not None:
                 setattr(config, param, kwargs[param])
 
         config.host = urlparse(config.host)

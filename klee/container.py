@@ -43,6 +43,7 @@ from .utils import human_duration, request_and_validate_response, listen_for_mes
 from .prune import prune_command
 from .inspect import inspect_command
 
+PARAM_HELP_ATTACH = "Attach to STDOUT/STDERR. If this flag is omitted the container will run detached from klee."
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
@@ -281,9 +282,7 @@ root.add_command(
 
 def container_start(name, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
-    @click.option(
-        "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
-    )
+    @click.option("--attach", "-a", default=False, is_flag=True, help=PARAM_HELP_ATTACH)
     @click.option(
         "--interactive",
         "-i",
@@ -385,9 +384,7 @@ def container_exec(name, hidden=False):
         # We use this to avoid problems option-parts of the "command" argument, i.e., 'klee container exec -a /bin/sh -c echo lol
         context_settings={"ignore_unknown_options": True},
     )
-    @click.option(
-        "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
-    )
+    @click.option("--attach", "-a", default=False, is_flag=True, help=PARAM_HELP_ATTACH)
     @click.option(
         "--env",
         "-e",
@@ -558,7 +555,12 @@ def container_run(name, hidden=False):
         help="Specify a jail parameters, see jail(8) for details",
     )
     @click.option(
-        "--attach", "-a", default=False, is_flag=True, help="Attach to STDOUT/STDERR"
+        "--attach",
+        "-a",
+        default=False,
+        is_flag=True,
+        metavar="flag",
+        help=PARAM_HELP_ATTACH,
     )
     @click.option(
         "--interactive",
@@ -589,7 +591,7 @@ def container_run(name, hidden=False):
         """
         Run a command in a new container.
 
-        The IMAGE parameter syntax is: (**IMAGE_ID**|**IMAGE_NAME**[:**TAG**])[:**@SNAPSHOT**]
+        The IMAGE syntax is: (**IMAGE_ID**|**IMAGE_NAME**[:**TAG**])[:**@SNAPSHOT**]
         """
         response = create_(
             name, user, network, ip, volume, env, jailparam, image, command

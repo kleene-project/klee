@@ -101,6 +101,17 @@ class TestFileConfiguration:
         output = output.stdout.decode("utf8").replace("\n", "")
         assert output == CERTIFICATE_REQUIRED_ERROR
 
+    def test_command_line_host_takes_priority(self):
+        # Testing in a completely fresh environment so we don't mess with envvars etc.
+        output = subprocess.run(
+            f'KLEE_HOST="{DEFAULT_HOST}" klee --host=http://127.0.0.1:8027 image ls',
+            shell=True,
+            capture_output=True,
+            check=False,
+        )
+        output = output.stdout.decode("utf8").replace("\n", "")
+        assert output == "unable to connect to kleened: [Errno 61] Connection refused"
+
     def test_invalid_no_tlskey(self):
         config = {
             "host": "https://127.0.0.1:8085",
