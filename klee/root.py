@@ -77,7 +77,7 @@ def create_cli():
     )
     @click.option(
         "--tlsverify/--no-tlsverify",
-        default=True,
+        default=None,
         help="Verify the server cert. Uses the CA bundle provided by Certifi unless the '--cacert' is set.",
     )
     @click.option(
