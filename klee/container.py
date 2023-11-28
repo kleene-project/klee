@@ -522,7 +522,10 @@ def container_run(name, hidden=False):
         "--user",
         "-u",
         default="",
-        help="Alternate user that should be used for starting the container",
+        help="""
+        Alternate user that should be used for starting the container.
+        This parameter will be overwritten by the jail parameter `exec.jail_user` if it is set.
+        """,
     )
     @click.option(
         "--network", "-n", default=None, help="Connect a container to a network"
@@ -552,7 +555,10 @@ def container_run(name, hidden=False):
         multiple=True,
         default=["mount.devfs"],
         show_default=True,
-        help="Specify a jail parameters, see jail(8) for details",
+        help="""
+        Specify one or more jail parameters to use. See the `jail(8)` man-page for details.
+        If you do not want `exec.clean` and `mount.devfs` enabled, you must actively disable them.
+        """,
     )
     @click.option(
         "--attach",

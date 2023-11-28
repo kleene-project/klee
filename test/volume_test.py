@@ -98,7 +98,7 @@ class TestVolumeSubcommand:
         expected_output = [
             f"created execution instance {exec_id}",
             "touch: /testdir1/testfile: Read-only file system",
-            "jail: /usr/bin/env -i /usr/bin/touch /testdir1/testfile: failed",
+            "jail: /usr/bin/env /usr/bin/touch /testdir1/testfile: failed",
         ]
 
         assert output[:3] == expected_output
