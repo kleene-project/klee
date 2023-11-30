@@ -201,6 +201,16 @@ class TestImageCreateSubcommand:
         image_id = result[-2]
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
+        assert resolv_conf_exist(image_id)
+        assert succesfully_remove_image(image_id)
+
+    def test_create_image_with_fetch_method_and_nodns(self):
+        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+        result = create_image("fetch", tag="ImageCreate:test-nodns", dns=False, url=url)
+        assert result[-3] == "image created"
+        image_id = result[-2]
+
+        assert not resolv_conf_exist(image_id)
         assert succesfully_remove_image(image_id)
 
     def test_create_image_with_zfs_method(self):
@@ -226,7 +236,41 @@ class TestImageCreateSubcommand:
         image_id = result[-2]
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
+        assert resolv_conf_exist(image_id)
         assert succesfully_remove_image(image_id)
+
+    def test_create_image_with_zfs_method_nodns(self):
+        dataset = "zroot/kleene_testdataset"
+        if os.path.isdir(f"/{dataset}"):
+            subprocess.run(["/sbin/zfs", "destroy", "-rf", dataset], check=True)
+
+        subprocess.run(["/sbin/zfs", "create", dataset], check=True)
+
+        result = subprocess.run(
+            [
+                "/usr/bin/tar",
+                "-xf",
+                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
+                "-C",
+                f"/{dataset}",
+            ],
+            check=True,
+        )
+        assert result.returncode == 0
+        result = create_image(
+            "zfs", tag="ImageCreate:test-zfs", dns=False, dataset=dataset
+        )
+        assert result[-3] == "image created"
+        image_id = result[-2]
+        image_id_listed = image_id_from_list(0)
+        assert image_id == image_id_listed
+        assert not resolv_conf_exist(image_id)
+        assert succesfully_remove_image(image_id)
+
+
+def resolv_conf_exist(image_id):
+    resolv_conf = f"/zroot/kleene/image/{image_id}/etc/resolv.conf"
+    return os.path.isfile(resolv_conf)
 
 
 def verify_build_output(expected_log, build_log):

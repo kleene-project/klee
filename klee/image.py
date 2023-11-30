@@ -66,6 +66,13 @@ def create(name="create"):
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
 @click.option(
+    "--dns/--no-dns",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
+)
+@click.option(
     "--force",
     "-f",
     is_flag=True,
@@ -73,7 +80,7 @@ def create(name="create"):
     help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the kleened host.",
 )
 @click.argument("method", nargs=1)
-def fetch(tag, force, method):
+def fetch(tag, dns, force, method):
     """
     Fetch and create a base image from a tar-archive downloaded with `fetch(1)`.
 
@@ -87,7 +94,9 @@ def fetch(tag, force, method):
     fetching_method = "fetch"
     dataset = ""
     asyncio.run(
-        _create_image_and_listen_for_messages(tag, dataset, url, force, fetching_method)
+        _create_image_and_listen_for_messages(
+            tag, dns, dataset, url, force, fetching_method
+        )
     )
 
 
@@ -95,8 +104,15 @@ def fetch(tag, force, method):
 @click.option(
     "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
 )
+@click.option(
+    "--dns/--no-dns",
+    is_flag=True,
+    default=True,
+    show_default=True,
+    help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
+)
 @click.argument("dataset", nargs=1)
-def zfs(tag, dataset):
+def zfs(tag, dns, dataset):
     """
     Create a base image from an existing ZFS dataset.
 
@@ -110,13 +126,16 @@ def zfs(tag, dataset):
     force = False
     url = ""
     method = "zfs"
-    asyncio.run(_create_image_and_listen_for_messages(tag, dataset, url, force, method))
+    asyncio.run(
+        _create_image_and_listen_for_messages(tag, dns, dataset, url, force, method)
+    )
 
 
-async def _create_image_and_listen_for_messages(tag, dataset, url, force, method):
+async def _create_image_and_listen_for_messages(tag, dns, dataset, url, force, method):
     config = json.dumps(
         {
             "tag": tag,
+            "dns": dns,
             "method": method,
             "zfs_dataset": dataset,
             "url": url,

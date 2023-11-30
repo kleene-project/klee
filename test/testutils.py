@@ -77,15 +77,17 @@ def decode_valid_image_build(result):
     return image_id, build_log
 
 
-def create_image(method, tag=None, url=None, dataset=None):
+def create_image(method, tag=None, url=None, dataset=None, dns=True):
     tag = "" if tag is None else f"--tag={tag} "
+    dns = "" if dns else "--no-dns "
+
     if method == "zfs":
         dataset = "" if dataset is None else f"{dataset}"
-        return run(f"image create {method} {tag}{dataset}")
+        return run(f"image create {method} {dns}{tag}{dataset}")
 
     if method == "fetch":
         fetch_method = "auto" if url is None else url
-        return run(f"image create {method} {tag}{fetch_method}")
+        return run(f"image create {method} {dns}{tag}{fetch_method}")
 
     return f"unknown method type {method}"
 

@@ -14,7 +14,7 @@ For information on connecting a container to a network, see the
 ### <a name="name"></a> Assign name and allocate pseudo-TTY (--name, -it)
 
 ```console
-$ klee run --name test -ait FreeBSD-13.2-STABLE /bin/sh
+$ klee run --name test -ait FreeBSD-13.2-RELEASE /bin/sh
 839aee293db2
 created execution instance 176b56a85a4a
 #

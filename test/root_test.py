@@ -134,5 +134,9 @@ class TestFileConfiguration:
 def _create_config_file(content, level):
     # In case of the '~/' directory
     filepath = os.path.expanduser(level2filepaths[level])
+    if level != "cwd":
+        dirpath = os.path.dirname(filepath)
+        os.makedirs(dirpath, exist_ok=True)
+
     with open(filepath, "w", encoding="utf8") as f:
         f.write(yaml.dump(content))
