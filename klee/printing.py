@@ -268,7 +268,6 @@ def print_options_section(self, ctx):
     style_metavar = "bold blue"
 
     for param in self.get_params(ctx):
-
         if param.opts[0][:2] != "--":
             continue
 
@@ -281,6 +280,10 @@ def print_options_section(self, ctx):
 
         if param.metavar:
             opt2 += Text(f" {param.metavar}", style=style_metavar)
+
+        # If the '--dns/--no-dns' form of printing options is preferred, uncomment below:
+        # if len(param.secondary_opts) > 0:
+        #    opt2 = opt2 + "/" + param.secondary_opts[0]
 
         help_record = param.get_help_record(ctx)
         if help_record is None:

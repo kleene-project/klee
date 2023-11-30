@@ -70,6 +70,7 @@ def create(name="create"):
     is_flag=True,
     default=True,
     show_default=True,
+    metavar="bool",
     help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
 )
 @click.option(
@@ -109,6 +110,7 @@ def fetch(tag, dns, force, method):
     is_flag=True,
     default=True,
     show_default=True,
+    metavar="bool",
     help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
 )
 @click.argument("dataset", nargs=1)
