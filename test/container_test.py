@@ -38,6 +38,12 @@ class TestContainerSubcommand:
 
         assert empty_container_list()
 
+    def test_remove_running_container(self):
+        name = "remove_running_container"
+        container_id = create_container(name=name, command="/bin/sh /etc/rc")
+        run(f"container start {container_id}")
+        assert [container_id, ""] == run(f"container rm --force {container_id}")
+
     def test_inspect_container(self):
         name = "test_container_inspect"
         container_id = create_container(name=name)

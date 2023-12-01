@@ -248,16 +248,27 @@ root.add_command(
 
 def container_remove(name, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
+    @click.option(
+        "--force",
+        "-f",
+        is_flag=True,
+        default=False,
+        help="Stop containers before removing them.",
+    )
     @click.argument("containers", required=True, nargs=-1)
-    def remove(containers):
+    def remove(force, containers):
         """Remove one or more containers"""
         for container_id in containers:
+            if force:
+                _stop([container_id], silent=True)
+
             response = request_and_validate_response(
                 container_remove_endpoint,
                 kwargs={"container_id": container_id},
                 statuscode2messsage={
                     200: lambda response: response.parsed.id,
                     404: lambda response: response.parsed.message,
+                    409: lambda response: response.parsed.message,
                     500: "kleened backend error",
                 },
             )
@@ -311,21 +322,36 @@ def container_stop(name, hidden=False):
     @click.argument("containers", nargs=-1)
     def stop(containers):
         """Stop one or more running containers"""
-        for container_id in containers:
-            response = request_and_validate_response(
-                container_stop_endpoint,
-                kwargs={"container_id": container_id},
-                statuscode2messsage={
-                    200: lambda response: response.parsed.id,
-                    304: lambda response: response.parsed.message,
-                    404: lambda response: response.parsed.message,
-                    500: "kleened backend error",
-                },
-            )
-            if response is None or response.status_code != 200:
-                break
+        _stop(containers)
 
     return stop
+
+
+def _stop(containers, silent=False):
+    def ssch(_):
+        return ""
+
+    def return_id(response):
+        return response.parsed.id
+
+    if silent:
+        response_200 = ssch
+    else:
+        response_200 = return_id
+
+    for container_id in containers:
+        response = request_and_validate_response(
+            container_stop_endpoint,
+            kwargs={"container_id": container_id},
+            statuscode2messsage={
+                200: response_200,
+                304: lambda response: response.parsed.message,
+                404: lambda response: response.parsed.message,
+                500: "kleened backend error",
+            },
+        )
+        if response is None or response.status_code != 200:
+            break
 
 
 root.add_command(container_stop("stop"), name="stop")
