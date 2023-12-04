@@ -26,11 +26,22 @@ class ContainerConfig:
             If `<tag>` is omitted, `latest` is assumed.
              Example: ['FreeBSD:13.2-STABLE', 'FreeBSD:13.2-STABLE:@6b3c821605d4', '48fa55889b0f',
             '48fa55889b0f:@2028818d6f06'].
-        jail_param (Union[Unset, None, List[str]]): List of `jail(8)` parameters to use for the container. Example:
-            ['allow.raw_sockets=true', 'osrelease=kleenejail'].
+        jail_param (Union[Unset, None, List[str]]): List of jail parameters to use for the container.
+            See the [`jails manual page`](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
+
+            A few parameters have some special behavior in Kleene:
+
+            - `exec.jail_user`: If not explicitly set, the value of the `user` parameter will be used.
+            - `mount.devfs`/`exec.clean`: If not explicitly set, `mount.devfs=true`/`exec.clean=true` will be used.
+
+            So, if you do not want `exec.clean` and `mount.devfs` enabled, you must actively disable them.
+             Example: ['allow.raw_sockets=true', 'osrelease=kleenejail'].
         name (Union[Unset, None, str]): Name of the container. Must match `/?[a-zA-Z0-9][a-zA-Z0-9_.-]+`.
-        user (Union[Unset, None, str]): User that executes the command (cmd). If no user is set the user from the image
-            will be used (which in turn is 'root' if no user is specified there). Default: ''.
+        user (Union[Unset, None, str]): User that executes the command (cmd).
+            If no user is set, the user from the image will be used, which in turn is 'root' if no user is specified there.
+
+            This parameter will be overwritten by the jail parameter `exec.jail_user` if it is set.
+             Default: ''.
         volumes (Union[Unset, None, List[str]]): List of volumes that should be mounted into the container
     """
 

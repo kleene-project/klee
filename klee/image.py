@@ -15,6 +15,7 @@ from .connection import create_websocket
 from .printing import (
     echo,
     echo_bold,
+    echo_error,
     group_cls,
     command_cls,
     print_table,
@@ -47,106 +48,95 @@ def root(name="image"):
     """Manage images"""
 
 
-@root.group(cls=group_cls())
-def create(name="create"):
-    """
-    Create a base image from a remote tar-archive or a ZFS dataset using the subcommands
-    listed below.
-
-    See the documentation for details on base images and how to create them.
-    """
-
-
-@create.command(
-    cls=command_cls(),
-    no_args_is_help=True,
-    short_help="Create a base image from a local or remote tar-archive.",
-)
-@click.option(
-    "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
-)
-@click.option(
-    "--dns/--no-dns",
-    is_flag=True,
-    default=True,
-    show_default=True,
-    metavar="bool",
-    help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
-)
-@click.option(
-    "--force",
-    "-f",
-    is_flag=True,
-    default=False,
-    help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the kleened host.",
-)
-@click.argument("method", nargs=1)
-def fetch(tag, dns, force, method):
-    """
-    Fetch and create a base image from a tar-archive downloaded with `fetch(1)`.
-
-    If `METHOD` is set to `auto`, Kleene will try to create the image from a userland (`base.txz`) fetched
-    from the official FreeBSD repositories, based on the host OS information from `uname(1)`.
-
-    Otherwise, `METHOD` should be an URL pointing to a tar-archive of the userland.
-    """
-
-    url = "" if method == "auto" else method
-    fetching_method = "fetch"
-    dataset = ""
-    asyncio.run(
-        _create_image_and_listen_for_messages(
-            tag, dns, dataset, url, force, fetching_method
-        )
+def image_create(name, hidden=False):
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        no_args_is_help=True,
+        short_help="Create a new base image",
     )
-
-
-@create.command(cls=command_cls(), no_args_is_help=True)
-@click.option(
-    "--tag", "-t", default="", help="Name and optionally a tag in the 'name:tag' format"
-)
-@click.option(
-    "--dns/--no-dns",
-    is_flag=True,
-    default=True,
-    show_default=True,
-    metavar="bool",
-    help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
-)
-@click.argument("dataset", nargs=1)
-def zfs(tag, dns, dataset):
-    """
-    Create a base image from an existing ZFS dataset.
-
-    Use a local zfs(8) dataset on the kleened host to create a base image.
-    The dataset should contain a complete userland or application that can
-    run in a jailed environement.
-
-    See the documentation for details on, e.g., building a FreeBSD base system from source or
-    using freebsd-update(8).
-    """
-    force = False
-    url = ""
-    method = "zfs"
-    asyncio.run(
-        _create_image_and_listen_for_messages(tag, dns, dataset, url, force, method)
+    @click.option(
+        "--tag",
+        "-t",
+        default="",
+        help="Name and optionally a tag in the 'name:tag' format",
     )
+    @click.option(
+        "--dns/--no-dns",
+        is_flag=True,
+        default=True,
+        show_default=True,
+        metavar="bool",
+        help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
+    )
+    @click.option(
+        "--force",
+        "-f",
+        is_flag=True,
+        default=False,
+        metavar="bool",
+        help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the kleened host. Method **fetch-auto** only.",
+    )
+    @click.option(
+        "--autotag",
+        "-a",
+        is_flag=True,
+        default=True,
+        metavar="bool",
+        help="Whether or not to auto-genereate a nametag `FreeBSD-<version>:latest` based on `uname(1)`. Method **fetch-auto** only.",
+    )
+    @click.argument("method", nargs=1)
+    @click.argument("source", nargs=-1)
+    def create(tag, dns, force, autotag, method, source):
+        """
+        Create a base image from a remote tar-archive or a ZFS dataset.
 
+        **METHOD** can be one of the following:
 
-async def _create_image_and_listen_for_messages(tag, dns, dataset, url, force, method):
-    config = json.dumps(
-        {
+        - **fetch**: Fetch a custom version of the base system and use it for image creation.
+          **SOURCE** is a valid url for `fetch(1)` pointing to a `base.txz` file.
+        - **fetch-auto**: Automatically fetch a release/snapshot from the offical FreeBSD
+          mirrors, based on information from `uname(1)`. **SOURCE** is not used.
+        - **zfs-copy**: Create the base image based on a copy of an existing ZFS dataset. **SOURCE** is the dataset.
+        - **zfs-clone**: Create the base image based on a clone of an existing ZFS dataset. **SOURCE** is the dataset.
+        """
+        dataset = ""
+        url = ""
+
+        if len(source) > 1:
+            additional_arguments = " ".join(source[1:])
+            echo_error(f"too many arguments: {additional_arguments}")
+            return
+
+        if method in {"zfs-clone", "zfs-copy"}:
+            dataset = source[0]
+
+        if method in {"fetch", "fetch-auto"}:
+            url = source[0]
+
+        config = {
+            "method": method,
+            "url": url,
+            "zfs_dataset": dataset,
             "tag": tag,
             "dns": dns,
-            "method": method,
-            "zfs_dataset": dataset,
-            "url": url,
             "force": force,
+            "autotag": autotag,
         }
-    )
+        config_json = json.dumps(config)
+        asyncio.run(_create_image_and_listen_for_messages(config_json))
+
+    return create
+
+
+root.add_command(image_create("create"), name="create")
+
+
+async def _create_image_and_listen_for_messages(config_json):
     try:
         async with create_websocket(WS_IMAGE_CREATE_ENDPOINT) as websocket:
-            await websocket.send(config)
+            await websocket.send(config_json)
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
             if start_msg["msg_type"] == "starting":
@@ -312,7 +302,7 @@ root.add_command(
         name="inspect",
         argument="image",
         id_var="image_id",
-        docs="Display detailed information on an image.",
+        docs="Display detailed information on an image",
         endpoint=image_inspect_endpoint,
     ),
     name="inspect",
@@ -360,7 +350,7 @@ def image_prune(name, hidden=False):
         help="Do not prompt for confirmation",
     )
     def prune(**kwargs):
-        """Remove images that are not being used by containers."""
+        """Remove images that are not being used by containers"""
         if not kwargs["force"]:
             click.echo("WARNING! This will remove all unused images.")
             click.confirm("Are you sure you want to continue?", abort=True)
@@ -377,7 +367,13 @@ root.add_command(image_prune("prune"), name="prune")
 
 
 def image_tag(name, hidden=False):
-    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        no_args_is_help=True,
+        short_help="Rename an image",
+    )
     @click.argument("source_image", nargs=1)
     @click.argument("nametag", nargs=1)
     def tag(source_image, nametag):

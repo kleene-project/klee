@@ -81,13 +81,14 @@ def create_image(method, tag=None, url=None, dataset=None, dns=True):
     tag = "" if tag is None else f"--tag={tag} "
     dns = "" if dns else "--no-dns "
 
-    if method == "zfs":
-        dataset = "" if dataset is None else f"{dataset}"
-        return run(f"image create {method} {dns}{tag}{dataset}")
+    if method in {"zfs-copy", "zfs-clone"}:
+        return run(f"image create {dns}{tag}{method} {dataset}")
 
     if method == "fetch":
-        fetch_method = "auto" if url is None else url
-        return run(f"image create {method} {dns}{tag}{fetch_method}")
+        return run(f"image create {dns}{tag}{method} {url}")
+
+    if method == "fetch-auto":
+        return "fetch-auto method not supported"
 
     return f"unknown method type {method}"
 
@@ -124,11 +125,11 @@ def remove_all_containers():
 def remove_all_images():
     _header, _lines, *images = run("image ls")
     image_ids = []
-    for line in images:
-        image_id, *_rest = line.split(" ")
+    for line in images[:-1]:
+        image_id, name, tag, *_rest = line.split(" ")
         if image_id == "":
             continue
-        if image_id == "base":
+        if name == "FreeBSD" and tag == "testing":
             continue
         image_ids.append(image_id)
 
@@ -137,7 +138,12 @@ def remove_all_images():
 
 
 def create_container(
-    image="base", name=None, command="/bin/ls", volumes=None, network=None, ip=None
+    image="FreeBSD:testing",
+    name=None,
+    command="/bin/ls",
+    volumes=None,
+    network=None,
+    ip=None,
 ):
 
     if volumes is None:
@@ -210,8 +216,9 @@ def run(command, exit_code=0):
     clear_config()
     runner = CliRunner()
     cli = create_cli()
+    print(f'running command: "{command}"')
     result = runner.invoke(cli, command.split(" "), catch_exceptions=False)
-    print(f'ran "{command}":{result.exit_code}: {result.output}')
+    print(f"exited with code {result.exit_code}:\n{result.output}")
     assert result.exit_code == exit_code
     return result.output.split("\n")
 

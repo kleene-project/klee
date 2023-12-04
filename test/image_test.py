@@ -196,7 +196,7 @@ class TestImageCreateSubcommand:
 
     def test_create_image_with_fetch_method(self):
         url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
-        result = create_image("fetch", tag="ImageCreate:test-fetch", url=url)
+        result = create_image("fetch", tag="ImageCreate:test", url=url)
         assert result[-3] == "image created"
         image_id = result[-2]
         image_id_listed = image_id_from_list(0)
@@ -231,7 +231,7 @@ class TestImageCreateSubcommand:
             check=True,
         )
         assert result.returncode == 0
-        result = create_image("zfs", tag="ImageCreate:test-zfs", dataset=dataset)
+        result = create_image("zfs-copy", tag="ImageCreate:test-zfs", dataset=dataset)
         assert result[-3] == "image created"
         image_id = result[-2]
         image_id_listed = image_id_from_list(0)
@@ -258,7 +258,7 @@ class TestImageCreateSubcommand:
         )
         assert result.returncode == 0
         result = create_image(
-            "zfs", tag="ImageCreate:test-zfs", dns=False, dataset=dataset
+            "zfs-copy", tag="ImageCreate:test-zfs", dns=False, dataset=dataset
         )
         assert result[-3] == "image created"
         image_id = result[-2]
@@ -296,11 +296,10 @@ def image_id_from_list(index):
 
 def assert_empty_image_list():
     created = human_duration("2023-09-14T21:21:57.990515Z")
-    lines = [
-        " ID     NAME      TAG       CREATED      ",
-        "─────────────────────────────────────────",
-        f" base   FreeBSD   testing   {created} ago ",
-        "",
-    ]
     output = run("image ls")
-    assert output == lines
+    assert output[:2] == [
+        " ID             NAME      TAG       CREATED      ",
+        "─────────────────────────────────────────────────",
+    ]
+
+    assert output[2][13:] == f"   FreeBSD   testing   {created} ago "

@@ -55,7 +55,7 @@ def sync_detailed(
 ) -> Response[List[str]]:
     """image prune
 
-     Remove images that are not being used for containers.
+     Remove images that are not being used by containers.
 
     Args:
         all_ (bool):
@@ -87,7 +87,7 @@ def sync(
 ) -> Optional[List[str]]:
     """image prune
 
-     Remove images that are not being used for containers.
+     Remove images that are not being used by containers.
 
     Args:
         all_ (bool):
@@ -113,7 +113,7 @@ async def asyncio_detailed(
 ) -> Response[List[str]]:
     """image prune
 
-     Remove images that are not being used for containers.
+     Remove images that are not being used by containers.
 
     Args:
         all_ (bool):
@@ -142,7 +142,7 @@ async def asyncio(
 ) -> Optional[List[str]]:
     """image prune
 
-     Remove images that are not being used for containers.
+     Remove images that are not being used by containers.
 
     Args:
         all_ (bool):
