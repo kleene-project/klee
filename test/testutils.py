@@ -15,9 +15,13 @@ CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_C
 
 def jail_info():
     result = subprocess.run(
-        args=["/usr/sbin/jls", "--libxo", "json"], capture_output=True
+        args=["/usr/sbin/jls", "--libxo", "json"], check=True, capture_output=True
     )
     return json.loads(result.stdout)
+
+
+def shell(cmd):
+    return subprocess.run(args=cmd, shell=True, check=False, capture_output=True)
 
 
 def container_stopped_msg(exec_id, exit_code=0):

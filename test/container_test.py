@@ -2,6 +2,7 @@ import subprocess
 import time
 
 from testutils import (
+    shell,
     jail_info,
     create_container,
     extract_exec_id,
@@ -12,6 +13,9 @@ from testutils import (
     prune,
     run,
 )
+
+
+TEST_IMG = "FreeBSD:testing"
 
 
 class TestContainerSubcommand:
@@ -134,6 +138,50 @@ class TestContainerSubcommand:
         ]
         assert container_output == expected_output
         remove_container(container_id)
+
+    def test_running_containers_with_mounts(self):
+        output = run(
+            f"container create -a -m too:many:colons:here {TEST_IMG}", exit_code=125
+        )
+        assert output == [
+            "invalid mount format 'too:many:colons:here'. Max 3 elements seperated by ':'.",
+            "",
+        ]
+
+        output = run(
+            f"container create -a -m too-few-colons-here {TEST_IMG}", exit_code=125
+        )
+        assert output == [
+            "invalid mount format 'too-few-colons-here'. Must have at least 2 elements ",
+            "seperated by ':'.",
+            "",
+        ]
+        output = run(
+            f"container run -a -m new_volume:/kl_mount_test:invalid {TEST_IMG} ls /kl_mount_test",
+            exit_code=125,
+        )
+        assert output == [
+            "invalid mount format 'new_volume:/kl_mount_test:invalid'. Last element should be",
+            "either 'ro' or 'rw'.",
+            "",
+        ]
+
+    def test_run_a_container_with_readonly_volume(self):
+        output = run(
+            f"container run -a -m new_volume:/kl_mount_test:ro {TEST_IMG} touch /kl_mount_test/test.txt"
+        )
+        assert output[2] == "touch: /kl_mount_test/test.txt: Read-only file system"
+
+    def test_run_a_container_with_nullfs_mount(self):
+        shell("rm /host/text.txt")
+        output = run(
+            f"container run -a -m /host:/kl_mount_test {TEST_IMG} touch /kl_mount_test/test.txt"
+        )
+        expected_exit = "container exited with exit-code 0"
+        idx = -len(expected_exit)
+        assert output[3][idx:] == expected_exit
+        assert shell("cat /host/test.txt").returncode == 0
+        assert shell("cat /host/test.txt").stdout == b""
 
 
 def container_is_running(container_id):

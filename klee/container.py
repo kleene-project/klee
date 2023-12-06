@@ -32,6 +32,7 @@ from .name_generator import random_name
 from .network import connect_
 from .printing import (
     echo_bold,
+    echo_error,
     command_cls,
     group_cls,
     print_websocket_closing,
@@ -86,7 +87,7 @@ def container_create(name, hidden=False):
     @click.option(
         "--user",
         "-u",
-        metavar="TEXT",
+        metavar="text",
         default="",
         help="Alternate user that should be used for starting the container",
     )
@@ -99,11 +100,15 @@ def container_create(name, hidden=False):
         help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
     )
     @click.option(
-        "--volume",
-        "-v",
+        "--mount",
+        "-m",
         multiple=True,
         default=None,
-        help="Mount a volume to the container",
+        metavar="list",
+        help="""
+        Mount a volume/directory/file on the host filesystem into the container.
+        Mounts are specfied using a `--mount <source>:<destination>[:rw|ro]` syntax.
+        """,
     )
     @click.option(
         "--env",
@@ -122,7 +127,7 @@ def container_create(name, hidden=False):
     )
     @click.argument("image", nargs=1)
     @click.argument("command", nargs=-1)
-    def create(name, user, network, ip, volume, env, jailparam, image, command):
+    def create(name, user, network, ip, mount, env, jailparam, image, command):
         """
         Create a new container. The **IMAGE** parameter syntax is:
         `<image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]`
@@ -130,7 +135,7 @@ def container_create(name, hidden=False):
         See the documentation for details.
         """
         create_container_and_connect_to_network(
-            name, user, network, ip, volume, env, jailparam, image, command
+            name, user, network, ip, mount, env, jailparam, image, command
         )
 
     return create
@@ -140,9 +145,9 @@ root.add_command(container_create("create"), name="create")
 
 
 def create_container_and_connect_to_network(
-    name, user, network, ip, volume, env, jailparam, image, command
+    name, user, network, ip, mount, env, jailparam, image, command
 ):
-    response = create_(name, user, network, ip, volume, env, jailparam, image, command)
+    response = create_(name, user, network, ip, mount, env, jailparam, image, command)
 
     if response is None or response.status_code != 201:
         return
@@ -153,19 +158,13 @@ def create_container_and_connect_to_network(
     return connect_(ip, network, response.parsed.id)
 
 
-def create_(name, user, network, ip, volume, env, jailparam, image, command):
-    if volume is None:
-        volumes = []
-    else:
-        volumes = list(volume)
-
-    if name == "":
-        name = random_name()
+def create_(name, user, network, ip, mount, env, jailparam, image, command):
+    mounts = [] if mount is None else list(mount)
 
     container_config = {
         "name": name,
         "cmd": list(command),
-        "volumes": volumes,
+        "mounts": [decode_mount(mnt) for mnt in mounts],
         "image": image,
         "jail_param": list(jailparam),
         "env": list(env),
@@ -182,6 +181,53 @@ def create_(name, user, network, ip, volume, env, jailparam, image, command):
             500: lambda response: response.parsed,
         },
     )
+
+
+def decode_mount(mount):
+    sections = mount.split(":")
+    if len(sections) > 3:
+        echo_error(f"invalid mount format '{mount}'. Max 3 elements seperated by ':'.")
+        sys.exit(125)
+
+    if len(sections) < 2:
+        echo_error(
+            f"invalid mount format '{mount}'. Must have at least 2 elements seperated by ':'."
+        )
+        sys.exit(125)
+
+    if len(sections) == 3 and sections[-1] not in {"ro", "rw"}:
+        echo_error(
+            f"invalid mount format '{mount}'. Last element should be either 'ro' or 'rw'."
+        )
+        sys.exit(125)
+
+    if len(sections) == 3:
+        source, destination, mode = sections
+        read_only = True if mode == "ro" else False
+    else:
+        source, destination = sections
+        read_only = False
+
+    if source[:1] == "/":
+        mount_type = "nullfs"
+    else:
+        mount_type = "volume"
+
+    return {
+        "type": mount_type,
+        "source": source,
+        "destination": destination,
+        "read_only": read_only,
+    }
+
+
+# def exit(exit_code):
+#    click.get_current_context().exit(-1)
+
+
+def decode_volume(volumes):
+
+    return None
 
 
 def container_list(name, hidden=False):
@@ -460,7 +506,7 @@ def container_update(name, hidden=False):
     @click.option(
         "--user",
         "-u",
-        metavar="TEXT",
+        metavar="text",
         default=None,
         help="Alternate user that should be used for starting the container",
     )
@@ -562,11 +608,15 @@ def container_run(name, hidden=False):
         help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
     )
     @click.option(
-        "--volume",
-        "-v",
+        "--mount",
+        "-m",
         multiple=True,
         default=None,
-        help="Mount a volume within a container. The syntax is `-v [volume-name]:/mountpoint/path[:ro]`.",
+        metavar="list",
+        help="""
+        Mount a volume/directory/file on the host filesystem into the container.
+        Mounts are specfied using a `--mount <source>:<destination>[:rw|ro]` syntax.
+        """,
     )
     @click.option(
         "--env",
@@ -611,7 +661,7 @@ def container_run(name, hidden=False):
         user,
         network,
         ip,
-        volume,
+        mount,
         env,
         jailparam,
         attach,
@@ -626,7 +676,7 @@ def container_run(name, hidden=False):
         The IMAGE syntax is: (**IMAGE_ID**|**IMAGE_NAME**[:**TAG**])[:**@SNAPSHOT**]
         """
         response = create_(
-            name, user, network, ip, volume, env, jailparam, image, command
+            name, user, network, ip, mount, env, jailparam, image, command
         )
         if response is None or response.status_code != 201:
             return
