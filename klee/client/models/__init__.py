@@ -17,6 +17,9 @@ from .image_buildargs import ImageBuildargs
 from .image_create_config import ImageCreateConfig
 from .image_create_config_method import ImageCreateConfigMethod
 from .mount_point import MountPoint
+from .mount_point_config import MountPointConfig
+from .mount_point_config_type import MountPointConfigType
+from .mount_point_type import MountPointType
 from .network import Network
 from .network_config import NetworkConfig
 from .network_inspect import NetworkInspect
@@ -44,6 +47,9 @@ __all__ = (
     "ImageCreateConfig",
     "ImageCreateConfigMethod",
     "MountPoint",
+    "MountPointConfig",
+    "MountPointConfigType",
+    "MountPointType",
     "Network",
     "NetworkConfig",
     "NetworkInspect",

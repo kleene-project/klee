@@ -3,40 +3,38 @@ from typing import Any, Dict, List, Type, TypeVar, Union
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..models.mount_point_type import MountPointType
+from ..models.mount_point_config_type import MountPointConfigType
 from ..types import UNSET, Unset
 
-T = TypeVar("T", bound="MountPoint")
+T = TypeVar("T", bound="MountPointConfig")
 
 
 @_attrs_define
-class MountPoint:
-    """Mount point between some part of the host file system and a container.
-    There are two types of mountpoints:
+class MountPointConfig:
+    """Create a mount point between sthe host file system and a container.
 
-    - `nullfs`: Mount from a user-specified file or directory from the host machine into the container.
-    - `volume`: Mount from a Kleene volume into the container.
+    There are two `type`'s of mount points:
+
+    - `nullfs`: Mount a user-specified file or directory from the host machine into the container.
+    - `volume`: Mount a Kleene volume into the container.
 
         Attributes:
-            container_id (Union[Unset, str]): ID of the container that the mountpoint belongs to.
             destination (Union[Unset, str]): Destination path of the mount within the container.
-            read_only (Union[Unset, bool]): Whether this mountpoint is read-only.
+            read_only (Union[Unset, bool]): Whether the mountpoint should be read-only.
             source (Union[Unset, str]): Source used for the mount. Depends on `method`:
 
                 - If `method="volume"` then `source` should be a volume name
                 - If `method="nullfs"`  then `source` should be a (absolute) path on the host
-            type (Union[Unset, MountPointType]): Kind of mount: `nullfs` or `volume`.
+            type (Union[Unset, MountPointConfigType]): Kind of mount to create: `nullfs` or `volume`.
     """
 
-    container_id: Union[Unset, str] = UNSET
     destination: Union[Unset, str] = UNSET
-    read_only: Union[Unset, bool] = UNSET
+    read_only: Union[Unset, bool] = False
     source: Union[Unset, str] = UNSET
-    type: Union[Unset, MountPointType] = UNSET
+    type: Union[Unset, MountPointConfigType] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        container_id = self.container_id
         destination = self.destination
         read_only = self.read_only
         source = self.source
@@ -47,8 +45,6 @@ class MountPoint:
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
-        if container_id is not UNSET:
-            field_dict["container_id"] = container_id
         if destination is not UNSET:
             field_dict["destination"] = destination
         if read_only is not UNSET:
@@ -63,8 +59,6 @@ class MountPoint:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
-        container_id = d.pop("container_id", UNSET)
-
         destination = d.pop("destination", UNSET)
 
         read_only = d.pop("read_only", UNSET)
@@ -72,22 +66,21 @@ class MountPoint:
         source = d.pop("source", UNSET)
 
         _type = d.pop("type", UNSET)
-        type: Union[Unset, MountPointType]
+        type: Union[Unset, MountPointConfigType]
         if isinstance(_type, Unset):
             type = UNSET
         else:
-            type = MountPointType(_type)
+            type = MountPointConfigType(_type)
 
-        mount_point = cls(
-            container_id=container_id,
+        mount_point_config = cls(
             destination=destination,
             read_only=read_only,
             source=source,
             type=type,
         )
 
-        mount_point.additional_properties = d
-        return mount_point
+        mount_point_config.additional_properties = d
+        return mount_point_config
 
     @property
     def additional_keys(self) -> List[str]:
