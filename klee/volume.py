@@ -55,7 +55,7 @@ VOLUME_LIST_COLUMNS = [
 
 
 def _print_volumes(volumes):
-    volumes = [[vol.name, human_duration(vol.created) + "ago"] for vol in volumes]
+    volumes = [[vol.name, human_duration(vol.created) + " ago"] for vol in volumes]
     print_table(volumes, VOLUME_LIST_COLUMNS)
 
 

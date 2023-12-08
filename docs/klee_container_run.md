@@ -30,20 +30,29 @@ image. The `-ait` options instructs Kleene to allocate a pseudo-TTY connected to
 the container's stdin; creating an interactive Bourne shell in the container.
 In the example, the Bourne shell is quit by entering `exit`.
 
-### <a name="volume"></a> Mount volume (-v, --read-only)
+### <a name="mount"></a> Mounting filesystems into containers (-m, --mount)
 
 ```console
-$ klee run -v /foo/bar -ait FreeBSD-13.2-STABLE /bin/sh
+$ klee run -m some_storage:/foo/bar -ait FreeBSD-13.2-STABLE /bin/sh
+...
 # ls /foo
 bar
+# exit
+$ klee volume ls
+ VOLUME NAME    CREATED
+──────────────────────────────
+ some_storage   5 seconds ago
 ```
 
-When the target directory of a volume-mount doesn't exist, Kleened
-will automatically create this directory in the container. The previous example
+When the target directory of a mount doesn't exist, Kleened
+will automatically create this directory in the container. This example
 caused Kleened to create `/foo/bar` folder before starting the container.
+Similarily, if the specified volume does not exist, Kleened will create
+it for you. In this example the volume `some_storage` was just created.
+
 
 ```console
-$ klee run -a -v /writeprotected:ro FreeBSD13.2-STABLE touch /writeprotected/here
+$ klee run -a -m archive:/writeprotected:ro FreeBSD13.2-STABLE touch /writeprotected/here
 50d478460a91
 created execution instance badd96b047a5
 touch: /writeprotected/here: Read-only file system
@@ -54,6 +63,20 @@ executable badd96b047a5 and its container exited with exit-code 1
 
 Volumes can be mounted read-only to control where a container writes files.
 The `:ro` option must be postfixed the mountpoint to mark the mount as read only.
+
+```console
+$ klee run -a -m /home/someuser/kleened:/kleened FreeBSD13.2-STABLE ls /kleened/lib
+d8b860024e7d
+created execution instance caccc94ab15f
+api
+core
+kleened.ex
+
+executable caccc94ab15f and its container exited with exit-code 0
+```
+
+Mounting arbitrary files or directories into a container is also possible by
+specifying an absolute path on the host system instead of a volume name.
 
 ### <a name="env"></a> Set environment variables (-e, --env, --env-file)
 

@@ -26,15 +26,32 @@ If `<tag>` is omitted `latest` is assumed. For example,
 
 For more information about snapshots see the [Build snapshots](/build/building/snapshots/) section.
 
-### Specifying volumes
-When creating containers it is also possible to mount one or more volumes using one or
-more instances of the `--volume/-v` option following the syntax `[name:]location[:ro]`.
-If `name` is supplied it implies that a volume with `name` has previously been created, otherwise
-a new nameless volume is created on-the-fly. If `:ro` is supplied, the volume is mounted read-only
-into the newly created container. For example:
+### Specifying mounts
+When creating containers it is also possible to mount volumes/directories/files
+into the container using one or more `--mount/-m  <mount>` flags. `<mount>` must use
+the following syntax:
 
-- `klee container create -v /storage:ro ...` create a read-only `storage` mountpoint in the container root.
-- `klee container create -v logs:/var/log/db ...` mount the volume named `logs` into the container at `/var/log/db`.
+```console
+SOURCE:DESTINATION[:rw|ro]
+```
+
+where
+
+- `SOURCE` can be either a volume name or an absolute path on the host system.
+  If `SOURCE` starts with '`/`' it is interpreted as a host path.
+  If a volume name is specified, and the volume does not exist, it will be created.
+- `DESTINATION` is the path of the mount within the container. If it does not exist it
+  will be created.
+- Optionally, if the mount is postfixed with `:ro` or `:rw` the mount will be read-only
+  or read-write, respectively. If omitted, `:rw` is assumed.
+
+For example:
+
+- `klee container create -m logs:/var/log ...` mount a volume named `logs` into the container at `/var/log`.
+- `klee container create -m my_archive:/archive:ro ...` create a read-only `archive` mountpoint in the
+  container root for the `my_archive` volume.
+- `klee container create -m /home/some_user:/home/some_user ...` mount the host directory `/home/some_user`
+  into the same path within the container.
 
 ### Starting the container
 You can then use the `klee container start`
