@@ -58,7 +58,7 @@ class TestContainerSubcommand:
 
     def test_restarting_container(self):
         container_id = create_container(name="test_restart", command="/bin/sleep 5")
-        run(f"container start {container_id}")
+        run(f"container start -d {container_id}")
         time.sleep(0.5)
         jails = jail_info()
         first_jid = jails["jail-information"]["jail"][0]["jid"]
@@ -103,7 +103,7 @@ class TestContainerSubcommand:
 
     def test_starting_and_stopping_a_container_and_list_containers(self):
         container_id = create_container(name="test_start_stop", command="/bin/sleep 10")
-        succes_msg, _newline = run(f"container start {container_id}")
+        succes_msg, _newline = run(f"container start -d {container_id}")
         assert "created execution instance " == succes_msg[:27]
         assert container_is_running(container_id)
         assert (container_id,) == container_list(all_=False)
@@ -117,7 +117,7 @@ class TestContainerSubcommand:
     def test_container_referencing(self):
         name = "test_container_referencing"
         container_id = create_container(name=name, command="/bin/sleep 10")
-        succes_msg, _newline = run(f"container start {container_id[:8]}")
+        succes_msg, _newline = run(f"container start -d {container_id[:8]}")
         assert "created execution instance " == succes_msg[:27]
         assert container_is_running(container_id)
         container_id_again, _ = run(f"container stop {container_id[:8]}")
@@ -127,7 +127,7 @@ class TestContainerSubcommand:
     def test_start_attached_container(self):
         name = "test_attached_container"
         container_id = create_container(name=name, command="/usr/bin/uname")
-        container_output = run(f"container start --attach {container_id}")
+        container_output = run(f"container start {container_id}")
         exec_id = extract_exec_id(container_output)
         expected_output = [
             f"created execution instance {exec_id}",
@@ -141,7 +141,7 @@ class TestContainerSubcommand:
 
     def test_running_containers_with_mounts(self):
         output = run(
-            f"container create -a -m too:many:colons:here {TEST_IMG}", exit_code=125
+            f"container create -m too:many:colons:here {TEST_IMG}", exit_code=125
         )
         assert output == [
             "invalid mount format 'too:many:colons:here'. Max 3 elements seperated by ':'.",
@@ -149,7 +149,7 @@ class TestContainerSubcommand:
         ]
 
         output = run(
-            f"container create -a -m too-few-colons-here {TEST_IMG}", exit_code=125
+            f"container create -m too-few-colons-here {TEST_IMG}", exit_code=125
         )
         assert output == [
             "invalid mount format 'too-few-colons-here'. Must have at least 2 elements ",
@@ -157,7 +157,7 @@ class TestContainerSubcommand:
             "",
         ]
         output = run(
-            f"container run -a -m new_volume:/kl_mount_test:invalid {TEST_IMG} ls /kl_mount_test",
+            f"container run -m new_volume:/kl_mount_test:invalid {TEST_IMG} ls /kl_mount_test",
             exit_code=125,
         )
         assert output == [
@@ -168,14 +168,14 @@ class TestContainerSubcommand:
 
     def test_run_a_container_with_readonly_volume(self):
         output = run(
-            f"container run -a -m new_volume:/kl_mount_test:ro {TEST_IMG} touch /kl_mount_test/test.txt"
+            f"container run -m new_volume:/kl_mount_test:ro {TEST_IMG} touch /kl_mount_test/test.txt"
         )
         assert output[2] == "touch: /kl_mount_test/test.txt: Read-only file system"
 
     def test_run_a_container_with_nullfs_mount(self):
         shell("rm /host/text.txt")
         output = run(
-            f"container run -a -m /host:/kl_mount_test {TEST_IMG} touch /kl_mount_test/test.txt"
+            f"container run -m /host:/kl_mount_test {TEST_IMG} touch /kl_mount_test/test.txt"
         )
         expected_exit = "container exited with exit-code 0"
         idx = -len(expected_exit)

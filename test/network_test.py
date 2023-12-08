@@ -201,7 +201,7 @@ class TestNetworkSubcommand:
 
 
 def container_is_connected(container_id, driver="loopback"):
-    output = run(f"container start --attach {container_id}")
+    output = run(f"container start {container_id}")
     exec_id = extract_exec_id(output)
     if driver == "loopback":
         connected_output = [
@@ -237,7 +237,7 @@ def container_is_connected(container_id, driver="loopback"):
 
 
 def container_is_disconnected(container_id):
-    output = run(f"container start --attach {container_id}")
+    output = run(f"container start {container_id}")
     exec_id = extract_exec_id(output)
     disconnected_output = [
         f"created execution instance {exec_id}",

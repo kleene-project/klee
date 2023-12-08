@@ -5,8 +5,8 @@ The command being run with `klee container exec` is not restarted if
 the container is restarted.
 
 `COMMAND` must be an executable. A chained or a quoted command does not work.
-For example, `klee container exec -a my_container sh -c "echo a && echo b"` works,
-but `klee container exec -a my_container "echo a && echo b"` does not.
+For example, `klee container exec my_container sh -c "echo a && echo b"` works,
+but `klee container exec my_container "echo a && echo b"` does not.
 
 ## Examples
 
@@ -15,7 +15,7 @@ but `klee container exec -a my_container "echo a && echo b"` does not.
 First, start a container.
 
 ```console
-$ klee run --name mycontainer -a 13.2-RELEASE /bin/sh /etc/rc
+$ klee run --name mycontainer 13.2-RELEASE /bin/sh /etc/rc
 ad813478a0ec
 created execution instance e9e43e57162d
 ELF ldconfig path: /lib /usr/lib /usr/lib/compat
@@ -45,7 +45,7 @@ exists and the jail runs in the background.
 Next, execute a non-interactive command on the container.
 
 ```console
-$ klee container exec -a mycontainer touch /tmp/execWorks
+$ klee container exec mycontainer touch /tmp/execWorks
 ```
 
 This creates a new file `/tmp/execWorks` inside the running container
@@ -54,7 +54,7 @@ This creates a new file `/tmp/execWorks` inside the running container
 Next, execute an interactive `sh` shell on the container.
 
 ```console
-$ klee container exec -ait mycontainer /bin/sh
+$ klee container exec -it mycontainer /bin/sh
 ```
 
 This starts a new shell session in the container `mycontainer`.
@@ -74,7 +74,7 @@ These environment variables are only valid for the `sh` process started by that
 the container.
 
 ```console
-$ klee exec -a -e VAR_A=1 -e VAR_B=2 mycontainer env
+$ klee exec -e VAR_A=1 -e VAR_B=2 mycontainer env
 created execution instance 73dbb1c9ee03
 VAR_B=2
 VAR_A=1

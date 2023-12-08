@@ -39,7 +39,7 @@ You can also use the `klee run --network=<network-name>` option to start a
 container and immediately connect it to a network.
 
 ```console
-$ klee run -a --network=multi-container-net FreeBSD-13.2-RELEASE
+$ klee run --network=multi-container-net FreeBSD-13.2-RELEASE
 ```
 
 ### <a name="ip"></a> Specify the IP address a container will use on a given network (--ip)

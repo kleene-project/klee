@@ -28,7 +28,6 @@ from .client.api.default.container_update import (
 
 from .client.models.container_config import ContainerConfig
 from .client.models.exec_config import ExecConfig
-from .name_generator import random_name
 from .network import connect_
 from .printing import (
     echo_bold,
@@ -44,7 +43,13 @@ from .utils import human_duration, request_and_validate_response, listen_for_mes
 from .prune import prune_command
 from .inspect import inspect_command
 
-PARAM_HELP_ATTACH = "Attach to STDOUT/STDERR. If this flag is omitted the container will run detached from klee."
+HELP_DETACH_FLAG = """
+Whether or not to attach to STDOUT/STDERR.
+If this is set, Klee will exit and return the container ID when the container has been started.
+"""
+HELP_INTERACTIVE_FLAG = (
+    "Send terminal input to container's STDIN. If set, `--detach` will be ignored."
+)
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
@@ -56,7 +61,7 @@ EXEC_START_ERROR = "error starting container"
 
 
 START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = (
-    "only one container can be started when setting the 'attach' flag."
+    "only one container can be started when attaching to container I/O."
 )
 
 CONTAINER_LIST_COLUMNS = [
@@ -150,10 +155,10 @@ def create_container_and_connect_to_network(
     response = create_(name, user, network, ip, mount, env, jailparam, image, command)
 
     if response is None or response.status_code != 201:
-        return
+        return None
 
     if network is None:
-        return
+        return None
 
     return connect_(ip, network, response.parsed.id)
 
@@ -219,15 +224,6 @@ def decode_mount(mount):
         "destination": destination,
         "read_only": read_only,
     }
-
-
-# def exit(exit_code):
-#    click.get_current_context().exit(-1)
-
-
-def decode_volume(volumes):
-
-    return None
 
 
 def container_list(name, hidden=False):
@@ -339,23 +335,19 @@ root.add_command(
 
 def container_start(name, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
-    @click.option("--attach", "-a", default=False, is_flag=True, help=PARAM_HELP_ATTACH)
+    @click.option("--detach", "-d", default=False, is_flag=True, help=HELP_DETACH_FLAG)
     @click.option(
-        "--interactive",
-        "-i",
-        default=False,
-        is_flag=True,
-        help="Send terminal input to container's STDIN. Ignored if '--attach' is not used.",
+        "--interactive", "-i", default=False, is_flag=True, help=HELP_INTERACTIVE_FLAG
     )
     @click.option(
         "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
     )
     @click.argument("containers", required=True, nargs=-1)
-    def start(attach, interactive, tty, containers):
+    def start(detach, interactive, tty, containers):
         """Start one or more stopped containers.
         Attach only if a single container is started
         """
-        start_(attach, interactive, tty, containers)
+        start_(detach, interactive, tty, containers)
 
     return start
 
@@ -426,7 +418,7 @@ def container_restart(name, hidden=False):
                 response.parsed.id,
                 tty=False,
                 interactive=False,
-                attach=False,
+                detach=True,
                 start_container="true",
             )
 
@@ -434,17 +426,6 @@ def container_restart(name, hidden=False):
 
 
 root.add_command(container_restart("restart"), name="restart")
-
-
-def start_(attach, interactive, tty, containers):
-    if attach and len(containers) != 1:
-        echo_bold(START_ONLY_ONE_CONTAINER_WHEN_ATTACHED)
-    else:
-        for container in containers:
-            start_container = True
-            execution_create_and_start(
-                container, tty, interactive, attach, start_container
-            )
 
 
 def container_exec(name, hidden=False):
@@ -456,7 +437,7 @@ def container_exec(name, hidden=False):
         # We use this to avoid problems option-parts of the "command" argument, i.e., 'klee container exec -a /bin/sh -c echo lol
         context_settings={"ignore_unknown_options": True},
     )
-    @click.option("--attach", "-a", default=False, is_flag=True, help=PARAM_HELP_ATTACH)
+    @click.option("--detach", "-d", default=False, is_flag=True, help=HELP_DETACH_FLAG)
     @click.option(
         "--env",
         "-e",
@@ -465,11 +446,7 @@ def container_exec(name, hidden=False):
         help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
     )
     @click.option(
-        "--interactive",
-        "-i",
-        default=False,
-        is_flag=True,
-        help="Send terminal input to STDIN. Ignored if '--attach' is not used.",
+        "--interactive", "-i", default=False, is_flag=True, help=HELP_INTERACTIVE_FLAG
     )
     @click.option(
         "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
@@ -479,13 +456,13 @@ def container_exec(name, hidden=False):
     )
     @click.argument("container", nargs=1)
     @click.argument("command", nargs=-1)
-    def exec_(attach, env, interactive, tty, user, container, command):
+    def exec_(detach, env, interactive, tty, user, container, command):
         """
         Run a command in a container
         """
         start_container = "true"
         execution_create_and_start(
-            container, tty, interactive, attach, start_container, command, env, user
+            container, tty, interactive, detach, start_container, command, env, user
         )
 
     return exec_
@@ -637,19 +614,15 @@ def container_run(name, hidden=False):
         """,
     )
     @click.option(
-        "--attach",
-        "-a",
+        "--detach",
+        "-d",
         default=False,
         is_flag=True,
         metavar="flag",
-        help=PARAM_HELP_ATTACH,
+        help=HELP_DETACH_FLAG,
     )
     @click.option(
-        "--interactive",
-        "-i",
-        default=False,
-        is_flag=True,
-        help="Send terminal input to container's STDIN. Ignored if '--attach' is not used.",
+        "--interactive", "-i", default=False, is_flag=True, help=HELP_INTERACTIVE_FLAG
     )
     @click.option(
         "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
@@ -664,7 +637,7 @@ def container_run(name, hidden=False):
         mount,
         env,
         jailparam,
-        attach,
+        detach,
         interactive,
         tty,
         image,
@@ -688,7 +661,7 @@ def container_run(name, hidden=False):
                 echo_bold("could not start container")
                 return
 
-        start_(attach, interactive, tty, [container_id])
+        start_(detach, interactive, tty, [container_id])
 
     return run
 
@@ -696,11 +669,26 @@ def container_run(name, hidden=False):
 root.add_command(container_run("run"), name="run")
 
 
+def start_(detach, interactive, tty, containers):
+    if interactive:
+        detach = False
+
+    if not detach and len(containers) != 1:
+        echo_bold(START_ONLY_ONE_CONTAINER_WHEN_ATTACHED)
+    else:
+        for container in containers:
+            start_container = True
+            execution_create_and_start(
+                container, tty, interactive, detach, start_container
+            )
+
+
 def execution_create_and_start(
-    container_id, tty, interactive, attach, start_container, cmd=None, env=None, user=""
+    container_id, tty, interactive, detach, start_container, cmd=None, env=None, user=""
 ):
     cmd = [] if cmd is None else cmd
     env = [] if env is None else env
+    attach = not detach
     exec_id = _create_exec_instance(container_id, tty, cmd, env, user)
     if exec_id is not None:
         exec_config = json.dumps(

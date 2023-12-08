@@ -198,7 +198,7 @@ def inspect(obj_type, identifier):
 
 
 def container_get_netstat_info(container_id, driver):
-    output = run(f"container start --attach {container_id}")
+    output = run(f"container start {container_id}")
     if driver == "vnet":
         netstat_info = "".join(output[2:-3])
 

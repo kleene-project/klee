@@ -14,7 +14,7 @@ For information on connecting a container to a network, see the
 ### <a name="name"></a> Assign name and allocate pseudo-TTY (--name, -it)
 
 ```console
-$ klee run --name test -ait FreeBSD-13.2-RELEASE /bin/sh
+$ klee run --name test -it FreeBSD-13.2-RELEASE /bin/sh
 839aee293db2
 created execution instance 176b56a85a4a
 #
@@ -26,14 +26,14 @@ $
 ```
 
 This example runs a container named `test` using the `FreeBSD-13.2-STABLE:latest`
-image. The `-ait` options instructs Kleene to allocate a pseudo-TTY connected to
+image. The `-it` options instructs Kleene to allocate a pseudo-TTY connected to
 the container's stdin; creating an interactive Bourne shell in the container.
 In the example, the Bourne shell is quit by entering `exit`.
 
 ### <a name="mount"></a> Mounting filesystems into containers (-m, --mount)
 
 ```console
-$ klee run -m some_storage:/foo/bar -ait FreeBSD-13.2-STABLE /bin/sh
+$ klee run -m some_storage:/foo/bar -it FreeBSD-13.2-STABLE /bin/sh
 ...
 # ls /foo
 bar
@@ -52,7 +52,7 @@ it for you. In this example the volume `some_storage` was just created.
 
 
 ```console
-$ klee run -a -m archive:/writeprotected:ro FreeBSD13.2-STABLE touch /writeprotected/here
+$ klee run -m archive:/writeprotected:ro FreeBSD13.2-STABLE touch /writeprotected/here
 50d478460a91
 created execution instance badd96b047a5
 touch: /writeprotected/here: Read-only file system
@@ -65,7 +65,7 @@ Volumes can be mounted read-only to control where a container writes files.
 The `:ro` option must be postfixed the mountpoint to mark the mount as read only.
 
 ```console
-$ klee run -a -m /home/someuser/kleened:/kleened FreeBSD13.2-STABLE ls /kleened/lib
+$ klee run -m /home/someuser/kleened:/kleened FreeBSD13.2-STABLE ls /kleened/lib
 d8b860024e7d
 created execution instance caccc94ab15f
 api
@@ -83,7 +83,7 @@ specifying an absolute path on the host system instead of a volume name.
 You can define the variable and its value when running the container:
 
 ```console
-$ klee run -a --env VAR1=value1 --env VAR2=value2 FreeBSD-13.2-STABLE env | grep VAR
+$ klee run --env VAR1=value1 --env VAR2=value2 FreeBSD-13.2-STABLE env | grep VAR
 VAR1=value1
 VAR2=value2
 ```
@@ -94,7 +94,7 @@ If you need to use variables that you've exported to your local environment:
 export VAR1=value1
 export VAR2=value2
 
-$ klee run -a --env VAR1=$VAR1 --env VAR2=$VAR2 FreeBSD-13.2-STABLE env | grep VAR
+$ klee run --env VAR1=$VAR1 --env VAR2=$VAR2 FreeBSD-13.2-STABLE env | grep VAR
 VAR1=value1
 VAR2=value2
 ```
@@ -138,18 +138,16 @@ containers can communicate easily using only another container's IP address.
 You can disconnect a container from a network using the `docker network
 disconnect` command.
 
-### <a name="attach"></a> Attach to STDIN/STDOUT/STDERR (-a, --attach)
+### <a name="detach"></a> Start a container detached from process IO (-d, --detach)
 
-The `--attach` (or `-a`) flag tells `docker run` to bind to the container's
-`STDOUT` and `STDERR`. This makes it possible to see the output if needed.
+The `--detach` (or `-d`) flag tells `docker run` ignore the container's
+`STDIN`, `STDOUT` and `STDERR`. This makes it possible to avoid output making the
+container run in the background.
 
 ```console
-$ klee run -a FreeBSD-13.2-STABLE echo test
-422100eb65cc
-created execution instance 29096db4ca54
-test
-
-executable 29096db4ca54 and its container exited with exit-code 0
+$ klee run -d FreeBSD-13.2-STABLE echo test
+8d8d235e3489
+created execution instance 3891db558a90
 ```
 
 ### <a name="jailparam"></a> Specifying Jail parameters (-J, --jailparam)
@@ -163,7 +161,7 @@ For instance, opening raw sockets is not permitted by default in jails, which is
 by, e.g., `ping(8)`:
 
 ```console
-klee run -a FreeBSD-13.2-STABLE --network host /sbin/ping 1.1.1.1
+klee run FreeBSD-13.2-STABLE --network host /sbin/ping 1.1.1.1
 56dd7945704e
 created execution instance a7e01343d836
 ping: ssend socket: Operation not permitted
@@ -175,7 +173,7 @@ executable a7e01343d836 and its container exited with exit-code 1
 This can be allowed using jail-parameters:
 
 ```console
-klee run -a FreeBSD-13.2-STABLE -J mount.devfs -J allow.raw_sockets --network host /sbin/ping 1.1.1.1
+klee run FreeBSD-13.2-STABLE -J mount.devfs -J allow.raw_sockets --network host /sbin/ping 1.1.1.1
 0efca150e755
 created execution instance 1c0b446fac16
 PING 1.1.1.1 (1.1.1.1): 56 data bytes

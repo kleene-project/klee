@@ -76,7 +76,7 @@ then starts the container and attaches to it:
 $ klee container create --name mycontainer hello-world:latest
 4d9d4e72a07f
 
-$ klee container start -ait mycontainer
+$ klee container start -it mycontainer
 created execution instance 71c359af03f7
 Hello World
 
@@ -86,7 +86,7 @@ executable 71c359af03f7 and its container exited with exit-code 0
 The above is the equivalent of a `klee run`:
 
 ```console
-$ klee container run -ait --name mycontainer hello-world:latest
+$ klee container run -it --name mycontainer hello-world:latest
 6e33dbacde70
 created execution instance 4eb13ad4c3a4
 Hello World

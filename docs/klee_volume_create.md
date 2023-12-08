@@ -5,7 +5,7 @@ Create a volume and then configure a container to use it:
 $ klee volume create hello
 hello
 $ sudo touch /zroot/kleene/volumes/hello/world
-$ klee run -a -v hello:/there FreeBSD-13.2-STABLE ls /there
+$ klee run -m hello:/there FreeBSD-13.2-STABLE ls /there
 968414ee0599
 created execution instance 7dbade0564df
 world
