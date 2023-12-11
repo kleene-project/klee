@@ -13,16 +13,16 @@ The container ID is then printed to `STDOUT`.
 ### Specifying IMAGE
 The `IMAGE` argument takes the following two forms:
 
-- `<image_id>[:@<snapshot_id>]`
-- `<image_name>[:<tag>][:@<snapshot_id>]`
+- `<image_id>[@<snapshot_id>]`
+- `<image_name>[:<tag>][@<snapshot_id>]`
 
 If `<tag>` is omitted `latest` is assumed. For example,
 
 - `FreeBSD` means the image `FreeBSD` with tag `latest`
 - `FreeBSD:13.2-STABLE` means the image `FreeBSD` with tag `13.2-STABLE`
-- `FreeBSD:base:@6b3c821605d4` means the `FreeBSD:base` image but create the container from the snapshot `6b3c821605d4`
+- `FreeBSD:base@6b3c821605d4` means the `FreeBSD:base` image but create the container from the snapshot `6b3c821605d4`
 - `48fa55889b0f` use the image having ID `48fa55889b0f`
-- `48fa55889b0f:@2028818d6f06` use the image as above but create the container from the snapshot `2028818d6f06`
+- `48fa55889b0f@2028818d6f06` use the image as above but create the container from the snapshot `2028818d6f06`
 
 For more information about snapshots see the [Build snapshots](/build/building/snapshots/) section.
 

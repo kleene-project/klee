@@ -13,7 +13,7 @@ class ContainerSummary:
     """summary description of a container
 
     Attributes:
-        command (Union[Unset, str]): Command being used when starting the container
+        cmd (Union[Unset, str]): Command being used when starting the container
         created (Union[Unset, str]): When the container was created
         id (Union[Unset, str]): The id of this container
         image_id (Union[Unset, str]): The id of the image that this container was created from
@@ -23,7 +23,7 @@ class ContainerSummary:
         running (Union[Unset, bool]): whether or not the container is running
     """
 
-    command: Union[Unset, str] = UNSET
+    cmd: Union[Unset, str] = UNSET
     created: Union[Unset, str] = UNSET
     id: Union[Unset, str] = UNSET
     image_id: Union[Unset, str] = UNSET
@@ -34,7 +34,7 @@ class ContainerSummary:
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        command = self.command
+        cmd = self.cmd
         created = self.created
         id = self.id
         image_id = self.image_id
@@ -46,8 +46,8 @@ class ContainerSummary:
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
-        if command is not UNSET:
-            field_dict["command"] = command
+        if cmd is not UNSET:
+            field_dict["cmd"] = cmd
         if created is not UNSET:
             field_dict["created"] = created
         if id is not UNSET:
@@ -68,7 +68,7 @@ class ContainerSummary:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
-        command = d.pop("command", UNSET)
+        cmd = d.pop("cmd", UNSET)
 
         created = d.pop("created", UNSET)
 
@@ -85,7 +85,7 @@ class ContainerSummary:
         running = d.pop("running", UNSET)
 
         container_summary = cls(
-            command=command,
+            cmd=cmd,
             created=created,
             id=id,
             image_id=image_id,

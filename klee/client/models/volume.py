@@ -14,9 +14,8 @@ class Volume:
 
     Attributes:
         created (Union[Unset, str]): when the volume was created
-        dataset (Union[Unset, str]): underlying zfs dataset of the volume
-        mountpoint (Union[Unset, str]): mountpoint of the volume's underlying zfs-dataset (the mountpoint shown with
-            'zfs list')
+        dataset (Union[Unset, str]): ZFS dataset used for the volume
+        mountpoint (Union[Unset, str]): Mountpoint of `dataset`
         name (Union[Unset, str]): Name of the volume
     """
 

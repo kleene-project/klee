@@ -21,9 +21,10 @@ class Image:
             values at build-time. Kleened uses the buildargs as the environment context for commands run via the Dockerfile
             RUN instruction, or for variable expansion in other Dockerfile instructions. This is not meant for passing
             secret values. Example: {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}.
-        command (Union[Unset, List[str]]): Default command used when creating a container from this image Example:
+        cmd (Union[Unset, List[str]]): Default command used when creating a container from this image Example:
             ['/bin/sh', '-c', '/bin/ls'].
         created (Union[Unset, str]): When the image was created
+        dataset (Union[Unset, str]): ZFS dataset of the image
         env (Union[Unset, List[str]]): Environment variables and their values to set before running command. Example:
             ['PWD=/roo/', 'JAIL_MGMT_ENGINE=kleene'].
         id (Union[Unset, str]): The id of the image
@@ -33,19 +34,18 @@ class Image:
             containing a instruction and its snapshot.
             The latter will only be present if it is a `RUN` or `COPY` instruction that executed succesfully.
             Otherwise `<snapshot>` will be an empty string.
-        layer_id (Union[Unset, str]): Id of the layer containing the image
         name (Union[Unset, str]): Name of the image
         tag (Union[Unset, str]): Tag of the image
         user (Union[Unset, str]): user used when executing the command
     """
 
     buildargs: Union[Unset, "ImageBuildargs"] = UNSET
-    command: Union[Unset, List[str]] = UNSET
+    cmd: Union[Unset, List[str]] = UNSET
     created: Union[Unset, str] = UNSET
+    dataset: Union[Unset, str] = UNSET
     env: Union[Unset, List[str]] = UNSET
     id: Union[Unset, str] = UNSET
     instructions: Union[Unset, List[List[str]]] = UNSET
-    layer_id: Union[Unset, str] = UNSET
     name: Union[Unset, str] = UNSET
     tag: Union[Unset, str] = UNSET
     user: Union[Unset, str] = UNSET
@@ -56,11 +56,12 @@ class Image:
         if not isinstance(self.buildargs, Unset):
             buildargs = self.buildargs.to_dict()
 
-        command: Union[Unset, List[str]] = UNSET
-        if not isinstance(self.command, Unset):
-            command = self.command
+        cmd: Union[Unset, List[str]] = UNSET
+        if not isinstance(self.cmd, Unset):
+            cmd = self.cmd
 
         created = self.created
+        dataset = self.dataset
         env: Union[Unset, List[str]] = UNSET
         if not isinstance(self.env, Unset):
             env = self.env
@@ -74,7 +75,6 @@ class Image:
 
                 instructions.append(instructions_item)
 
-        layer_id = self.layer_id
         name = self.name
         tag = self.tag
         user = self.user
@@ -84,18 +84,18 @@ class Image:
         field_dict.update({})
         if buildargs is not UNSET:
             field_dict["buildargs"] = buildargs
-        if command is not UNSET:
-            field_dict["command"] = command
+        if cmd is not UNSET:
+            field_dict["cmd"] = cmd
         if created is not UNSET:
             field_dict["created"] = created
+        if dataset is not UNSET:
+            field_dict["dataset"] = dataset
         if env is not UNSET:
             field_dict["env"] = env
         if id is not UNSET:
             field_dict["id"] = id
         if instructions is not UNSET:
             field_dict["instructions"] = instructions
-        if layer_id is not UNSET:
-            field_dict["layer_id"] = layer_id
         if name is not UNSET:
             field_dict["name"] = name
         if tag is not UNSET:
@@ -117,9 +117,11 @@ class Image:
         else:
             buildargs = ImageBuildargs.from_dict(_buildargs)
 
-        command = cast(List[str], d.pop("command", UNSET))
+        cmd = cast(List[str], d.pop("cmd", UNSET))
 
         created = d.pop("created", UNSET)
+
+        dataset = d.pop("dataset", UNSET)
 
         env = cast(List[str], d.pop("env", UNSET))
 
@@ -132,8 +134,6 @@ class Image:
 
             instructions.append(instructions_item)
 
-        layer_id = d.pop("layer_id", UNSET)
-
         name = d.pop("name", UNSET)
 
         tag = d.pop("tag", UNSET)
@@ -142,12 +142,12 @@ class Image:
 
         image = cls(
             buildargs=buildargs,
-            command=command,
+            cmd=cmd,
             created=created,
+            dataset=dataset,
             env=env,
             id=id,
             instructions=instructions,
-            layer_id=layer_id,
             name=name,
             tag=tag,
             user=user,

@@ -135,7 +135,7 @@ def container_create(name, hidden=False):
     def create(name, user, network, ip, mount, env, jailparam, image, command):
         """
         Create a new container. The **IMAGE** parameter syntax is:
-        `<image_id>|[<image_name>[:<tag>]][:@<snapshot_id>]`
+        `<image_id>|[<image_name>[:<tag>]][@<snapshot_id>]`
 
         See the documentation for details.
         """

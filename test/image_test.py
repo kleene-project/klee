@@ -166,7 +166,7 @@ class TestImageSubcommand:
         snapshot_line = build_log[2]
         snapshot = snapshot_line.split("--> Snapshot created: @")[0]
         verify_build_output(expected_build_log, build_log)
-        output = run(f"run {image_id}:@{snapshot} /bin/cat /root/test.txt", exit_code=0)
+        output = run(f"run {image_id}@{snapshot} /bin/cat /root/test.txt", exit_code=0)
 
         prefix = "created execution instance "
         assert output[1][: len(prefix)] == prefix

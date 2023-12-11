@@ -24,12 +24,12 @@ class ContainerConfig:
         image (Union[Unset, str]): The name or id and possibly a snapshot of the image used for creating the container.
             The parameter uses the followinge format:
 
-            - `<image_id>[:@<snapshot_id>]` or
-            - `<name>[:<tag>][:@<snapshot_id>]`.
+            - `<image_id>[@<snapshot_id>]` or
+            - `<name>[:<tag>][@<snapshot_id>]`.
 
             If `<tag>` is omitted, `latest` is assumed.
-             Example: ['FreeBSD:13.2-STABLE', 'FreeBSD:13.2-STABLE:@6b3c821605d4', '48fa55889b0f',
-            '48fa55889b0f:@2028818d6f06'].
+             Example: ['FreeBSD:13.2-STABLE', 'FreeBSD:13.2-STABLE@6b3c821605d4', '48fa55889b0f',
+            '48fa55889b0f@2028818d6f06'].
         jail_param (Union[Unset, None, List[str]]): List of jail parameters to use for the container.
             See the [`jails manual page`](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
 
