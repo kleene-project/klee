@@ -2,7 +2,9 @@
 
 from .container import Container
 from .container_config import ContainerConfig
+from .container_config_network_driver import ContainerConfigNetworkDriver
 from .container_inspect import ContainerInspect
+from .container_network_driver import ContainerNetworkDriver
 from .container_summary import ContainerSummary
 from .end_point import EndPoint
 from .end_point_config import EndPointConfig
@@ -22,7 +24,9 @@ from .mount_point_config_type import MountPointConfigType
 from .mount_point_type import MountPointType
 from .network import Network
 from .network_config import NetworkConfig
+from .network_config_type import NetworkConfigType
 from .network_inspect import NetworkInspect
+from .network_type import NetworkType
 from .volume import Volume
 from .volume_config import VolumeConfig
 from .volume_inspect import VolumeInspect
@@ -32,7 +36,9 @@ from .web_socket_message_msg_type import WebSocketMessageMsgType
 __all__ = (
     "Container",
     "ContainerConfig",
+    "ContainerConfigNetworkDriver",
     "ContainerInspect",
+    "ContainerNetworkDriver",
     "ContainerSummary",
     "EndPoint",
     "EndPointConfig",
@@ -52,7 +58,9 @@ __all__ = (
     "MountPointType",
     "Network",
     "NetworkConfig",
+    "NetworkConfigType",
     "NetworkInspect",
+    "NetworkType",
     "Volume",
     "VolumeConfig",
     "VolumeInspect",

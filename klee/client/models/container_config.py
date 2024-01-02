@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.container_config_network_driver import ContainerConfigNetworkDriver
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -43,6 +44,10 @@ class ContainerConfig:
         mounts (Union[Unset, None, List['MountPointConfig']]): List of files/directories/volumes on the host filesystem
             that should be mounted into the container.
         name (Union[Unset, None, str]): Name of the container. Must match `/?[a-zA-Z0-9][a-zA-Z0-9_.-]+`.
+        network_driver (Union[Unset, ContainerConfigNetworkDriver]): What kind of network driver should the container
+            use.
+            Possible values are `ipnet`, `host`, `vnet`, `disabled`.
+             Default: ContainerConfigNetworkDriver.IPNET. Example: host.
         user (Union[Unset, None, str]): User that executes the command (cmd).
             If no user is set, the user from the image will be used, which in turn is 'root' if no user is specified there.
 
@@ -56,6 +61,9 @@ class ContainerConfig:
     jail_param: Union[Unset, None, List[str]] = UNSET
     mounts: Union[Unset, None, List["MountPointConfig"]] = UNSET
     name: Union[Unset, None, str] = UNSET
+    network_driver: Union[
+        Unset, ContainerConfigNetworkDriver
+    ] = ContainerConfigNetworkDriver.IPNET
     user: Union[Unset, None, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -94,6 +102,10 @@ class ContainerConfig:
                     mounts.append(mounts_item)
 
         name = self.name
+        network_driver: Union[Unset, str] = UNSET
+        if not isinstance(self.network_driver, Unset):
+            network_driver = self.network_driver.value
+
         user = self.user
 
         field_dict: Dict[str, Any] = {}
@@ -111,6 +123,8 @@ class ContainerConfig:
             field_dict["mounts"] = mounts
         if name is not UNSET:
             field_dict["name"] = name
+        if network_driver is not UNSET:
+            field_dict["network_driver"] = network_driver
         if user is not UNSET:
             field_dict["user"] = user
 
@@ -138,6 +152,13 @@ class ContainerConfig:
 
         name = d.pop("name", UNSET)
 
+        _network_driver = d.pop("network_driver", UNSET)
+        network_driver: Union[Unset, ContainerConfigNetworkDriver]
+        if isinstance(_network_driver, Unset):
+            network_driver = UNSET
+        else:
+            network_driver = ContainerConfigNetworkDriver(_network_driver)
+
         user = d.pop("user", UNSET)
 
         container_config = cls(
@@ -147,6 +168,7 @@ class ContainerConfig:
             jail_param=jail_param,
             mounts=mounts,
             name=name,
+            network_driver=network_driver,
             user=user,
         )
 

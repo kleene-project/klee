@@ -3,6 +3,7 @@ from typing import Any, Dict, List, Type, TypeVar, Union, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
+from ..models.container_network_driver import ContainerNetworkDriver
 from ..types import UNSET, Unset
 
 T = TypeVar("T", bound="Container")
@@ -24,6 +25,9 @@ class Container:
         jail_param (Union[Unset, List[str]]): List of jail parameters (see jail(8) for details) Example:
             ['allow.raw_sockets=true', 'osrelease=kleenejail'].
         name (Union[Unset, str]): Name of the container.
+        network_driver (Union[Unset, ContainerNetworkDriver]): What kind of network driver is the container using.
+            Possible values are `ipnet`, `host`, `vnet`, `disabled`.
+             Example: ipnet.
         running (Union[Unset, bool]): whether or not the container is running
         user (Union[Unset, str]): The default user used when creating execution instances in the container.
     """
@@ -36,6 +40,7 @@ class Container:
     image_id: Union[Unset, str] = UNSET
     jail_param: Union[Unset, List[str]] = UNSET
     name: Union[Unset, str] = UNSET
+    network_driver: Union[Unset, ContainerNetworkDriver] = UNSET
     running: Union[Unset, bool] = UNSET
     user: Union[Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -58,6 +63,10 @@ class Container:
             jail_param = self.jail_param
 
         name = self.name
+        network_driver: Union[Unset, str] = UNSET
+        if not isinstance(self.network_driver, Unset):
+            network_driver = self.network_driver.value
+
         running = self.running
         user = self.user
 
@@ -80,6 +89,8 @@ class Container:
             field_dict["jail_param"] = jail_param
         if name is not UNSET:
             field_dict["name"] = name
+        if network_driver is not UNSET:
+            field_dict["network_driver"] = network_driver
         if running is not UNSET:
             field_dict["running"] = running
         if user is not UNSET:
@@ -106,6 +117,13 @@ class Container:
 
         name = d.pop("name", UNSET)
 
+        _network_driver = d.pop("network_driver", UNSET)
+        network_driver: Union[Unset, ContainerNetworkDriver]
+        if isinstance(_network_driver, Unset):
+            network_driver = UNSET
+        else:
+            network_driver = ContainerNetworkDriver(_network_driver)
+
         running = d.pop("running", UNSET)
 
         user = d.pop("user", UNSET)
@@ -119,6 +137,7 @@ class Container:
             image_id=image_id,
             jail_param=jail_param,
             name=name,
+            network_driver=network_driver,
             running=running,
             user=user,
         )

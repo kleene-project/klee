@@ -13,47 +13,52 @@ class EndPoint:
     """Endpoint connecting a container to a network.
 
     Attributes:
-        container (Union[Unset, str]): ID of the container that this endpoint belongs to.
+        container_id (Union[Unset, str]): ID of the container that this endpoint belongs to.
         epair (Union[Unset, None, str]): epair used for endpoint in case of a VNET network
         id (Union[Unset, str]): EndPoint ID
-        ip_address (Union[Unset, None, str]): IP address of the container connected to the network
-        network (Union[Unset, str]): Name of the network that this endpoint belongs to.
+        ip_address (Union[Unset, str]): The IPv4 address of the container. Example: 10.13.37.33.
+        ip_address6 (Union[Unset, str]): The IPv6 address of the container. Example: FIXME.
+        network_id (Union[Unset, str]): Name of the network that this endpoint belongs to.
     """
 
-    container: Union[Unset, str] = UNSET
+    container_id: Union[Unset, str] = UNSET
     epair: Union[Unset, None, str] = UNSET
     id: Union[Unset, str] = UNSET
-    ip_address: Union[Unset, None, str] = UNSET
-    network: Union[Unset, str] = UNSET
+    ip_address: Union[Unset, str] = UNSET
+    ip_address6: Union[Unset, str] = UNSET
+    network_id: Union[Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        container = self.container
+        container_id = self.container_id
         epair = self.epair
         id = self.id
         ip_address = self.ip_address
-        network = self.network
+        ip_address6 = self.ip_address6
+        network_id = self.network_id
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
-        if container is not UNSET:
-            field_dict["container"] = container
+        if container_id is not UNSET:
+            field_dict["container_id"] = container_id
         if epair is not UNSET:
             field_dict["epair"] = epair
         if id is not UNSET:
             field_dict["id"] = id
         if ip_address is not UNSET:
             field_dict["ip_address"] = ip_address
-        if network is not UNSET:
-            field_dict["network"] = network
+        if ip_address6 is not UNSET:
+            field_dict["ip_address6"] = ip_address6
+        if network_id is not UNSET:
+            field_dict["network_id"] = network_id
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
-        container = d.pop("container", UNSET)
+        container_id = d.pop("container_id", UNSET)
 
         epair = d.pop("epair", UNSET)
 
@@ -61,14 +66,17 @@ class EndPoint:
 
         ip_address = d.pop("ip_address", UNSET)
 
-        network = d.pop("network", UNSET)
+        ip_address6 = d.pop("ip_address6", UNSET)
+
+        network_id = d.pop("network_id", UNSET)
 
         end_point = cls(
-            container=container,
+            container_id=container_id,
             epair=epair,
             id=id,
             ip_address=ip_address,
-            network=network,
+            ip_address6=ip_address6,
+            network_id=network_id,
         )
 
         end_point.additional_properties = d
