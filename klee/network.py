@@ -3,7 +3,7 @@ import click
 from .client.api.default.network_connect import sync_detailed as network_connect
 from .client.api.default.network_create import sync_detailed as network_create
 from .client.api.default.network_disconnect import sync_detailed as network_disconnect
-from .client.api.default.network_list import sync_detailed as network_list
+from .client.api.default.network_list import sync_detailed as network_list_endpoint
 from .client.api.default.network_inspect import (
     sync_detailed as network_inspect_endpoint,
 )
@@ -18,13 +18,10 @@ from .prune import prune_command
 from .inspect import inspect_command
 from .utils import request_and_validate_response
 
-IFNAME_NEEDED_FOR_LOOPBACK_DRIVER = (
-    "Option 'ifname' is needed when the network driver 'loopback' is used"
-)
 NETWORK_LIST_COLUMNS = [
     ("ID", {"style": "cyan"}),
     ("NAME", {"style": "bold aquamarine1"}),
-    ("DRIVER", {"style": "bright_white"}),
+    ("TYPE", {"style": "bright_white"}),
     ("SUBNET", {"style": "bold aquamarine1"}),
 ]
 
@@ -36,42 +33,81 @@ def root(name="network"):
 
 @root.command(cls=command_cls(), name="create", no_args_is_help=True)
 @click.option(
-    "--driver",
-    "-d",
+    "--type",
+    "-t",
     default="loopback",
     show_default=True,
-    help="Which driver to use for the network. Possible values are 'vnet', 'loopback', and 'host'. See jails(8) and the networking documentation for details.",
+    help="What kind of network should be created. Possible values are 'bridge', 'loopback', and 'custom'.",
 )
 @click.option(
-    "--ifname",
+    "--interface",
+    "-i",
     default="",
-    help="Name of the loopback interface used for the loopback network",
+    help="""
+    Name of the interface used for the host interface of the network.
+    If not set the interface name is set to `kleened` postfixed with an integer.
+    If the `type` is set to `custom` the value of `interface` must be the name of an existing interface.
+  """,
 )
-@click.option("--subnet", required=True, help="Subnet in CIDR format for the network")
-@click.argument("network_name", nargs=1)
-def create(driver, ifname, subnet, network_name):
-    """Create a new network"""
-    network_config = {
-        "name": network_name,
-        "ifname": ifname,
-        "subnet": subnet,
-        "driver": driver,
-    }
-    if driver == "loopback" and ifname is None:
-        echo_bold(IFNAME_NEEDED_FOR_LOOPBACK_DRIVER)
+@click.option("--subnet", default="", help="Subnet in CIDR format for the network")
+@click.option(
+    "--subnet6", default="", help="IPv6 subnet in CIDR format for the network"
+)
+@click.option(
+    "--gw",
+    default="auto",
+    help="""The default IPv4 router that is added to 'vnet' containers, if `--subnet` is set.
+    Only affects bridge networks. Set `--gw=auto` to use the same gateway as the host (default).
+    Setting `--gw=\"\"` implies that no gateway is used.
+    """,
+)
+@click.option(
+    "--gw6",
+    default="auto",
+    help="""The default IPv6 router that is added to 'vnet' containers, if `--subnet6` is set.
+    See `--gw` for details.
+    """,
+)
+@click.option(
+    "--nat",
+    default=True,
+    is_flag=True,
+    help="Whether or not to use NAT for networks outgoing traffic. Default is to use NAT, use `--no-nat` to disable it.",
+)
+@click.option(
+    "--nat-if",
+    default=None,
+    help="""
+    Specify which interface to NAT the IPv4 network traffic to.
+    Defaults to the host's gateway interface. Ignored if `--no-nat` is set.
+    """,
+)
+@click.argument("name", nargs=1)
+def create(**config):
+    """Create a new network named **NAME**."""
+    config["gateway"] = config.pop("gw")
+    config["gateway6"] = config.pop("gw6")
+    for gw in ["gateway", "gateway6"]:
+        config[gw] = "<auto>" if config[gw] == "auto" else config[gw]
 
+    nat = config.pop("nat")
+    nat_interface = config.pop("nat_if")
+    if nat:
+        config["nat"] = "<host-gateway>" if nat_interface is None else nat_interface
     else:
-        network_config = NetworkConfig.from_dict(network_config)
+        config["nat"] = ""
 
-        request_and_validate_response(
-            network_create,
-            kwargs={"json_body": network_config},
-            statuscode2messsage={
-                201: lambda response: response.parsed.id,
-                409: lambda response: response.parsed.message,
-                500: "kleened backend error",
-            },
-        )
+    network_config = NetworkConfig.from_dict(config)
+
+    request_and_validate_response(
+        network_create,
+        kwargs={"json_body": network_config},
+        statuscode2messsage={
+            201: lambda response: response.parsed.id,
+            409: lambda response: response.parsed.message,
+            500: "kleened backend error",
+        },
+    )
 
 
 @root.command(cls=command_cls(), name="rm", no_args_is_help=True)
@@ -104,22 +140,27 @@ root.add_command(
 )
 
 
-@root.command(cls=command_cls(), name="ls")
-def list_networks():
-    """List networks"""
-    request_and_validate_response(
-        network_list,
-        kwargs={},
-        statuscode2messsage={
-            200: lambda response: _print_networks(response.parsed),
-            500: "kleened backend error",
-        },
-    )
+def network_list(name, hidden=False):
+    def _print_networks(networks):
+        networks = [[nw.id, nw.name, nw.type, nw.subnet] for nw in networks]
+        print_table(networks, NETWORK_LIST_COLUMNS)
+
+    @root.command(cls=command_cls(), name=name, hidden=hidden)
+    def listing():
+        """List networks"""
+        request_and_validate_response(
+            network_list_endpoint,
+            kwargs={},
+            statuscode2messsage={
+                200: lambda response: _print_networks(response.parsed),
+                500: "kleened backend error",
+            },
+        )
+
+    return listing
 
 
-def _print_networks(networks):
-    networks = [[nw.id, nw.name, nw.driver, nw.subnet] for nw in networks]
-    print_table(networks, NETWORK_LIST_COLUMNS)
+root.add_command(network_list("ls"), name="ls")
 
 
 root.add_command(
@@ -138,11 +179,16 @@ root.add_command(
 @click.option(
     "--ip",
     default=None,
-    help="IPv4 address (e.g., 172.30.100.104) used for the container.",
+    help="IPv4 address used for the container. If `--ip` is omitted and a (ipv4) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",
+)
+@click.option(
+    "--ip6",
+    default=None,
+    help="IPv6 address used for the container. If `--ip6` is omitted and a (ipv6) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",  # FIXME: Fiks, omitted --> ignored.
 )
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
-def connect(ip, network, container):
+def connect(ip, ip6, network, container):
     """
     Connect a container to a network.
 
@@ -150,13 +196,16 @@ def connect(ip, network, container):
     Once connected, the container can communicate with other containers in
     the same network.
     """
-    connect_(ip, network, container)
+    connect_(ip, ip6, network, container)
 
 
-def connect_(ip, network, container):
+def connect_(ip, ip6, network, container):
+    ip = "<auto>" if ip is None else ip
+    ip6 = "" if ip6 is None else ip6
+
     if ip is not None:
         endpoint_config = EndPointConfig.from_dict(
-            {"container": container, "ip_address": ip}
+            {"container": container, "ip_address": ip, "ip_address6": ip6}
         )
     else:
         endpoint_config = EndPointConfig.from_dict({"container": container})

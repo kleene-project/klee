@@ -44,12 +44,21 @@ from .prune import prune_command
 from .inspect import inspect_command
 
 HELP_DETACH_FLAG = """
-Whether or not to attach to STDOUT/STDERR.
+Do not output STDOUT/STDERR to the terminal.
 If this is set, Klee will exit and return the container ID when the container has been started.
 """
 HELP_INTERACTIVE_FLAG = (
     "Send terminal input to container's STDIN. If set, `--detach` will be ignored."
 )
+
+HELP_NETWORK_DRIVER_FLAG = """
+Network driver of the container.
+Possible values are `ipnet`, `host`, `vnet`, and `disabled`.
+"""
+
+HELP_IP_FLAG = "IPv4 address used for the container. If omitted, an unused ip is allocated from the IPv4 subnet of `--network`."
+
+HELP_IP6_FLAG = "IPv6 address used for the container. If omitted, an unused ip is allocated from the IPv6 subnet of `--network`."
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
@@ -97,12 +106,11 @@ def container_create(name, hidden=False):
         help="Alternate user that should be used for starting the container",
     )
     @click.option(
-        "--network", "-n", default=None, help="Connect a container to a network."
-    )
-    @click.option(
-        "--ip",
+        "--env",
+        "-e",
+        multiple=True,
         default=None,
-        help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
+        help="Set environment variables (e.g. --env FIRST=SomeValue --env SECOND=AnotherValue)",
     )
     @click.option(
         "--mount",
@@ -116,13 +124,6 @@ def container_create(name, hidden=False):
         """,
     )
     @click.option(
-        "--env",
-        "-e",
-        multiple=True,
-        default=None,
-        help="Set environment variables (e.g. --env FIRST=SomeValue --env SECOND=AnotherValue)",
-    )
-    @click.option(
         "--jailparam",
         "-J",
         multiple=True,
@@ -130,18 +131,22 @@ def container_create(name, hidden=False):
         show_default=True,
         help="Specify a jail parameters, see jail(8) for details",
     )
+    @click.option("--driver", "-l", default=None, help=HELP_NETWORK_DRIVER_FLAG)
+    @click.option(
+        "--network", "-n", default=None, help="Connect container to this network."
+    )
+    @click.option("--ip", default=None, help=HELP_IP_FLAG)
+    @click.option("--ip6", default=None, help=HELP_IP6_FLAG)
     @click.argument("image", nargs=1)
     @click.argument("command", nargs=-1)
-    def create(name, user, network, ip, mount, env, jailparam, image, command):
+    def create(**kwargs):
         """
         Create a new container. The **IMAGE** parameter syntax is:
         `<image_id>|[<image_name>[:<tag>]][@<snapshot_id>]`
 
         See the documentation for details.
         """
-        create_container_and_connect_to_network(
-            name, user, network, ip, mount, env, jailparam, image, command
-        )
+        create_container_and_connect_to_network(**kwargs)
 
     return create
 
@@ -149,31 +154,54 @@ def container_create(name, hidden=False):
 root.add_command(container_create("create"), name="create")
 
 
-def create_container_and_connect_to_network(
-    name, user, network, ip, mount, env, jailparam, image, command
-):
-    response = create_(name, user, network, ip, mount, env, jailparam, image, command)
+def create_container_and_connect_to_network(**kwargs):
+    kwargs_create = {
+        "name": kwargs["name"],
+        "image": kwargs["image"],
+        "command": kwargs["command"],
+        "user": kwargs["user"],
+        "mount": kwargs["mount"],
+        "env": kwargs["env"],
+        "jailparam": kwargs["jailparam"],
+        "network_driver": kwargs["driver"],
+    }
+    response = create_(**kwargs_create)
 
     if response is None or response.status_code != 201:
-        return None
+        echo_error("could not create container: ", response.parsed.message)
+        return
 
-    if network is None:
-        return None
+    container_id = response.parsed.id
 
-    return connect_(ip, network, response.parsed.id)
+    if kwargs["network"] is None:
+        return container_id
+
+    kwargs_connect = {
+        "ip": kwargs["ip"],
+        "ip6": kwargs["ip6"],
+        "network": kwargs["network"],
+        "container": container_id,
+    }
+    response = connect_(**kwargs_connect)
+    if response is None or response.status_code != 204:
+        echo_error(f"could not connect container: {response.parsed.message}")
+        return
+
+    return container_id
 
 
-def create_(name, user, network, ip, mount, env, jailparam, image, command):
-    mounts = [] if mount is None else list(mount)
+def create_(**kwargs):
+    mounts = [] if kwargs["mount"] is None else list(kwargs["mount"])
 
     container_config = {
-        "name": name,
-        "cmd": list(command),
+        "name": kwargs["name"],
+        "image": kwargs["image"],
+        "cmd": list(kwargs["command"]),
+        "user": kwargs["user"],
+        "env": list(kwargs["env"]),
         "mounts": [decode_mount(mnt) for mnt in mounts],
-        "image": image,
-        "jail_param": list(jailparam),
-        "env": list(env),
-        "user": user,
+        "jail_param": list(kwargs["jailparam"]),
+        "network_driver": kwargs["network_driver"],
     }
     container_config = ContainerConfig.from_dict(container_config)
 
@@ -241,7 +269,7 @@ def container_list(name, hidden=False):
             container_list_endpoint,
             kwargs={"all_": kwargs["all"]},
             statuscode2messsage={
-                200: lambda response: _print_container(response.parsed),
+                200: lambda response: _print_container(response),
                 500: "kleened backend error",
             },
         )
@@ -252,7 +280,9 @@ def container_list(name, hidden=False):
 root.add_command(container_list("ls"), name="ls")
 
 
-def _print_container(containers):
+def _print_container(response):
+    containers = response.parsed
+
     def command_json2command_human(command_str):
         return " ".join(json.loads(command_str))
 
@@ -267,7 +297,7 @@ def _print_container(containers):
             c.name,
             c.image_id,
             c.image_tag,
-            command_json2command_human(c.command),
+            command_json2command_human(c.cmd),
             human_duration(c.created) + " ago",
             is_running_str(c.running),
         ]
@@ -577,14 +607,6 @@ def container_run(name, hidden=False):
         """,
     )
     @click.option(
-        "--network", "-n", default=None, help="Connect a container to a network"
-    )
-    @click.option(
-        "--ip",
-        default=None,
-        help="IPv4 address (e.g., 172.30.100.104). If the '--network' parameter is not set '--ip' is ignored.",
-    )
-    @click.option(
         "--mount",
         "-m",
         multiple=True,
@@ -613,6 +635,12 @@ def container_run(name, hidden=False):
         If you do not want `exec.clean` and `mount.devfs` enabled, you must actively disable them.
         """,
     )
+    @click.option("--driver", "-l", default="ipnet", help=HELP_NETWORK_DRIVER_FLAG)
+    @click.option(
+        "--network", "-n", default=None, help="Connect a container to a network"
+    )
+    @click.option("--ip", default=None, help=HELP_IP_FLAG)
+    @click.option("--ip6", default=None, help=HELP_IP6_FLAG)
     @click.option(
         "--detach",
         "-d",
@@ -629,39 +657,24 @@ def container_run(name, hidden=False):
     )
     @click.argument("image", nargs=1)
     @click.argument("command", nargs=-1)
-    def run(
-        name,
-        user,
-        network,
-        ip,
-        mount,
-        env,
-        jailparam,
-        detach,
-        interactive,
-        tty,
-        image,
-        command,
-    ):
+    def run(**kwargs):
         """
         Run a command in a new container.
 
         The IMAGE syntax is: (**IMAGE_ID**|**IMAGE_NAME**[:**TAG**])[:**@SNAPSHOT**]
         """
-        response = create_(
-            name, user, network, ip, mount, env, jailparam, image, command
-        )
-        if response is None or response.status_code != 201:
+        kwargs_start = {
+            "detach": kwargs.pop("detach"),
+            "interactive": kwargs.pop("interactive"),
+            "tty": kwargs.pop("tty"),
+        }
+
+        container_id = create_container_and_connect_to_network(**kwargs)
+        if container_id is None:
             return
 
-        container_id = response.parsed.id
-        if network is not None:
-            response = connect_(ip, network, container_id)
-            if response is None or response.status_code != 204:
-                echo_bold("could not start container")
-                return
-
-        start_(detach, interactive, tty, [container_id])
+        kwargs_start["containers"] = [container_id]
+        start_(**kwargs_start)
 
     return run
 

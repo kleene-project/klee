@@ -66,7 +66,7 @@ def request(endpoint, kwargs):
         transport = httpx.HTTPTransport(**transport_kwargs)
 
     # Try to connect to backend
-    client = Client(base_url=url, timeout=10.0)
+    client = Client(base_url=url, timeout=60.0)
     return endpoint(transport, client=client, **kwargs)
 
 
