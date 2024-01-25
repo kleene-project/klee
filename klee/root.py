@@ -43,8 +43,8 @@ def create_cli():
 
     from .printing import root_cls
     from .image import root as image_root, image_list, image_build, image_remove
-    from .network import root as network_root
-    from .volume import root as volume_root
+    from .network import root as network_root, network_list
+    from .volume import root as volume_root, volume_list
     from .shortcuts import SHORTCUTS
 
     shortcuts2command_obj = {
@@ -54,6 +54,8 @@ def create_cli():
         "exec": container_exec("exec", hidden=True),
         "lsc": container_list("lsc", hidden=True),
         "lsi": image_list(name="lsi", hidden=True),
+        "lsn": network_list(name="lsn", hidden=True),
+        "lsv": volume_list(name="lsv", hidden=True),
         "restart": container_restart("restart", hidden=True),
         "rmc": container_remove("rmc", hidden=True),
         "rmi": image_remove("rmi", hidden=True),

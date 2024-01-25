@@ -1,7 +1,7 @@
 import click
 
 from .client.api.default.volume_create import sync_detailed as volume_create
-from .client.api.default.volume_list import sync_detailed as volume_list
+from .client.api.default.volume_list import sync_detailed as volume_list_endpoint
 from .client.api.default.volume_inspect import sync_detailed as volume_inspect_endpoint
 from .client.api.default.volume_remove import sync_detailed as volume_remove
 from .client.api.default.volume_prune import sync_detailed as volume_prune_endpoint
@@ -35,29 +35,32 @@ def create(volume_name):
     )
 
 
-@root.command(cls=command_cls(), name="ls")
-def list_volumes():
-    """List volumes"""
-    request_and_validate_response(
-        volume_list,
-        kwargs={},
-        statuscode2messsage={
-            200: lambda response: _print_volumes(response.parsed),
-            500: "kleened backend error",
-        },
-    )
+def volume_list(name, hidden=False):
+    VOLUME_LIST_COLUMNS = [
+        ("VOLUME NAME", {"style": "bold aquamarine1"}),
+        ("CREATED", {"style": "bright_white"}),
+    ]
+
+    def _print_volumes(volumes):
+        volumes = [[vol.name, human_duration(vol.created) + " ago"] for vol in volumes]
+        print_table(volumes, VOLUME_LIST_COLUMNS)
+
+    @root.command(cls=command_cls(), name=name, hidden=hidden)
+    def listing():
+        """List volumes"""
+        request_and_validate_response(
+            volume_list_endpoint,
+            kwargs={},
+            statuscode2messsage={
+                200: lambda response: _print_volumes(response.parsed),
+                500: "kleened backend error",
+            },
+        )
+
+    return listing
 
 
-VOLUME_LIST_COLUMNS = [
-    ("VOLUME NAME", {"style": "bold aquamarine1"}),
-    ("CREATED", {"style": "bright_white"}),
-]
-
-
-def _print_volumes(volumes):
-    volumes = [[vol.name, human_duration(vol.created) + " ago"] for vol in volumes]
-    print_table(volumes, VOLUME_LIST_COLUMNS)
-
+root.add_command(volume_list("ls"), name="ls")
 
 root.add_command(
     inspect_command(
