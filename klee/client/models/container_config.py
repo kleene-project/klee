@@ -8,6 +8,7 @@ from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
     from ..models.mount_point_config import MountPointConfig
+    from ..models.public_port_config import PublicPortConfig
 
 
 T = TypeVar("T", bound="ContainerConfig")
@@ -48,6 +49,7 @@ class ContainerConfig:
             use.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.
              Default: ContainerConfigNetworkDriver.IPNET. Example: host.
+        public_ports (Union[Unset, List['PublicPortConfig']]): FIXME
         user (Union[Unset, None, str]): User that executes the command (cmd).
             If no user is set, the user from the image will be used, which in turn is 'root' if no user is specified there.
 
@@ -64,6 +66,7 @@ class ContainerConfig:
     network_driver: Union[
         Unset, ContainerConfigNetworkDriver
     ] = ContainerConfigNetworkDriver.IPNET
+    public_ports: Union[Unset, List["PublicPortConfig"]] = UNSET
     user: Union[Unset, None, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -106,6 +109,14 @@ class ContainerConfig:
         if not isinstance(self.network_driver, Unset):
             network_driver = self.network_driver.value
 
+        public_ports: Union[Unset, List[Dict[str, Any]]] = UNSET
+        if not isinstance(self.public_ports, Unset):
+            public_ports = []
+            for public_ports_item_data in self.public_ports:
+                public_ports_item = public_ports_item_data.to_dict()
+
+                public_ports.append(public_ports_item)
+
         user = self.user
 
         field_dict: Dict[str, Any] = {}
@@ -125,6 +136,8 @@ class ContainerConfig:
             field_dict["name"] = name
         if network_driver is not UNSET:
             field_dict["network_driver"] = network_driver
+        if public_ports is not UNSET:
+            field_dict["public_ports"] = public_ports
         if user is not UNSET:
             field_dict["user"] = user
 
@@ -133,6 +146,7 @@ class ContainerConfig:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         from ..models.mount_point_config import MountPointConfig
+        from ..models.public_port_config import PublicPortConfig
 
         d = src_dict.copy()
         cmd = cast(List[str], d.pop("cmd", UNSET))
@@ -159,6 +173,13 @@ class ContainerConfig:
         else:
             network_driver = ContainerConfigNetworkDriver(_network_driver)
 
+        public_ports = []
+        _public_ports = d.pop("public_ports", UNSET)
+        for public_ports_item_data in _public_ports or []:
+            public_ports_item = PublicPortConfig.from_dict(public_ports_item_data)
+
+            public_ports.append(public_ports_item)
+
         user = d.pop("user", UNSET)
 
         container_config = cls(
@@ -169,6 +190,7 @@ class ContainerConfig:
             mounts=mounts,
             name=name,
             network_driver=network_driver,
+            public_ports=public_ports,
             user=user,
         )
 

@@ -14,12 +14,12 @@ class EndPointConfig:
 
     Attributes:
         container (str): Identifier of the container using this endpoint.
-        ip_address (Union[Unset, str]): The IPv4 address that should be assigned to the container. If set to `"auto"` an
-            unused ip from the subnet will be used. If set to `""` no address will be set. Default: ''. Example:
+        ip_address (Union[Unset, str]): The IPv4 address that should be assigned to the container. If set to `"<auto>"`
+            an unused ip from the subnet will be used. If set to `""` no address will be set. Default: ''. Example:
             10.13.37.33.
-        ip_address6 (Union[Unset, str]): The IPv6 address that should be assigned to the container. If this field is
-            `""` an unused ip contained in the subnet is auto-generated. `null` if no address should be set. Default: ''.
-            Example: 2001:db8:8a2e:370:7334::2.
+        ip_address6 (Union[Unset, str]): The IPv6 address that should be assigned to the container. If set to `"<auto>"`
+            an unused ip from the subnet will be used. If set to `""` no address will be set. Default: ''. Example:
+            2001:db8:8a2e:370:7334::2.
         network (Union[Unset, str]): Name of the network that this endpoint belongs to.
     """
 

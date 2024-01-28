@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, TypeVar, Union
+from typing import Any, Dict, List, Type, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -18,6 +18,10 @@ class NetworkConfig:
         type (NetworkConfigType): What kind of network should be created. Possible values are 'bridge', 'loopback', and
             'custom'.
              Example: bridge.
+        external_interfaces (Union[Unset, List[str]]): Name of the external interfaces where incoming traffic is
+            redirected from, if ports are being published externally on this network.
+            If set to the empty list `[]` Kleened uses the `gateway` interface.
+             Example: ['em0', 'igb2'].
         gateway (Union[Unset, str]): Only for bridge networks. The default IPv4 router that is added to 'vnet'
             containers connecting to bridged networks.
             If set to `""` no gateway is used. If set to `"<auto>"` the first IP of the subnet is added to `interface` and
@@ -27,11 +31,15 @@ class NetworkConfig:
             containers connecting to bridged networks.
             See `gateway` for details.
              Default: ''. Example: 2001:db8:8a2e:370:7334::1.
+        icc (Union[Unset, bool]): Whether or not to enable connectivity between containers within the same network.
+            Default: True.
         interface (Union[Unset, str]): Name of the host interface used for the network.
             If set to `""` the name is set to `kleened` prefixed with an integer.
             If `type` is set to `custom` the value of `interface` must refer to an existing interface.
             The name must not exceed 15 characters.
              Default: ''. Example: kleene0.
+        internal (Union[Unset, bool]): Whether or not the network is internal, i.e., not allowing outgoing upstream
+            traffic
         nat (Union[Unset, str]): Which interface should be used for NAT'ing outgoing traffic from the network.
             If set to `"<host-gateway>"` the hosts gateway interface is used, if it exists.
             If set to `""` no NAT'ing is configured.
@@ -44,9 +52,12 @@ class NetworkConfig:
 
     name: str
     type: NetworkConfigType
+    external_interfaces: Union[Unset, List[str]] = UNSET
     gateway: Union[Unset, str] = ""
     gateway6: Union[Unset, str] = ""
+    icc: Union[Unset, bool] = True
     interface: Union[Unset, str] = ""
+    internal: Union[Unset, bool] = False
     nat: Union[Unset, str] = "<host-gateway>"
     subnet: Union[Unset, str] = ""
     subnet6: Union[Unset, str] = ""
@@ -56,9 +67,15 @@ class NetworkConfig:
         name = self.name
         type = self.type.value
 
+        external_interfaces: Union[Unset, List[str]] = UNSET
+        if not isinstance(self.external_interfaces, Unset):
+            external_interfaces = self.external_interfaces
+
         gateway = self.gateway
         gateway6 = self.gateway6
+        icc = self.icc
         interface = self.interface
+        internal = self.internal
         nat = self.nat
         subnet = self.subnet
         subnet6 = self.subnet6
@@ -71,12 +88,18 @@ class NetworkConfig:
                 "type": type,
             }
         )
+        if external_interfaces is not UNSET:
+            field_dict["external_interfaces"] = external_interfaces
         if gateway is not UNSET:
             field_dict["gateway"] = gateway
         if gateway6 is not UNSET:
             field_dict["gateway6"] = gateway6
+        if icc is not UNSET:
+            field_dict["icc"] = icc
         if interface is not UNSET:
             field_dict["interface"] = interface
+        if internal is not UNSET:
+            field_dict["internal"] = internal
         if nat is not UNSET:
             field_dict["nat"] = nat
         if subnet is not UNSET:
@@ -93,11 +116,17 @@ class NetworkConfig:
 
         type = NetworkConfigType(d.pop("type"))
 
+        external_interfaces = cast(List[str], d.pop("external_interfaces", UNSET))
+
         gateway = d.pop("gateway", UNSET)
 
         gateway6 = d.pop("gateway6", UNSET)
 
+        icc = d.pop("icc", UNSET)
+
         interface = d.pop("interface", UNSET)
+
+        internal = d.pop("internal", UNSET)
 
         nat = d.pop("nat", UNSET)
 
@@ -108,9 +137,12 @@ class NetworkConfig:
         network_config = cls(
             name=name,
             type=type,
+            external_interfaces=external_interfaces,
             gateway=gateway,
             gateway6=gateway6,
+            icc=icc,
             interface=interface,
+            internal=internal,
             nat=nat,
             subnet=subnet,
             subnet6=subnet6,

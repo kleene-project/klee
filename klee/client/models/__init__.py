@@ -27,6 +27,10 @@ from .network_config import NetworkConfig
 from .network_config_type import NetworkConfigType
 from .network_inspect import NetworkInspect
 from .network_type import NetworkType
+from .public_port import PublicPort
+from .public_port_config import PublicPortConfig
+from .public_port_config_protocol import PublicPortConfigProtocol
+from .public_port_protocol import PublicPortProtocol
 from .volume import Volume
 from .volume_config import VolumeConfig
 from .volume_inspect import VolumeInspect
@@ -61,6 +65,10 @@ __all__ = (
     "NetworkConfigType",
     "NetworkInspect",
     "NetworkType",
+    "PublicPort",
+    "PublicPortConfig",
+    "PublicPortConfigProtocol",
+    "PublicPortProtocol",
     "Volume",
     "VolumeConfig",
     "VolumeInspect",

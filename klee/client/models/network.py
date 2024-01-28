@@ -34,6 +34,8 @@ class Network:
             If the `type` property is set to `custom` the value of `interface` must be the name of an existing interface.
             The name must not exceed 15 characters.
              Default: ''. Example: kleene0.
+        internal (Union[Unset, bool]): Whether or not the network is internal, i.e., not allowing outgoing upstream
+            traffic Default: True.
         name (Union[Unset, str]): Name of the network. Example: westnet.
         nat (Union[Unset, str]): Which interface should be used for NAT'ing outgoing traffic from the network.
             If set to `""` no NAT'ing is configured.
@@ -53,6 +55,7 @@ class Network:
     icc: Union[Unset, bool] = True
     id: Union[Unset, str] = UNSET
     interface: Union[Unset, str] = ""
+    internal: Union[Unset, bool] = True
     name: Union[Unset, str] = UNSET
     nat: Union[Unset, str] = ""
     subnet: Union[Unset, str] = UNSET
@@ -70,6 +73,7 @@ class Network:
         icc = self.icc
         id = self.id
         interface = self.interface
+        internal = self.internal
         name = self.name
         nat = self.nat
         subnet = self.subnet
@@ -93,6 +97,8 @@ class Network:
             field_dict["id"] = id
         if interface is not UNSET:
             field_dict["interface"] = interface
+        if internal is not UNSET:
+            field_dict["internal"] = internal
         if name is not UNSET:
             field_dict["name"] = name
         if nat is not UNSET:
@@ -121,6 +127,8 @@ class Network:
 
         interface = d.pop("interface", UNSET)
 
+        internal = d.pop("internal", UNSET)
+
         name = d.pop("name", UNSET)
 
         nat = d.pop("nat", UNSET)
@@ -143,6 +151,7 @@ class Network:
             icc=icc,
             id=id,
             interface=interface,
+            internal=internal,
             name=name,
             nat=nat,
             subnet=subnet,

@@ -1,10 +1,14 @@
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..models.container_network_driver import ContainerNetworkDriver
 from ..types import UNSET, Unset
+
+if TYPE_CHECKING:
+    from ..models.public_port import PublicPort
+
 
 T = TypeVar("T", bound="Container")
 
@@ -28,6 +32,7 @@ class Container:
         network_driver (Union[Unset, ContainerNetworkDriver]): What kind of network driver is the container using.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.
              Example: ipnet.
+        public_ports (Union[Unset, List['PublicPort']]): FIXME
         running (Union[Unset, bool]): whether or not the container is running
         user (Union[Unset, str]): The default user used when creating execution instances in the container.
     """
@@ -41,6 +46,7 @@ class Container:
     jail_param: Union[Unset, List[str]] = UNSET
     name: Union[Unset, str] = UNSET
     network_driver: Union[Unset, ContainerNetworkDriver] = UNSET
+    public_ports: Union[Unset, List["PublicPort"]] = UNSET
     running: Union[Unset, bool] = UNSET
     user: Union[Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -67,6 +73,14 @@ class Container:
         if not isinstance(self.network_driver, Unset):
             network_driver = self.network_driver.value
 
+        public_ports: Union[Unset, List[Dict[str, Any]]] = UNSET
+        if not isinstance(self.public_ports, Unset):
+            public_ports = []
+            for public_ports_item_data in self.public_ports:
+                public_ports_item = public_ports_item_data.to_dict()
+
+                public_ports.append(public_ports_item)
+
         running = self.running
         user = self.user
 
@@ -91,6 +105,8 @@ class Container:
             field_dict["name"] = name
         if network_driver is not UNSET:
             field_dict["network_driver"] = network_driver
+        if public_ports is not UNSET:
+            field_dict["public_ports"] = public_ports
         if running is not UNSET:
             field_dict["running"] = running
         if user is not UNSET:
@@ -100,6 +116,8 @@ class Container:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+        from ..models.public_port import PublicPort
+
         d = src_dict.copy()
         cmd = cast(List[str], d.pop("cmd", UNSET))
 
@@ -124,6 +142,13 @@ class Container:
         else:
             network_driver = ContainerNetworkDriver(_network_driver)
 
+        public_ports = []
+        _public_ports = d.pop("public_ports", UNSET)
+        for public_ports_item_data in _public_ports or []:
+            public_ports_item = PublicPort.from_dict(public_ports_item_data)
+
+            public_ports.append(public_ports_item)
+
         running = d.pop("running", UNSET)
 
         user = d.pop("user", UNSET)
@@ -138,6 +163,7 @@ class Container:
             jail_param=jail_param,
             name=name,
             network_driver=network_driver,
+            public_ports=public_ports,
             running=running,
             user=user,
         )
