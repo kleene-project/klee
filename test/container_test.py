@@ -82,7 +82,7 @@ class TestContainerSubcommand:
         run(f"container update --env TEST=lol {container_id} /bin/sleep 10")
         container_endpoints = inspect("container", container_id)
         assert container_endpoints["container"]["env"] == ["TEST=lol"]
-        assert container_endpoints["container"]["command"] == ["/bin/sleep", "10"]
+        assert container_endpoints["container"]["cmd"] == ["/bin/sleep", "10"]
 
     def test_prune_container(self):
         remove_all_containers()

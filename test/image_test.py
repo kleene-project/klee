@@ -154,6 +154,7 @@ class TestImageSubcommand:
         result = build_image(quiet=False, cleanup=False)
         image_id, build_log = decode_invalid_image_build(result)
         expected_build_log = [
+            # f"Started to build image with ID {image_id}",
             "Step 1/3 : FROM FreeBSD:testing",
             'Step 2/3 : RUN echo "first" > /root/test.txt',
             "--> Snapshot created: @",
@@ -164,7 +165,7 @@ class TestImageSubcommand:
         ]
 
         snapshot_line = build_log[2]
-        snapshot = snapshot_line.split("--> Snapshot created: @")[0]
+        snapshot = snapshot_line.split("--> Snapshot created: @")[1]
         verify_build_output(expected_build_log, build_log)
         output = run(f"run {image_id}@{snapshot} /bin/cat /root/test.txt", exit_code=0)
 

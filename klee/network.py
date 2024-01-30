@@ -82,6 +82,18 @@ def root(name="network"):
     Defaults to the host's gateway interface. Ignored if `--no-nat` is set.
     """,
 )
+@click.option(
+    "--icc",
+    default=True,
+    is_flag=True,
+    help="Whether or not to enable connectivity between containers within the same network.",
+)
+@click.option(
+    "--internal",
+    default=False,
+    is_flag=True,
+    help="Whether or not the network is internal, i.e., not allowing outgoing upstream traffic",
+)
 @click.argument("name", nargs=1)
 def create(**config):
     """Create a new network named **NAME**."""
@@ -179,12 +191,12 @@ root.add_command(
 @click.option(
     "--ip",
     default=None,
-    help="IPv4 address used for the container. If `--ip` is omitted and a (ipv4) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",
+    help="Specify an IPv4 address used for the container. If `--ip` is omitted and a (ipv4) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",
 )
 @click.option(
     "--ip6",
     default=None,
-    help="IPv6 address used for the container. If `--ip6` is omitted and a (ipv6) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",  # FIXME: Fiks, omitted --> ignored.
+    help="Specify an IPv6 address used for the container. If `--ip6` is omitted and a (ipv6) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",
 )
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
@@ -201,7 +213,7 @@ def connect(ip, ip6, network, container):
 
 def connect_(ip, ip6, network, container):
     ip = "<auto>" if ip is None else ip
-    ip6 = "" if ip6 is None else ip6
+    ip6 = "<auto>" if ip6 is None else ip6
 
     if ip is not None:
         endpoint_config = EndPointConfig.from_dict(

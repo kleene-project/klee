@@ -1,3 +1,5 @@
+import json
+
 from testutils import (
     container_get_netstat_info,
     create_container,
@@ -23,7 +25,9 @@ class TestNetworkSubcommand:
 
     def test_add_remove_and_list_networks(self):
         name = "test_arl_networks"
-        network_id = create_network(name, ifname="testif", subnet="10.13.37.0/24")
+
+        cmd = f"network create --interface testif --subnet 10.13.37.0/24 {name}"
+        network_id, _ = run(cmd)
         assert len(network_id) == 12
 
         networks = list_non_default_networks()
@@ -37,28 +41,23 @@ class TestNetworkSubcommand:
 
     def test_inspect_network(self):
         name = "test_network_inspect"
-        network_id = create_network(name=name, ifname="testif", subnet="10.13.37.0/24")
+        cmd = f"network create --interface testif --subnet 10.13.37.0/24 {name}"
+        network_id, _ = run(cmd)
         assert inspect("network", "notexist") == "network not found"
         network_endpoints = inspect("network", network_id)
         assert network_endpoints["network"]["name"] == name
         remove_network(network_id)
 
     def test_prune_network(self):
-        name1 = "test_network_prune1"
-        name2 = "test_network_prune2"
-        network_id1 = create_network(
-            name=name1, ifname="testif1", subnet="10.13.37.0/24"
-        )
-        network_id2 = create_network(
-            name=name2, ifname="testif2", subnet="10.13.38.0/24"
-        )
+        cmd = "network create --interface testif1 --subnet 10.13.37.0/24 test_prune1"
+        network_id1, _ = run(cmd)
+        cmd = "network create --interface testif2 --subnet 10.13.38.0/24 test_prune2"
+        network_id2, _ = run(cmd)
         assert set(prune("network")) == set([network_id1, network_id2])
 
     def test_remove_network_by_id(self):
-        name1 = "test_network_rm1"
-        name2 = "test_network_rm2"
-        network_id1 = create_network(name1, ifname="testif0", subnet="10.13.37.0/24")
-        network_id2 = create_network(name2, ifname="testif1", subnet="10.13.37.1/24")
+        network_id1, _ = run("network create --subnet 10.13.37.0/24 test_rm1")
+        network_id2, _ = run("network create --subnet 10.13.38.0/24 test_rm2")
         network_id1_again = remove_network(network_id1)
         network_id2_again = remove_network(network_id2[:8])
         assert network_id1 == network_id1_again
@@ -66,9 +65,7 @@ class TestNetworkSubcommand:
         assert_empty_network_list()
 
     def test_create_container_connected_to_custom_network_with_default_driver(self):
-        network_id = create_network(
-            "test_create_conn", ifname="testif", subnet="10.13.37.0/24"
-        )
+        network_id, _ = run("network create --subnet 10.13.37.0/24 test_create_conn")
         container_id = create_container(
             name="test_disconn_network",
             command="/usr/bin/host -t A freebsd.org 1.1.1.1",
@@ -79,29 +76,19 @@ class TestNetworkSubcommand:
         remove_network(network_id)
 
     def test_create_container_connected_to_custom_vnet_network(self):
-        network_id = create_network(
-            "test_vnet", ifname="testif", subnet="10.13.37.0/24", driver="vnet"
-        )
-        container_id = create_container(
-            name="test_disconn_network",
-            command="/usr/bin/host -t A freebsd.org 1.1.1.1",
-            network="test_vnet",
+        network_id, _ = run("network create -t bridge --subnet 10.13.37.0/24 test_vnet")
+        container_id, _ = run(
+            "container create --name disconn_network --driver vnet --network test_vnet FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
         )
         container_is_connected(container_id, driver="vnet")
         remove_container(container_id)
         remove_network(network_id)
 
     def test_connection_and_disconnecting_container_to_loopback_network(self):
-        container_name = "test_disconn_network"
         network_name = "test_nw_disconn"
-        network_id = create_network(
-            network_name, ifname="testif", subnet="10.13.37.0/24", driver="loopback"
-        )
-        container_id = create_container(
-            name=container_name,
-            command="/usr/bin/host -t A freebsd.org 1.1.1.1",
-            network=network_name,
-        )
+        network_id, _ = run(f"network create --subnet 10.13.37.0/24 {network_name}")
+        cmd = f"container create --name disconn_network --network {network_id} FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
+        container_id, _ = run(cmd)
         container_is_connected(container_id)
         assert [""] == run(f"network disconnect {network_name} {container_id}")
         container_is_disconnected(container_id)
@@ -109,16 +96,12 @@ class TestNetworkSubcommand:
         remove_network(network_id)
 
     def test_connection_and_disconnecting_container_to_vnet_network(self):
-        container_name = "test_disconn_network"
         network_name = "test_nw_disconn"
-        network_id = create_network(
-            network_name, ifname="testif", subnet="10.13.37.0/24", driver="vnet"
-        )
-        container_id = create_container(
-            name=container_name,
-            command="/usr/bin/host -t A freebsd.org 1.1.1.1",
-            network=network_name,
-        )
+        cmd = f"network create -t bridge --subnet 10.13.37.0/24 {network_name}"
+        network_id, _ = run(cmd)
+
+        cmd = f"container create --name disconn_network2 --driver vnet --network {network_name} FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
+        container_id, _ = run(cmd)
         container_is_connected(container_id, driver="vnet")
         assert [""] == run(f"network disconnect {network_name} {container_id}")
         container_is_disconnected(container_id)
@@ -128,15 +111,11 @@ class TestNetworkSubcommand:
     def test_create_container_with_user_defined_ip_loopback(self):
         container_name = "custom_ip1"
         network_name = "custom_ip1"
-        network_id = create_network(
-            network_name, ifname="testif", subnet="10.13.37.0/24", driver="loopback"
-        )
-        container_id = create_container(
-            name=container_name,
-            command="/usr/bin/netstat --libxo json -i -4",
-            network=network_name,
-            ip="10.13.37.13",
-        )
+        cmd = f"network create -t loopback --subnet 10.13.37.0/24 {network_name}"
+        network_id, _ = run(cmd)
+        cmd = f"container create --name {container_name} --ip 10.13.37.13 --network {network_name} FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
+        container_id, _ = run(cmd)
+
         netstat_info = container_get_netstat_info(container_id, driver="loopback")
         assert netstat_info[0]["address"] == "10.13.37.13"
         assert [""] == run(f"network disconnect {network_name} {container_id}")
@@ -146,15 +125,10 @@ class TestNetworkSubcommand:
     def test_create_container_with_user_defined_ip_vnet(self):
         container_name = "custom_ip2"
         network_name = "custom_ip2"
-        network_id = create_network(
-            network_name, ifname="testif", subnet="10.13.38.0/24", driver="vnet"
-        )
-        container_id = create_container(
-            name=container_name,
-            command="/usr/bin/netstat --libxo json -i -4",
-            network=network_name,
-            ip="10.13.38.13",
-        )
+        cmd = f"network create -t bridge --subnet 10.13.38.0/24 {network_name}"
+        network_id, _ = run(cmd)
+        cmd = f"container create --name {container_name} --ip 10.13.38.13 --driver vnet --network {network_name} FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
+        container_id, _ = run(cmd)
         netstat_info = container_get_netstat_info(container_id, driver="vnet")
         assert netstat_info[0]["address"] == "10.13.38.13"
         assert [""] == run(f"network disconnect {network_name} {container_id}")
@@ -164,12 +138,10 @@ class TestNetworkSubcommand:
     def test_connect_container_with_user_defined_ip_loopback(self):
         container_name = "custom_ip3"
         network_name = "custom_ip3"
-        network_id = create_network(
-            network_name, ifname="testif", subnet="10.13.37.0/24", driver="loopback"
-        )
-        container_id = create_container(
-            name=container_name, command="/usr/bin/netstat --libxo json -i -4"
-        )
+        cmd = f"network create -t loopback --subnet 10.13.37.0/24 {network_name}"
+        network_id, _ = run(cmd)
+        cmd = f"container create --name {container_name} FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
+        container_id, _ = run(cmd)
         run(f"network connect --ip 10.13.37.13 {network_name} {container_name}")
         netstat_info = container_get_netstat_info(container_id, driver="loopback")
         assert netstat_info[0]["address"] == "10.13.37.13"
@@ -180,12 +152,11 @@ class TestNetworkSubcommand:
     def test_connect_container_with_user_defined_ip_vnet(self):
         container_name = "custom_ip3"
         network_name = "custom_ip3"
-        network_id = create_network(
-            network_name, ifname="testif", subnet="10.13.38.0/24", driver="vnet"
-        )
-        container_id = create_container(
-            name=container_name, command="/usr/bin/netstat --libxo json -i -4"
-        )
+        cmd = f"network create -t loopback --interface testif -t bridge --subnet 10.13.38.0/24 {network_name}"
+        network_id, _ = run(cmd)
+        cmd = f"container create --name {container_name} --driver vnet FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
+        container_id, _ = run(cmd)
+
         run(f"network connect --ip 10.13.38.13 {network_name} {container_name}")
         netstat_info = container_get_netstat_info(container_id, driver="vnet")
         assert netstat_info[0]["address"] == "10.13.38.13"
@@ -193,11 +164,24 @@ class TestNetworkSubcommand:
         remove_container(container_id)
         remove_network(network_id)
 
+    def test_create_a_internal_network(self):
+        network_id, _ = run(
+            "network create --internal --type loopback --subnet=10.13.38.0/24 testnet"
+        )
+
+        network_json = run(f"network inspect {network_id}")
+        network = json.loads("".join(network_json))
+        assert network["network"]["internal"]
+
     def test_create_container_using_nonexisting_network(self):
         output = run(
             "container create --name invalid_network --network nonexisting FreeBSD:testing /bin/ls"
         )
-        assert ["network not found", ""] == output[1:]
+        assert [
+            "network not found",
+            "could not connect container: network not found",
+            "",
+        ] == output[1:]
 
 
 def container_is_connected(container_id, driver="loopback"):
@@ -219,7 +203,7 @@ def container_is_connected(container_id, driver="loopback"):
     elif driver == "vnet":
         connected_output = [
             f"created execution instance {exec_id}",
-            "add net default: gateway 10.13.37.0",
+            "add net default: gateway 10.13.37.1",
             "Using domain server:",
             "Name: 1.1.1.1",
             "Address: 1.1.1.1#53",
@@ -253,30 +237,29 @@ def container_is_disconnected(container_id):
 def remove_all_networks():
     networks = list_non_default_networks()
     for network in networks:
-        if network[:4] == "host":
-            continue
+        # if network == "":
+        #    continue
         remove_network(network[1:13])
 
 
 def list_non_default_networks():
-    tmp = run("network ls")
-    _header, _header_line, _host_network, *networks, _ = tmp
-    return networks
+    _header, _header_line, *networks = run("network ls")
+    return networks[:-1]
 
 
 def assert_empty_network_list():
-    expected_output = [
-        " ID     NAME   DRIVER   SUBNET ",
-        "───────────────────────────────",
-        " host   host   host     n/a    ",
-        "",
-    ]
+    expected_output = [" ID   NAME   TYPE   SUBNET ", "───────────────────────────", ""]
     output = run("network ls")
     assert expected_output == output
 
 
 def remove_network(network_id):
     network_id, _ = run(f"network rm {network_id}")
+    return network_id
+
+
+def network_create(command):
+    network_id, _ = run(f"network create {command}")
     return network_id
 
 

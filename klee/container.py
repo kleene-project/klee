@@ -60,6 +60,12 @@ HELP_IP_FLAG = "IPv4 address used for the container. If omitted, an unused ip is
 
 HELP_IP6_FLAG = "IPv6 address used for the container. If omitted, an unused ip is allocated from the IPv6 subnet of `--network`."
 
+HELP_PUBLISH_FLAG = """
+Publish one or more ports using the syntax `<HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>]` or
+`<INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]`.
+`CONTAINER-PORT` defaults to `HOST-PORT` and `PROTOCOL` defaults to 'tcp'.
+"""
+
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
 EXEC_INSTANCE_CREATED = "created execution instance {exec_id}"
@@ -94,8 +100,8 @@ def container_create(name, hidden=False):
         cls=command_cls(),
         name=name,
         hidden=hidden,
-        no_args_is_help=True,
         context_settings={"ignore_unknown_options": True},
+        no_args_is_help=True,
     )
     @click.option("--name", default="", help="Assign a name to the container")
     @click.option(
@@ -131,12 +137,19 @@ def container_create(name, hidden=False):
         show_default=True,
         help="Specify a jail parameters, see jail(8) for details",
     )
-    @click.option("--driver", "-l", default=None, help=HELP_NETWORK_DRIVER_FLAG)
+    @click.option(
+        "--driver",
+        "-l",
+        show_default=True,
+        default="ipnet",
+        help=HELP_NETWORK_DRIVER_FLAG,
+    )
     @click.option(
         "--network", "-n", default=None, help="Connect container to this network."
     )
     @click.option("--ip", default=None, help=HELP_IP_FLAG)
     @click.option("--ip6", default=None, help=HELP_IP6_FLAG)
+    @click.option("--publish", "-p", multiple=True, help=HELP_PUBLISH_FLAG)
     @click.argument("image", nargs=1)
     @click.argument("command", nargs=-1)
     def create(**kwargs):
@@ -165,11 +178,15 @@ def create_container_and_connect_to_network(**kwargs):
         "jailparam": kwargs["jailparam"],
         "network_driver": kwargs["driver"],
     }
+
+    kwargs_create["public_ports"] = list(decode_public_ports(kwargs["publish"]))
+
     response = create_(**kwargs_create)
 
     if response is None or response.status_code != 201:
-        echo_error("could not create container: ", response.parsed.message)
-        return
+        if response is not None:
+            echo_error(f"could not create container: {response.parsed.message}")
+        return None
 
     container_id = response.parsed.id
 
@@ -185,9 +202,53 @@ def create_container_and_connect_to_network(**kwargs):
     response = connect_(**kwargs_connect)
     if response is None or response.status_code != 204:
         echo_error(f"could not connect container: {response.parsed.message}")
-        return
+        return None
 
     return container_id
+
+
+def decode_public_ports(public_ports):
+    """
+    Decodes
+    - <HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>] and
+    - <INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]
+    """
+    for pub_port in public_ports:
+        pub_port, protocol = extract_protocol(pub_port)
+        interfaces, host_port, container_port = extract_ports_and_interface(pub_port)
+        yield {
+            "interfaces": interfaces,
+            "host_port": host_port,
+            "container_port": container_port,
+            "protocol": protocol,
+        }
+
+
+def extract_protocol(pub_port_raw):
+    pub_port = pub_port_raw.split("/")
+    if len(pub_port) == 2:
+        return pub_port[0], pub_port[1]
+
+    if len(pub_port) == 1:
+        return pub_port[0], "tcp"
+
+    echo_error("could not decode port to publish: ", pub_port_raw)
+    sys.exit(1)
+
+
+def extract_ports_and_interface(pub_port_raw):
+    pub_port = pub_port_raw.split(":")
+    if len(pub_port) == 3:
+        return [pub_port[0]], pub_port[1], pub_port[2]
+
+    if len(pub_port) == 2:
+        return [], pub_port[0], pub_port[1]
+
+    if len(pub_port) == 1:
+        return [], pub_port[0], pub_port[0]
+
+    echo_error("could not decode port to publish: ", pub_port_raw)
+    sys.exit(1)
 
 
 def create_(**kwargs):
@@ -202,6 +263,7 @@ def create_(**kwargs):
         "mounts": [decode_mount(mnt) for mnt in mounts],
         "jail_param": list(kwargs["jailparam"]),
         "network_driver": kwargs["network_driver"],
+        "public_ports": kwargs["public_ports"],
     }
     container_config = ContainerConfig.from_dict(container_config)
 
@@ -641,14 +703,8 @@ def container_run(name, hidden=False):
     )
     @click.option("--ip", default=None, help=HELP_IP_FLAG)
     @click.option("--ip6", default=None, help=HELP_IP6_FLAG)
-    @click.option(
-        "--detach",
-        "-d",
-        default=False,
-        is_flag=True,
-        metavar="flag",
-        help=HELP_DETACH_FLAG,
-    )
+    @click.option("--publish", "-p", multiple=True, help=HELP_PUBLISH_FLAG)
+    @click.option("--detach", "-d", default=False, is_flag=True, help=HELP_DETACH_FLAG)
     @click.option(
         "--interactive", "-i", default=False, is_flag=True, help=HELP_INTERACTIVE_FLAG
     )
