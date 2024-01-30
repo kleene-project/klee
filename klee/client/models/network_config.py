@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import Any, Dict, List, Type, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -18,10 +18,6 @@ class NetworkConfig:
         type (NetworkConfigType): What kind of network should be created. Possible values are 'bridge', 'loopback', and
             'custom'.
              Example: bridge.
-        external_interfaces (Union[Unset, List[str]]): Name of the external interfaces where incoming traffic is
-            redirected from, if ports are being published externally on this network.
-            If set to the empty list `[]` Kleened uses the `gateway` interface.
-             Example: ['em0', 'igb2'].
         gateway (Union[Unset, str]): Only for bridge networks. The default IPv4 router that is added to 'vnet'
             containers connecting to bridged networks.
             If set to `""` no gateway is used. If set to `"<auto>"` the first IP of the subnet is added to `interface` and
@@ -52,7 +48,6 @@ class NetworkConfig:
 
     name: str
     type: NetworkConfigType
-    external_interfaces: Union[Unset, List[str]] = UNSET
     gateway: Union[Unset, str] = ""
     gateway6: Union[Unset, str] = ""
     icc: Union[Unset, bool] = True
@@ -66,10 +61,6 @@ class NetworkConfig:
     def to_dict(self) -> Dict[str, Any]:
         name = self.name
         type = self.type.value
-
-        external_interfaces: Union[Unset, List[str]] = UNSET
-        if not isinstance(self.external_interfaces, Unset):
-            external_interfaces = self.external_interfaces
 
         gateway = self.gateway
         gateway6 = self.gateway6
@@ -88,8 +79,6 @@ class NetworkConfig:
                 "type": type,
             }
         )
-        if external_interfaces is not UNSET:
-            field_dict["external_interfaces"] = external_interfaces
         if gateway is not UNSET:
             field_dict["gateway"] = gateway
         if gateway6 is not UNSET:
@@ -116,8 +105,6 @@ class NetworkConfig:
 
         type = NetworkConfigType(d.pop("type"))
 
-        external_interfaces = cast(List[str], d.pop("external_interfaces", UNSET))
-
         gateway = d.pop("gateway", UNSET)
 
         gateway6 = d.pop("gateway6", UNSET)
@@ -137,7 +124,6 @@ class NetworkConfig:
         network_config = cls(
             name=name,
             type=type,
-            external_interfaces=external_interfaces,
             gateway=gateway,
             gateway6=gateway6,
             icc=icc,

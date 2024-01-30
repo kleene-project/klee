@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class PublicPortProtocol(str, Enum):
+class PublishedPortConfigProtocol(str, Enum):
     TCP = "tcp"
     UDP = "udp"
 

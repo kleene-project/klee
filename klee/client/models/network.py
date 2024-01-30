@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Type, TypeVar, Union, cast
+from typing import Any, Dict, List, Type, TypeVar, Union
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -14,10 +14,6 @@ class Network:
     """summary description of a network
 
     Attributes:
-        external_interfaces (Union[Unset, List[str]]): Name of the external interfaces where incoming traffic is
-            redirected from, if ports are being published externally on this network.
-            If an element is set to `"gateway"` the interface of the default router/gateway is used, if it exists.
-             Example: ['em0', 'igb2'].
         gateway (Union[Unset, str]): The default IPv4 router that is added to 'vnet' containers connecting to the
             network.
             If `""` no gateway is used.
@@ -29,8 +25,7 @@ class Network:
         icc (Union[Unset, bool]): Whether or not to enable connectivity between containers within the network. Default:
             True.
         id (Union[Unset, str]): The id of the network
-        interface (Union[Unset, str]): Name for the interface that is being used for the network. If set to `""` the
-            name is automatically set to `kleened` prefixed with a integer.
+        interface (Union[Unset, str]): Name for the interface that is being used for the network.
             If the `type` property is set to `custom` the value of `interface` must be the name of an existing interface.
             The name must not exceed 15 characters.
              Default: ''. Example: kleene0.
@@ -49,7 +44,6 @@ class Network:
              Example: bridge.
     """
 
-    external_interfaces: Union[Unset, List[str]] = UNSET
     gateway: Union[Unset, str] = ""
     gateway6: Union[Unset, str] = ""
     icc: Union[Unset, bool] = True
@@ -64,10 +58,6 @@ class Network:
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        external_interfaces: Union[Unset, List[str]] = UNSET
-        if not isinstance(self.external_interfaces, Unset):
-            external_interfaces = self.external_interfaces
-
         gateway = self.gateway
         gateway6 = self.gateway6
         icc = self.icc
@@ -85,8 +75,6 @@ class Network:
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
-        if external_interfaces is not UNSET:
-            field_dict["external_interfaces"] = external_interfaces
         if gateway is not UNSET:
             field_dict["gateway"] = gateway
         if gateway6 is not UNSET:
@@ -115,8 +103,6 @@ class Network:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
-        external_interfaces = cast(List[str], d.pop("external_interfaces", UNSET))
-
         gateway = d.pop("gateway", UNSET)
 
         gateway6 = d.pop("gateway6", UNSET)
@@ -145,7 +131,6 @@ class Network:
             type = NetworkType(_type)
 
         network = cls(
-            external_interfaces=external_interfaces,
             gateway=gateway,
             gateway6=gateway6,
             icc=icc,

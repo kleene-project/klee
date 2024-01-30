@@ -3,30 +3,33 @@ from typing import Any, Dict, List, Type, TypeVar, Union, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..models.public_port_config_protocol import PublicPortConfigProtocol
+from ..models.published_port_config_protocol import PublishedPortConfigProtocol
 from ..types import UNSET, Unset
 
-T = TypeVar("T", bound="PublicPortConfig")
+T = TypeVar("T", bound="PublishedPortConfig")
 
 
 @_attrs_define
-class PublicPortConfig:
-    """FIXME
+class PublishedPortConfig:
+    """Necessary configurations for publishing a port of a container and opening it up for incoming traffic from external
+    sources.
 
-    Attributes:
-        container_port (int): port or portrange on the host that accepts traffic from `host_port`.
-        host_port (int): source port or portrange on the host where incoming traffic is redirected
-        interfaces (List[str]): List of host interfaces where the port is published, i.e., where traffic to the
-            designated `host_port` is redirected to the container's ip4/ip6 addresses on the specified network. If the list
-            is empty, the hosts gateway interface is used.
-        protocol (Union[Unset, PublicPortConfigProtocol]): Whether to use TCP or UDP as transport protocol Default:
-            PublicPortConfigProtocol.TCP.
+        Attributes:
+            container_port (str): port or portrange on the host that accepts traffic from `host_port`.
+            host_port (str): source port or portrange on the host where incoming traffic is redirected
+            interfaces (List[str]): List of host interfaces where the port is published, i.e., where traffic to the
+                designated `host_port` is redirected to the container's ip4/ip6 addresses on the specified network. If the list
+                is empty, the hosts gateway interface is used.
+            protocol (Union[Unset, PublishedPortConfigProtocol]): Whether to use TCP or UDP as transport protocol Default:
+                PublishedPortConfigProtocol.TCP.
     """
 
-    container_port: int
-    host_port: int
+    container_port: str
+    host_port: str
     interfaces: List[str]
-    protocol: Union[Unset, PublicPortConfigProtocol] = PublicPortConfigProtocol.TCP
+    protocol: Union[
+        Unset, PublishedPortConfigProtocol
+    ] = PublishedPortConfigProtocol.TCP
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -62,21 +65,21 @@ class PublicPortConfig:
         interfaces = cast(List[str], d.pop("interfaces"))
 
         _protocol = d.pop("protocol", UNSET)
-        protocol: Union[Unset, PublicPortConfigProtocol]
+        protocol: Union[Unset, PublishedPortConfigProtocol]
         if isinstance(_protocol, Unset):
             protocol = UNSET
         else:
-            protocol = PublicPortConfigProtocol(_protocol)
+            protocol = PublishedPortConfigProtocol(_protocol)
 
-        public_port_config = cls(
+        published_port_config = cls(
             container_port=container_port,
             host_port=host_port,
             interfaces=interfaces,
             protocol=protocol,
         )
 
-        public_port_config.additional_properties = d
-        return public_port_config
+        published_port_config.additional_properties = d
+        return published_port_config
 
     @property
     def additional_keys(self) -> List[str]:

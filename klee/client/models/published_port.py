@@ -3,24 +3,23 @@ from typing import Any, Dict, List, Type, TypeVar, cast
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
-from ..models.public_port_protocol import PublicPortProtocol
+from ..models.published_port_protocol import PublishedPortProtocol
 
-T = TypeVar("T", bound="PublicPort")
+T = TypeVar("T", bound="PublishedPort")
 
 
 @_attrs_define
-class PublicPort:
-    """FIXME
+class PublishedPort:
+    """A published port of a container, i.e., opening up the port for incoming traffic from external sources.
 
     Attributes:
         container_port (str): port or portrange on the host that accepts traffic from `host_port`.
         host_port (str): source port or portrange on the host where incoming traffic is redirected
-        interfaces (List[str]): List of host interfaces where `host_port` is going to be public, i.e., where traffic to
-            the `host_port` is redirected to the container.
-            If the list is empty, the hosts gateway interface is used.
+        interfaces (List[str]): List of host interfaces where incoming traffic to `host_port` is redirected to the
+            container at `ip_address` and/or `ip_address6` on `container_port`.
         ip_address (str): ipv4 address within the container that receives traffic from the public port
         ip_address6 (str): ipv6 address within the container that receives traffic from the public port
-        protocol (PublicPortProtocol): tcp or udp
+        protocol (PublishedPortProtocol): tcp or udp
     """
 
     container_port: str
@@ -28,7 +27,7 @@ class PublicPort:
     interfaces: List[str]
     ip_address: str
     ip_address6: str
-    protocol: PublicPortProtocol
+    protocol: PublishedPortProtocol
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -68,9 +67,9 @@ class PublicPort:
 
         ip_address6 = d.pop("ip_address6")
 
-        protocol = PublicPortProtocol(d.pop("protocol"))
+        protocol = PublishedPortProtocol(d.pop("protocol"))
 
-        public_port = cls(
+        published_port = cls(
             container_port=container_port,
             host_port=host_port,
             interfaces=interfaces,
@@ -79,8 +78,8 @@ class PublicPort:
             protocol=protocol,
         )
 
-        public_port.additional_properties = d
-        return public_port
+        published_port.additional_properties = d
+        return published_port
 
     @property
     def additional_keys(self) -> List[str]:

@@ -7,7 +7,7 @@ from ..models.container_network_driver import ContainerNetworkDriver
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.public_port import PublicPort
+    from ..models.published_port import PublishedPort
 
 
 T = TypeVar("T", bound="Container")
@@ -32,7 +32,8 @@ class Container:
         network_driver (Union[Unset, ContainerNetworkDriver]): What kind of network driver is the container using.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.
              Example: ipnet.
-        public_ports (Union[Unset, List['PublicPort']]): FIXME
+        public_ports (Union[Unset, List['PublishedPort']]): List of listening ports that should accept traffic from
+            sources external to the container.
         running (Union[Unset, bool]): whether or not the container is running
         user (Union[Unset, str]): The default user used when creating execution instances in the container.
     """
@@ -46,7 +47,7 @@ class Container:
     jail_param: Union[Unset, List[str]] = UNSET
     name: Union[Unset, str] = UNSET
     network_driver: Union[Unset, ContainerNetworkDriver] = UNSET
-    public_ports: Union[Unset, List["PublicPort"]] = UNSET
+    public_ports: Union[Unset, List["PublishedPort"]] = UNSET
     running: Union[Unset, bool] = UNSET
     user: Union[Unset, str] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -116,7 +117,7 @@ class Container:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
-        from ..models.public_port import PublicPort
+        from ..models.published_port import PublishedPort
 
         d = src_dict.copy()
         cmd = cast(List[str], d.pop("cmd", UNSET))
@@ -145,7 +146,7 @@ class Container:
         public_ports = []
         _public_ports = d.pop("public_ports", UNSET)
         for public_ports_item_data in _public_ports or []:
-            public_ports_item = PublicPort.from_dict(public_ports_item_data)
+            public_ports_item = PublishedPort.from_dict(public_ports_item_data)
 
             public_ports.append(public_ports_item)
 

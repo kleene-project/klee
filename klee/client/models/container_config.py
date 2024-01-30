@@ -8,7 +8,7 @@ from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
     from ..models.mount_point_config import MountPointConfig
-    from ..models.public_port_config import PublicPortConfig
+    from ..models.published_port_config import PublishedPortConfig
 
 
 T = TypeVar("T", bound="ContainerConfig")
@@ -49,7 +49,8 @@ class ContainerConfig:
             use.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.
              Default: ContainerConfigNetworkDriver.IPNET. Example: host.
-        public_ports (Union[Unset, List['PublicPortConfig']]): FIXME
+        public_ports (Union[Unset, List['PublishedPortConfig']]): List of listening ports that should accept traffic
+            from sources external to the container.
         user (Union[Unset, None, str]): User that executes the command (cmd).
             If no user is set, the user from the image will be used, which in turn is 'root' if no user is specified there.
 
@@ -66,7 +67,7 @@ class ContainerConfig:
     network_driver: Union[
         Unset, ContainerConfigNetworkDriver
     ] = ContainerConfigNetworkDriver.IPNET
-    public_ports: Union[Unset, List["PublicPortConfig"]] = UNSET
+    public_ports: Union[Unset, List["PublishedPortConfig"]] = UNSET
     user: Union[Unset, None, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -146,7 +147,7 @@ class ContainerConfig:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         from ..models.mount_point_config import MountPointConfig
-        from ..models.public_port_config import PublicPortConfig
+        from ..models.published_port_config import PublishedPortConfig
 
         d = src_dict.copy()
         cmd = cast(List[str], d.pop("cmd", UNSET))
@@ -176,7 +177,7 @@ class ContainerConfig:
         public_ports = []
         _public_ports = d.pop("public_ports", UNSET)
         for public_ports_item_data in _public_ports or []:
-            public_ports_item = PublicPortConfig.from_dict(public_ports_item_data)
+            public_ports_item = PublishedPortConfig.from_dict(public_ports_item_data)
 
             public_ports.append(public_ports_item)
 
