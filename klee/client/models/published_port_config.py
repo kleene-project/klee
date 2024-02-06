@@ -27,9 +27,9 @@ class PublishedPortConfig:
     container_port: str
     host_port: str
     interfaces: List[str]
-    protocol: Union[
-        Unset, PublishedPortConfigProtocol
-    ] = PublishedPortConfigProtocol.TCP
+    protocol: Union[Unset, PublishedPortConfigProtocol] = (
+        PublishedPortConfigProtocol.TCP
+    )
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:

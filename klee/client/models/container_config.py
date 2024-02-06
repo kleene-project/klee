@@ -64,9 +64,9 @@ class ContainerConfig:
     jail_param: Union[Unset, None, List[str]] = UNSET
     mounts: Union[Unset, None, List["MountPointConfig"]] = UNSET
     name: Union[Unset, None, str] = UNSET
-    network_driver: Union[
-        Unset, ContainerConfigNetworkDriver
-    ] = ContainerConfigNetworkDriver.IPNET
+    network_driver: Union[Unset, ContainerConfigNetworkDriver] = (
+        ContainerConfigNetworkDriver.IPNET
+    )
     public_ports: Union[Unset, List["PublishedPortConfig"]] = UNSET
     user: Union[Unset, None, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)

@@ -13,6 +13,7 @@ from ...types import Response
 def _get_kwargs(
     image_id: str,
 ) -> Dict[str, Any]:
+
     pass
 
     return {
@@ -34,6 +35,10 @@ def _parse_response(
         response_404 = ErrorResponse.from_dict(response.json())
 
         return response_404
+    if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
+        response_500 = ErrorResponse.from_dict(response.json())
+
+        return response_500
     if client.raise_on_unexpected_status:
         raise errors.UnexpectedStatus(response.status_code, response.content)
     else:
