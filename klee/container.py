@@ -38,6 +38,7 @@ from .printing import (
     print_table,
     unexpected_error,
 )
+from .name_generator import random_name
 from .connection import create_websocket
 from .utils import human_duration, request_and_validate_response, listen_for_messages
 from .prune import prune_command
@@ -103,7 +104,7 @@ def container_create(name, hidden=False):
         context_settings={"ignore_unknown_options": True},
         no_args_is_help=True,
     )
-    @click.option("--name", default="", help="Assign a name to the container")
+    @click.option("--name", default=None, help="Assign a name to the container")
     @click.option(
         "--user",
         "-u",
@@ -169,7 +170,7 @@ root.add_command(container_create("create"), name="create")
 
 def create_container_and_connect_to_network(**kwargs):
     kwargs_create = {
-        "name": kwargs["name"],
+        "name": random_name() if kwargs["name"] is None else kwargs["name"],
         "image": kwargs["image"],
         "command": kwargs["command"],
         "user": kwargs["user"],
@@ -658,7 +659,7 @@ def container_run(name, hidden=False):
         # 'ignore_unknown_options' because the user can supply an arbitrary command
         context_settings={"ignore_unknown_options": True},
     )
-    @click.option("--name", default="", help="Assign a name to the container")
+    @click.option("--name", default=None, help="Assign a name to the container")
     @click.option(
         "--user",
         "-u",

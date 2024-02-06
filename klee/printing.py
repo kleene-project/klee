@@ -34,7 +34,7 @@ def echo_bold(msg):
 
 
 def echo(msg, **kwargs):
-    console.print(msg, **kwargs)
+    console.out(msg, **kwargs)
 
 
 def echo_error(msg):
@@ -60,6 +60,10 @@ def unrecognized_status_code(status_code):
 
 def print_unable_to_connect(msg):
     echo_error(f"unable to connect to kleened: {msg}")
+
+
+def print_unexpected_response():
+    echo_error("Error! Unexpected response received from Kleened.")
 
 
 def print_id_list(id_list):

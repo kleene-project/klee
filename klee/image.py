@@ -1,6 +1,7 @@
 import json
 import asyncio
 import os
+import sys
 
 import click
 import websockets
@@ -170,7 +171,8 @@ def image_build(name, hidden=False):
         "--file",
         "-f",
         default="Dockerfile",
-        help="Alternative location of the `Dockerfile`. The location should be relative to `PATH` (default: 'Dockerfile')",
+        show_default=True,
+        help="Location of the `Dockerfile` relative to **PATH**.",
     )
     @click.option(
         "--tag",
@@ -200,7 +202,7 @@ def image_build(name, hidden=False):
     )
     @click.argument("path", nargs=1)
     def build(file, tag, quiet, cleanup, build_arg, path):
-        """Build an image from a context and Dockerfile located in PATH"""
+        """Build an image from a context and Dockerfile located in **PATH**"""
         asyncio.run(
             _build_image_and_listen_for_messages(
                 file, tag, quiet, cleanup, build_arg, path
@@ -226,7 +228,7 @@ async def _build_image_and_listen_for_messages(
     build_config = json.dumps(
         {
             "context": path,
-            "file": file_,
+            "dockerfile": file_,
             "tag": tag,
             "quiet": quiet,
             "cleanup": cleanup,
@@ -246,6 +248,7 @@ async def _build_image_and_listen_for_messages(
                     closing_message = await listen_for_messages(websocket)
                 except json.JSONDecodeError:
                     unexpected_error()
+                    sys.exit(1)
 
                 if closing_message["msg_type"] == "error":
                     if closing_message["data"] != "":
