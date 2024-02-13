@@ -16,7 +16,7 @@ from .printing import (
 )
 
 
-async def listen_for_messages(websocket):
+async def listen_for_messages(websocket, newline=False):
     while True:
         try:
             message = await websocket.recv()
@@ -25,7 +25,7 @@ async def listen_for_messages(websocket):
             echo("")
             return closing_message
 
-        echo(message, end="")
+        echo(message, newline)
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):

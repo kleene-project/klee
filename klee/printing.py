@@ -33,8 +33,8 @@ def echo_bold(msg):
     console.print(msg, style=style)
 
 
-def echo(msg, **kwargs):
-    console.out(msg, **kwargs)
+def echo(msg, newline=True):
+    click.echo(msg, nl=newline)
 
 
 def echo_error(msg):

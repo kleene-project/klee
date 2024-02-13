@@ -2,8 +2,12 @@ import signal
 import asyncio
 import sys
 import functools
+import tty
+import termios
 
 import json
+
+import websockets
 
 import click
 
@@ -806,39 +810,47 @@ async def _execute(config):
 
 async def _attached_execute(config, interactive):
     loop = asyncio.get_running_loop()
-    async with create_websocket(WS_EXEC_START_ENDPOINT) as websocket:
-        if interactive:
-            for signame in ["SIGINT", "SIGTERM"]:
-                loop.add_signal_handler(
-                    getattr(signal, signame),
-                    functools.partial(_close_websocket, websocket),
-                )
-
-        await websocket.send(config)
-        starting_frame = await websocket.recv()
-        start_msg = json.loads(starting_frame)
-
-        if start_msg["msg_type"] == "starting":
+    try:
+        async with create_websocket(WS_EXEC_START_ENDPOINT) as websocket:
             if interactive:
-                loop = asyncio.get_event_loop()
-                loop.add_reader(sys.stdin, _send_user_input, websocket)
-            closing_message = await listen_for_messages(websocket)
-            if closing_message["data"] == "":
+                for signame in ["SIGINT", "SIGTERM"]:
+                    loop.add_signal_handler(
+                        getattr(signal, signame),
+                        functools.partial(_close_websocket, websocket),
+                    )
+
+            await websocket.send(config)
+            starting_frame = await websocket.recv()
+            start_msg = json.loads(starting_frame)
+
+            if start_msg["msg_type"] == "starting":
+                if interactive:
+                    loop = asyncio.get_event_loop()
+                    # The data from stdin should be available immediately:
+                    tty.setraw(sys.stdin.fileno(), when=termios.TCSANOW)
+                    loop.add_reader(sys.stdin.fileno(), _send_user_input, websocket)
+                closing_message = await listen_for_messages(websocket)
+                if closing_message["data"] == "":
+                    print_websocket_closing(closing_message, ["message"])
+
+                else:
+                    print_websocket_closing(closing_message, ["message", "data"])
+
+            elif start_msg["msg_type"] == "error":
                 print_websocket_closing(closing_message, ["message"])
 
             else:
-                print_websocket_closing(closing_message, ["message", "data"])
+                unexpected_error()
 
-        elif start_msg["msg_type"] == "error":
-            print_websocket_closing(closing_message, ["message"])
-
-        else:
-            unexpected_error()
+    except websockets.exceptions.ConnectionClosedError as e:
+        echo_error(
+            f"Kleened returned an error with error code {e.code} and reason #{e.reason}"
+        )
 
 
 def _send_user_input(websocket):
     tasks = []
-    input_line = sys.stdin.readline()
+    input_line = sys.stdin.buffer.read(1)
     task = asyncio.ensure_future(websocket.send(input_line))
     tasks.append(task)
 
