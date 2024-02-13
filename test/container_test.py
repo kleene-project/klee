@@ -25,22 +25,22 @@ class TestContainerSubcommand:
 
     # pylint: disable=no-self-use
     def test_empty_container_listing_of_containers(self):
-        assert empty_container_list(all_=False)
-        assert empty_container_list(all_=True)
+        empty_container_list(all_=False)
+        empty_container_list(all_=True)
 
     def test_add_remove_and_list_containers(self):
         name = "test_adl_containers"
         container_id = create_container(name=name)
         assert len(container_id) == 12
 
-        assert empty_container_list(all_=False)
+        empty_container_list(all_=False)
         _header, _lines, container, *_ = run("container ls -a")
         assert container[1:13] == container_id
 
         container_id2, _ = run(f"container rm {name}")
         assert container_id2 == container_id
 
-        assert empty_container_list()
+        empty_container_list()
 
     def test_remove_running_container(self):
         name = "remove_running_container"
@@ -194,7 +194,7 @@ def container_is_running(container_id):
 
 def empty_container_list(all_=True):
     expected_output = [
-        " CONTAINER ID    NAME   IMAGE   TAG   COMMAND   CREATED   STATUS ",
+        " CONTAINER ID    NAME   IMAGE   COMMAND   CREATED   STATUS   JID ",
         "─────────────────────────────────────────────────────────────────",
         "",
     ]
@@ -204,7 +204,7 @@ def empty_container_list(all_=True):
     else:
         output = run("container ls")
 
-    return output == expected_output
+    assert output == expected_output
 
 
 def container_list(all_=True):

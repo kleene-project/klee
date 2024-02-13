@@ -19,6 +19,7 @@ class ContainerSummary:
         image_id (Union[Unset, str]): The id of the image that this container was created from
         image_name (Union[Unset, str]): Name of the image that this container was created from
         image_tag (Union[Unset, str]): Tag of the image that this container was created from
+        jid (Union[Unset, int]): Jail ID if it is a running container
         name (Union[Unset, str]): Name of the container
         running (Union[Unset, bool]): whether or not the container is running
     """
@@ -29,6 +30,7 @@ class ContainerSummary:
     image_id: Union[Unset, str] = UNSET
     image_name: Union[Unset, str] = UNSET
     image_tag: Union[Unset, str] = UNSET
+    jid: Union[Unset, int] = UNSET
     name: Union[Unset, str] = UNSET
     running: Union[Unset, bool] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -40,6 +42,7 @@ class ContainerSummary:
         image_id = self.image_id
         image_name = self.image_name
         image_tag = self.image_tag
+        jid = self.jid
         name = self.name
         running = self.running
 
@@ -58,6 +61,8 @@ class ContainerSummary:
             field_dict["image_name"] = image_name
         if image_tag is not UNSET:
             field_dict["image_tag"] = image_tag
+        if jid is not UNSET:
+            field_dict["jid"] = jid
         if name is not UNSET:
             field_dict["name"] = name
         if running is not UNSET:
@@ -80,6 +85,8 @@ class ContainerSummary:
 
         image_tag = d.pop("image_tag", UNSET)
 
+        jid = d.pop("jid", UNSET)
+
         name = d.pop("name", UNSET)
 
         running = d.pop("running", UNSET)
@@ -91,6 +98,7 @@ class ContainerSummary:
             image_id=image_id,
             image_name=image_name,
             image_tag=image_tag,
+            jid=jid,
             name=name,
             running=running,
         )

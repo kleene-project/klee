@@ -16,7 +16,7 @@ HTYP_ERROR = (
 )
 
 EMPTY_CONTAINER_LIST = [
-    " CONTAINER ID    NAME   IMAGE   TAG   COMMAND   CREATED   STATUS ",
+    " CONTAINER ID    NAME   IMAGE   COMMAND   CREATED   STATUS   JID ",
     "─────────────────────────────────────────────────────────────────",
 ]
 

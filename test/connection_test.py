@@ -2,7 +2,7 @@ from testutils import run, CERTIFICATE_REQUIRED_ERROR, SELF_SIGNED_ERROR
 from klee.config import config
 
 EMPTY_LIST = [
-    " CONTAINER ID    NAME   IMAGE   TAG   COMMAND   CREATED   STATUS ",
+    " CONTAINER ID    NAME   IMAGE   COMMAND   CREATED   STATUS   JID ",
     "─────────────────────────────────────────────────────────────────",
     "",
 ]
