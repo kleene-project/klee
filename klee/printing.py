@@ -62,6 +62,10 @@ def print_unable_to_connect(msg):
     echo_error(f"unable to connect to kleened: {msg}")
 
 
+def print_timeout():
+    echo_error("Error! Timed out while waiting for Kleene to respond.")
+
+
 def print_unexpected_response():
     echo_error("Error! Unexpected response received from Kleened.")
 
@@ -88,6 +92,23 @@ def print_json(json_obj):
     # pprint(json_obj)
 
 
+def print_image_column(name, tag, id_):
+    if name == "":
+        return f"[b bright_magenta]{id_}[/b bright_magenta]"
+    return f"[b bright_blue]{name}:[/b bright_blue][bright_cyan]{tag}[/bright_cyan]"
+
+
+def is_running_str(running):
+    if config.theme == THEME_FANCY:
+        if running:
+            return "[green]running[/green]"
+        return "[red]stopped[/red]"
+
+    if running:
+        return "running"
+    return "stopped"
+
+
 def print_table(items, columns):
     if config.theme == THEME_FANCY:
         table = Table(show_edge=False, box=box.SIMPLE)
@@ -98,12 +119,14 @@ def print_table(items, columns):
         if config.theme == THEME_FANCY:
             table.add_column(column_name, **kwargs)
         elif config.theme == THEME_SIMPLE:
-            table.add_column(column_name)
+            if "style" in kwargs:
+                kwargs.pop("style")
+            table.add_column(column_name, **kwargs)
 
     for item in items:
         table.add_row(*item)
 
-    console.print(table)
+    console.print(table, soft_wrap=True)
 
 
 class RootGroup(click.Group):

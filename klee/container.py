@@ -39,6 +39,8 @@ from .printing import (
     command_cls,
     group_cls,
     print_websocket_closing,
+    print_image_column,
+    is_running_str,
     print_table,
     unexpected_error,
 )
@@ -87,11 +89,11 @@ START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = (
 CONTAINER_LIST_COLUMNS = [
     ("CONTAINER ID", {"style": "cyan", "min_width": 13}),
     ("NAME", {"style": "bold aquamarine1"}),
-    ("IMAGE", {"style": "bold bright_magenta"}),
-    ("TAG", {"style": "aquamarine1"}),
-    ("COMMAND", {"style": "bright_white"}),
+    ("IMAGE", {"style": "blue"}),
+    ("COMMAND", {"style": "bright_white", "max_width": 40, "no_wrap": True}),
     ("CREATED", {"style": "bright_white"}),
     ("STATUS", {}),
+    ("JID", {"style": "white"}),
 ]
 
 # pylint: disable=unused-argument
@@ -353,23 +355,19 @@ def _print_container(response):
     def command_json2command_human(command_str):
         return " ".join(json.loads(command_str))
 
-    def is_running_str(running):
-        if running:
-            return "[green]running[/green]"
-        return "[red]stopped[/red]"
-
     containers = [
         [
             c.id,
             c.name,
-            c.image_id,
-            c.image_tag,
+            print_image_column(c.image_name, c.image_tag, c.image_id),
             command_json2command_human(c.cmd),
             human_duration(c.created) + " ago",
             is_running_str(c.running),
+            "" if c.jid is None else str(c.jid),
         ]
         for c in containers
     ]
+
     print_table(containers, CONTAINER_LIST_COLUMNS)
 
 

@@ -85,7 +85,7 @@ def image_create(name, hidden=False):
         is_flag=True,
         default=True,
         metavar="bool",
-        help="Whether or not to auto-genereate a nametag `FreeBSD-<version>:latest` based on `uname(1)`. Method **fetch-auto** only.",
+        help="Whether or not to auto-genereate a nametag `FreeBSD-<version>:latest` based on `uname(1)`. If `tag` is set this is ignored. Method **fetch-auto** only.",
     )
     @click.argument("method", nargs=1)
     @click.argument("source", nargs=-1)
@@ -113,8 +113,13 @@ def image_create(name, hidden=False):
         if method in {"zfs-clone", "zfs-copy"}:
             dataset = source[0]
 
-        if method in {"fetch", "fetch-auto"}:
+        if method == "fetch":
             url = source[0]
+
+        if method == "fetch-auto":
+            url = ""
+            if tag != "":
+                autotag = False
 
         config = {
             "method": method,
@@ -141,7 +146,11 @@ async def _create_image_and_listen_for_messages(config_json):
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
             if start_msg["msg_type"] == "starting":
-                closing_message = await listen_for_messages(websocket)
+                try:
+                    closing_message = await listen_for_messages(websocket, newline=True)
+                except json.decoder.JSONDecodeError:
+                    echo_error("Kleened returned an unknown error")
+                    return
 
                 if closing_message["data"] == "":
                     print_websocket_closing(closing_message, ["message"])

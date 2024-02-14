@@ -10,6 +10,7 @@ from .printing import (
     echo,
     echo_bold,
     print_unable_to_connect,  # Message
+    print_timeout,
     unexpected_error,  # Message
     unrecognized_status_code,  # Message
     print_unexpected_response,
@@ -44,6 +45,10 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
         # Request URL has an unsupported protocol 'unix://' as e:
         print_unable_to_connect(e)
         return None
+
+    except httpx.ReadTimeout:
+        print_timeout()
+        return
 
     except json.decoder.JSONDecodeError:
         print_unexpected_response()
