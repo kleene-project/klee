@@ -23,8 +23,7 @@ class ImageCreateConfig:
             - `"zfs-clone"`: Create the base image based on a clone of `zfs_dataset`.
         autotag (Union[Unset, bool]): Whether or not to auto-genereate a nametag `FreeBSD-<version>:latest` based on
             `uname(1)`.
-            *Method `"fetch-auto"` only*.
-             Default: True.
+            Overrides `tag` if set to true`. *Method `"fetch-auto"` only*.
         dns (Union[Unset, bool]): Whether or not to copy `/etc/resolv.conf` from the host to the new image. Default:
             True.
         force (Union[Unset, bool]): Ignore any discrepancies detected when using `uname(1)` to fetch the base system.
@@ -40,7 +39,7 @@ class ImageCreateConfig:
     """
 
     method: ImageCreateConfigMethod
-    autotag: Union[Unset, bool] = True
+    autotag: Union[Unset, bool] = False
     dns: Union[Unset, bool] = True
     force: Union[Unset, bool] = False
     tag: Union[Unset, str] = ""

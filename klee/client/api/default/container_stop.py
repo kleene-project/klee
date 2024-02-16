@@ -31,10 +31,6 @@ def _parse_response(
         response_200 = IdResponse.from_dict(response.json())
 
         return response_200
-    if response.status_code == HTTPStatus.NOT_MODIFIED:
-        response_304 = ErrorResponse.from_dict(response.json())
-
-        return response_304
     if response.status_code == HTTPStatus.NOT_FOUND:
         response_404 = ErrorResponse.from_dict(response.json())
 

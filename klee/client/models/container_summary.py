@@ -19,7 +19,7 @@ class ContainerSummary:
         image_id (Union[Unset, str]): The id of the image that this container was created from
         image_name (Union[Unset, str]): Name of the image that this container was created from
         image_tag (Union[Unset, str]): Tag of the image that this container was created from
-        jid (Union[Unset, int]): Jail ID if it is a running container
+        jid (Union[Unset, None, int]): Jail ID if it is a running container
         name (Union[Unset, str]): Name of the container
         running (Union[Unset, bool]): whether or not the container is running
     """
@@ -30,7 +30,7 @@ class ContainerSummary:
     image_id: Union[Unset, str] = UNSET
     image_name: Union[Unset, str] = UNSET
     image_tag: Union[Unset, str] = UNSET
-    jid: Union[Unset, int] = UNSET
+    jid: Union[Unset, None, int] = UNSET
     name: Union[Unset, str] = UNSET
     running: Union[Unset, bool] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
