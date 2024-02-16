@@ -101,6 +101,11 @@ class TestContainerSubcommand:
         assert container_id1 == container_id1_again
         assert container_id2 == container_id2_again
 
+    def test_remove_container_twice(self):
+        container_id1 = create_container()
+        assert container_id1 == remove_container(container_id1)
+        assert ["no such container", ""] == run(f"container rm {container_id1}")
+
     def test_starting_and_stopping_a_container_and_list_containers(self):
         container_id = create_container(name="test_start_stop", command="/bin/sleep 10")
         succes_msg, _newline = run(f"container start -d {container_id}")

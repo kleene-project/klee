@@ -266,6 +266,17 @@ class TestImageCreateSubcommand:
         assert not resolv_conf_exist(image_id)
         assert succesfully_remove_image(image_id)
 
+    def test_create_image_with_zfs_invalid_image(self):
+        result = create_image(
+            "zfs-clone", tag="ImageCreate:test-zfs", dataset="/zroot/kleene_basejail/"
+        )
+        assert result == [
+            "invalid dataset",
+            "",
+            "image creation failed: invalid dataset",
+            "",
+        ]
+
 
 def resolv_conf_exist(image_id):
     resolv_conf = f"/zroot/kleene/image/{image_id}/etc/resolv.conf"
