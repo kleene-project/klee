@@ -23,7 +23,8 @@ class ContainerConfig:
         env (Union[Unset, None, List[str]]): List of environment variables when using the container. This list will be
             merged with environment variables defined by the image. The values in this list takes precedence if the variable
             is defined in both. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
-        image (Union[Unset, str]): The name or id and possibly a snapshot of the image used for creating the container.
+        image (Union[Unset, None, str]): The name or id and possibly a snapshot of the image used for creating the
+            container.
             The parameter uses the followinge format:
 
             - `<image_id>[@<snapshot_id>]` or
@@ -60,7 +61,7 @@ class ContainerConfig:
 
     cmd: Union[Unset, None, List[str]] = UNSET
     env: Union[Unset, None, List[str]] = UNSET
-    image: Union[Unset, str] = UNSET
+    image: Union[Unset, None, str] = UNSET
     jail_param: Union[Unset, None, List[str]] = UNSET
     mounts: Union[Unset, None, List["MountPointConfig"]] = UNSET
     name: Union[Unset, None, str] = UNSET

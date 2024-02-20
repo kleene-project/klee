@@ -6,6 +6,8 @@ from attrs import field as _attrs_field
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.container_config import ContainerConfig
+    from ..models.end_point_config import EndPointConfig
     from ..models.image_build_config_buildargs import ImageBuildConfigBuildargs
 
 
@@ -14,9 +16,10 @@ T = TypeVar("T", bound="ImageBuildConfig")
 
 @_attrs_define
 class ImageBuildConfig:
-    """Configuration for an image build.
+    """Configuration for an image build, including container configuration for the build container.
 
     Attributes:
+        container_config (ContainerConfig):
         context (str): Path on the Kleened host of the context that is used for the build.
         buildargs (Union[Unset, ImageBuildConfigBuildargs]): Object of string pairs for build-time ARG-variables.
             Kleened uses the buildargs as the environment variables for, e.g., the RUN instruction, or for variable
@@ -25,20 +28,26 @@ class ImageBuildConfig:
         cleanup (Union[Unset, bool]): Whether or not to remove the image in case of a build failure. Default: True.
         dockerfile (Union[Unset, str]): Path of the Dockerfile used for the build. The path is relative to the context
             path. Default: 'Dockerfile'.
+        networks (Union[Unset, List['EndPointConfig']]): List of endpoint-configs for the networks that the build
+            container will be connected to.
         quiet (Union[Unset, bool]): Whether or not to emit status messages of the build process.
         tag (Union[Unset, str]): A name and optional tag to apply to the image in the name:tag format. If you omit the
             tag the default latest value is assumed. Default: ''.
     """
 
+    container_config: "ContainerConfig"
     context: str
     buildargs: Union[Unset, "ImageBuildConfigBuildargs"] = UNSET
     cleanup: Union[Unset, bool] = True
     dockerfile: Union[Unset, str] = "Dockerfile"
+    networks: Union[Unset, List["EndPointConfig"]] = UNSET
     quiet: Union[Unset, bool] = False
     tag: Union[Unset, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        container_config = self.container_config.to_dict()
+
         context = self.context
         buildargs: Union[Unset, Dict[str, Any]] = UNSET
         if not isinstance(self.buildargs, Unset):
@@ -46,6 +55,14 @@ class ImageBuildConfig:
 
         cleanup = self.cleanup
         dockerfile = self.dockerfile
+        networks: Union[Unset, List[Dict[str, Any]]] = UNSET
+        if not isinstance(self.networks, Unset):
+            networks = []
+            for networks_item_data in self.networks:
+                networks_item = networks_item_data.to_dict()
+
+                networks.append(networks_item)
+
         quiet = self.quiet
         tag = self.tag
 
@@ -53,6 +70,7 @@ class ImageBuildConfig:
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
+                "container_config": container_config,
                 "context": context,
             }
         )
@@ -62,6 +80,8 @@ class ImageBuildConfig:
             field_dict["cleanup"] = cleanup
         if dockerfile is not UNSET:
             field_dict["dockerfile"] = dockerfile
+        if networks is not UNSET:
+            field_dict["networks"] = networks
         if quiet is not UNSET:
             field_dict["quiet"] = quiet
         if tag is not UNSET:
@@ -71,9 +91,13 @@ class ImageBuildConfig:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+        from ..models.container_config import ContainerConfig
+        from ..models.end_point_config import EndPointConfig
         from ..models.image_build_config_buildargs import ImageBuildConfigBuildargs
 
         d = src_dict.copy()
+        container_config = ContainerConfig.from_dict(d.pop("container_config"))
+
         context = d.pop("context")
 
         _buildargs = d.pop("buildargs", UNSET)
@@ -87,15 +111,24 @@ class ImageBuildConfig:
 
         dockerfile = d.pop("dockerfile", UNSET)
 
+        networks = []
+        _networks = d.pop("networks", UNSET)
+        for networks_item_data in _networks or []:
+            networks_item = EndPointConfig.from_dict(networks_item_data)
+
+            networks.append(networks_item)
+
         quiet = d.pop("quiet", UNSET)
 
         tag = d.pop("tag", UNSET)
 
         image_build_config = cls(
+            container_config=container_config,
             context=context,
             buildargs=buildargs,
             cleanup=cleanup,
             dockerfile=dockerfile,
+            networks=networks,
             quiet=quiet,
             tag=tag,
         )

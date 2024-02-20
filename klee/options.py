@@ -13,11 +13,6 @@ HELP_NETWORK_DRIVER_FLAG = """
 Network driver of the container.
 Possible values are `ipnet`, `host`, `vnet`, and `disabled`.
 """
-HELP_PUBLISH_FLAG = """
-Publish one or more ports using the syntax `<HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>]` or
-`<INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]`.
-`CONTAINER-PORT` defaults to `HOST-PORT` and `PROTOCOL` defaults to 'tcp'.
-"""
 
 
 def exec_options(cmd):
@@ -41,7 +36,6 @@ def exec_options(cmd):
 
 def container_create_options(cmd):
     options = [
-        click.Option(["--name"], default=None, help="Assign a name to the container"),
         click.Option(
             ["--user", "-u"],
             metavar="text",
@@ -63,9 +57,9 @@ def container_create_options(cmd):
             default=None,
             metavar="list",
             help="""
-        Mount a volume/directory/file on the host filesystem into the container.
-        Mounts are specfied using a `--mount <source>:<destination>[:rw|ro]` syntax.
-        """,
+            Mount a volume/directory/file on the host filesystem into the container.
+            Mounts are specfied using a `--mount <source>:<destination>[:rw|ro]` syntax.
+            """,
         ),
         click.Option(
             ["--jailparam", "-J"],
@@ -80,7 +74,7 @@ def container_create_options(cmd):
         click.Option(
             ["--driver", "-l"],
             show_default=True,
-            default="ipnet",
+            default="host",
             help=HELP_NETWORK_DRIVER_FLAG,
         ),
         click.Option(
@@ -88,7 +82,6 @@ def container_create_options(cmd):
         ),
         click.Option(["--ip"], default=None, help=HELP_IP_FLAG),
         click.Option(["--ip6"], default=None, help=HELP_IP6_FLAG),
-        click.Option(["--publish", "-p"], multiple=True, help=HELP_PUBLISH_FLAG),
     ]
     cmd.params.extend(options)
     return cmd

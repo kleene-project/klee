@@ -64,12 +64,10 @@ class TestNetworkSubcommand:
         assert network_id2 == network_id2_again
         assert_empty_network_list()
 
-    def test_create_container_connected_to_custom_network_with_default_driver(self):
-        network_id, _ = run("network create --subnet 10.13.37.0/24 test_create_conn")
-        container_id = create_container(
-            name="test_disconn_network",
-            command="/usr/bin/host -t A freebsd.org 1.1.1.1",
-            network="test_create_conn",
+    def test_create_container_connected_to_custom_network_with_ipnet_driver(self):
+        network_id, _ = run("network create --subnet 10.13.37.0/24 test_conn")
+        container_id, _ = run(
+            "create -n test_conn -l ipnet FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
         )
         container_is_connected(container_id)
         remove_container(container_id)
@@ -87,7 +85,7 @@ class TestNetworkSubcommand:
     def test_connection_and_disconnecting_container_to_loopback_network(self):
         network_name = "test_nw_disconn"
         network_id, _ = run(f"network create --subnet 10.13.37.0/24 {network_name}")
-        cmd = f"container create --name disconn_network --network {network_id} FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
+        cmd = f"container create --name disconn_network --network {network_id} -l ipnet FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
         container_id, _ = run(cmd)
         container_is_connected(container_id)
         assert [""] == run(f"network disconnect {network_name} {container_id}")
@@ -113,7 +111,7 @@ class TestNetworkSubcommand:
         network_name = "custom_ip1"
         cmd = f"network create -t loopback --subnet 10.13.37.0/24 {network_name}"
         network_id, _ = run(cmd)
-        cmd = f"container create --name {container_name} --ip 10.13.37.13 --network {network_name} FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
+        cmd = f"container create --name {container_name} --ip 10.13.37.13 --network {network_name} -l ipnet FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
         container_id, _ = run(cmd)
 
         netstat_info = container_get_netstat_info(container_id, driver="loopback")
@@ -140,7 +138,7 @@ class TestNetworkSubcommand:
         network_name = "custom_ip3"
         cmd = f"network create -t loopback --subnet 10.13.37.0/24 {network_name}"
         network_id, _ = run(cmd)
-        cmd = f"container create --name {container_name} FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
+        cmd = f"container create --driver ipnet --name {container_name} FreeBSD:testing /usr/bin/netstat --libxo json -i -4"
         container_id, _ = run(cmd)
         run(f"network connect --ip 10.13.37.13 {network_name} {container_name}")
         netstat_info = container_get_netstat_info(container_id, driver="loopback")

@@ -208,10 +208,10 @@ def connect(ip, ip6, network, container):
     Once connected, the container can communicate with other containers in
     the same network.
     """
-    connect_(ip, ip6, network, container)
+    _connect(ip, ip6, network, container)
 
 
-def connect_(ip, ip6, network, container):
+def _connect(ip, ip6, network, container):
     ip = "<auto>" if ip is None else ip
     ip6 = "<auto>" if ip6 is None else ip6
 

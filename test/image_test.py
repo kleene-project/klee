@@ -272,7 +272,6 @@ class TestImageCreateSubcommand:
         )
         assert result == [
             "invalid dataset",
-            "",
             "image creation failed: invalid dataset",
             "",
         ]

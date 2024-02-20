@@ -11,6 +11,7 @@ from .client.api.default.image_remove import sync_detailed as image_remove_endpo
 from .client.api.default.image_tag import sync_detailed as image_tag_endpoint
 from .client.api.default.image_inspect import sync_detailed as image_inspect_endpoint
 from .client.api.default.image_prune import sync_detailed as image_prune_endpoint
+from .client.models.end_point_config import EndPointConfig
 
 from .connection import create_websocket
 from .printing import (
@@ -26,7 +27,14 @@ from .printing import (
     unexpected_error,
 )
 from .inspect import inspect_command
-from .utils import human_duration, listen_for_messages, request_and_validate_response
+from .utils import (
+    human_duration,
+    listen_for_messages,
+    request_and_validate_response,
+    decode_mount,
+)
+from .name_generator import random_name
+from .options import container_create_options
 
 
 WS_IMAGE_BUILD_ENDPOINT = "/images/build"
@@ -102,70 +110,9 @@ def image_create(name, hidden=False):
         - **zfs-copy**: Create the base image based on a copy of an existing ZFS dataset. **SOURCE** is the dataset.
         - **zfs-clone**: Create the base image based on a clone of an existing ZFS dataset. **SOURCE** is the dataset.
         """
-        dataset = ""
-        url = ""
-
-        if len(source) > 1:
-            additional_arguments = " ".join(source[1:])
-            echo_error(f"too many arguments: {additional_arguments}")
-            return
-
-        if method in {"zfs-clone", "zfs-copy"}:
-            dataset = source[0]
-
-        if method == "fetch":
-            url = source[0]
-
-        if method == "fetch-auto":
-            url = ""
-            if tag != "":
-                autotag = False
-
-        config = {
-            "method": method,
-            "url": url,
-            "zfs_dataset": dataset,
-            "tag": tag,
-            "dns": dns,
-            "force": force,
-            "autotag": autotag,
-        }
-        config_json = json.dumps(config)
-        asyncio.run(_create_image_and_listen_for_messages(config_json))
+        _create(tag, dns, force, autotag, method, source)
 
     return create
-
-
-root.add_command(image_create("create"), name="create")
-
-
-async def _create_image_and_listen_for_messages(config_json):
-    try:
-        async with create_websocket(WS_IMAGE_CREATE_ENDPOINT) as websocket:
-            await websocket.send(config_json)
-            starting_frame = await websocket.recv()
-            start_msg = json.loads(starting_frame)
-            if start_msg["msg_type"] == "starting":
-                try:
-                    closing_message = await listen_for_messages(websocket, newline=True)
-                except json.decoder.JSONDecodeError:
-                    echo_error("Kleened returned an unknown error")
-                    return
-
-                if closing_message["data"] == "":
-                    print_websocket_closing(closing_message, ["message"])
-
-                else:
-                    print_websocket_closing(closing_message, ["message", "data"])
-
-            elif start_msg["msg_type"] == "error":
-                print_websocket_closing(closing_message, ["message"])
-
-            else:
-                unexpected_error()
-
-    except websockets.exceptions.ConnectionClosedError:
-        connection_closed_unexpectedly()
 
 
 def image_build(name, hidden=False):
@@ -176,110 +123,55 @@ def image_build(name, hidden=False):
         no_args_is_help=True,
         short_help="Build a new image",
     )
-    @click.option(
-        "--file",
-        "-f",
-        default="Dockerfile",
-        show_default=True,
-        help="Location of the `Dockerfile` relative to **PATH**.",
-    )
-    @click.option(
-        "--tag",
-        "-t",
-        default="",
-        help="Name and optionally a tag in the `name:tag` format",
-    )
-    @click.option(
-        "--quiet",
-        "-q",
-        is_flag=True,
-        default=False,
-        help="Suppress the build output and print image ID on success",
-    )
-    @click.option(
-        "--cleanup/--no-cleanup",
-        "-l",
-        is_flag=True,
-        default=True,
-        help="Whether or not to remove the build-container if the build fails",
-    )
-    @click.option(
-        "--build-arg",
-        multiple=True,
-        default=None,
-        help="Set build-time variables (e.g. --build-arg FIRST=hello --build-arg SECOND=world)",
-    )
-    @click.argument("path", nargs=1)
-    def build(file, tag, quiet, cleanup, build_arg, path):
-        """Build an image from a context and Dockerfile located in **PATH**"""
-        asyncio.run(
-            _build_image_and_listen_for_messages(
-                file, tag, quiet, cleanup, build_arg, path
-            )
-        )
+    def build(**kwargs):
+        """
+        Build an image from a context and Dockerfile located in **PATH**.
+
+        The container-related options configures the build-container.
+        """
+        asyncio.run(_build_image_and_listen_for_messages(**kwargs))
+
+    build = container_create_options(build)
+    build_options = [
+        click.Option(
+            ["--from"],
+            default=None,
+            help="Specify an image that will override the image in the Dockerfile's `FROM` instruction.",
+        ),
+        click.Option(
+            ["--file", "-f"],
+            default="Dockerfile",
+            show_default=True,
+            help="Location of the `Dockerfile` relative to **PATH**.",
+        ),
+        click.Option(
+            ["--tag", "-t"],
+            default="",
+            help="Name and optionally a tag in the `name:tag` format",
+        ),
+        click.Option(
+            ["--quiet", "-q"],
+            is_flag=True,
+            default=False,
+            help="Suppress the build output and print image ID on success",
+        ),
+        click.Option(
+            ["--cleanup/--no-cleanup", "-l"],
+            is_flag=True,
+            default=True,
+            help="Whether or not to remove the build-container if the build fails",
+        ),
+        click.Option(
+            ["--build-arg"],
+            multiple=True,
+            default=None,
+            help="Set build-time variables (e.g. --build-arg FIRST=hello --build-arg SECOND=world)",
+        ),
+        click.Argument(["path"], nargs=1),
+    ]
+    build.params.extend(build_options)
 
     return build
-
-
-root.add_command(image_build("build"), name="build")
-
-
-async def _build_image_and_listen_for_messages(
-    file_, tag, quiet, cleanup, build_arg, path
-):
-    quiet = "true" if quiet else "false"
-    path = os.path.abspath(path)
-    buildargs = {}
-    for buildarg in build_arg:
-        var, value = buildarg.split("=", maxsplit=1)
-        buildargs[var] = value
-
-    build_config = json.dumps(
-        {
-            "context": path,
-            "dockerfile": file_,
-            "tag": tag,
-            "quiet": quiet,
-            "cleanup": cleanup,
-            "buildargs": buildargs,
-        }
-    )
-    try:
-        async with create_websocket(WS_IMAGE_BUILD_ENDPOINT) as websocket:
-            await websocket.send(build_config)
-            starting_frame = await websocket.recv()
-            start_msg = json.loads(starting_frame)
-            if start_msg["msg_type"] == "starting":
-                if start_msg["data"] != "":
-                    image_id = start_msg["data"]
-                    echo_bold(BUILD_START_MESSAGE.format(image_id=image_id))
-                try:
-                    closing_message = await listen_for_messages(websocket)
-                except json.JSONDecodeError:
-                    unexpected_error()
-                    sys.exit(1)
-
-                if closing_message["msg_type"] == "error":
-                    if closing_message["data"] != "":
-                        snapshot = closing_message["data"]
-                        echo_bold(
-                            BUILD_FAILED.format(snapshot=snapshot, image_id=image_id)
-                        )
-
-                elif closing_message["data"] == "":
-                    echo_bold(closing_message["message"])
-
-                else:
-                    echo_bold(closing_message["message"])
-                    echo_bold(closing_message["data"])
-
-            elif start_msg["msg_type"] == "error":
-                echo_bold(start_msg["message"])
-            else:
-                unexpected_error()
-
-    except websockets.exceptions.ConnectionClosedError:
-        connection_closed_unexpectedly()
 
 
 def image_list(name, hidden=False):
@@ -296,29 +188,6 @@ def image_list(name, hidden=False):
         )
 
     return _image_list
-
-
-root.add_command(image_list("ls"), name="ls")
-
-
-def _print_image_list(images):
-    images = [
-        [img.id, img.name, img.tag, human_duration(img.created) + " ago"]
-        for img in images
-    ]
-    print_table(images, IMAGE_LIST_COLUMNS)
-
-
-root.add_command(
-    inspect_command(
-        name="inspect",
-        argument="image",
-        id_var="image_id",
-        docs="Display detailed information on an image",
-        endpoint=image_inspect_endpoint,
-    ),
-    name="inspect",
-)
 
 
 def image_remove(name, hidden=False):
@@ -340,9 +209,6 @@ def image_remove(name, hidden=False):
                 break
 
     return remove
-
-
-root.add_command(image_remove("rm"), name="rm")
 
 
 def image_prune(name, hidden=False):
@@ -375,9 +241,6 @@ def image_prune(name, hidden=False):
     return prune
 
 
-root.add_command(image_prune("prune"), name="prune")
-
-
 def image_tag(name, hidden=False):
     @click.command(
         cls=command_cls(),
@@ -407,4 +270,193 @@ def image_tag(name, hidden=False):
     return tag
 
 
+root.add_command(image_create("create"), name="create")
+root.add_command(image_build("build"), name="build")
+root.add_command(image_list("ls"), name="ls")
+root.add_command(
+    inspect_command(
+        name="inspect",
+        argument="image",
+        id_var="image_id",
+        docs="Display detailed information on an image",
+        endpoint=image_inspect_endpoint,
+    ),
+    name="inspect",
+)
+root.add_command(image_remove("rm"), name="rm")
+root.add_command(image_prune("prune"), name="prune")
 root.add_command(image_tag("tag"), name="tag")
+
+
+def _create(tag, dns, force, autotag, method, source):
+    dataset = ""
+    url = ""
+
+    if len(source) > 1:
+        additional_arguments = " ".join(source[1:])
+        echo_error(f"too many arguments: {additional_arguments}")
+        return
+
+    if method in {"zfs-clone", "zfs-copy"}:
+        dataset = source[0]
+
+    if method == "fetch":
+        url = source[0]
+
+    if method == "fetch-auto":
+        url = ""
+        if tag != "":
+            autotag = False
+
+    config = {
+        "method": method,
+        "url": url,
+        "zfs_dataset": dataset,
+        "tag": tag,
+        "dns": dns,
+        "force": force,
+        "autotag": autotag,
+    }
+    config_json = json.dumps(config)
+    asyncio.run(_create_image_and_listen_for_messages(config_json))
+
+
+async def _create_image_and_listen_for_messages(config_json):
+    try:
+        async with create_websocket(WS_IMAGE_CREATE_ENDPOINT) as websocket:
+            await websocket.send(config_json)
+            starting_frame = await websocket.recv()
+            start_msg = json.loads(starting_frame)
+            if start_msg["msg_type"] == "starting":
+                try:
+                    closing_message = await listen_for_messages(websocket)
+                except json.decoder.JSONDecodeError:
+                    echo_error("Kleened returned an unknown error")
+                    return
+
+                if closing_message["data"] == "":
+                    print_websocket_closing(closing_message, ["message"])
+
+                else:
+                    print_websocket_closing(closing_message, ["message", "data"])
+
+            elif start_msg["msg_type"] == "error":
+                print_websocket_closing(closing_message, ["message"])
+
+            else:
+                unexpected_error()
+
+    except websockets.exceptions.ConnectionClosedError:
+        connection_closed_unexpectedly()
+
+
+def process_build_messages(message):
+    snapshot_message = "--> Snapshot created: @"
+    if snapshot_message in message:
+        echo_bold(message)
+
+    elif "Step " in message and " : " in message:
+        echo_bold(message)
+
+    elif "Using user-supplied parent image:" in message:
+        echo_bold(message)
+
+    else:
+        echo(message, newline=False)
+
+
+async def _build_image_and_listen_for_messages(**kwargs):
+    quiet = "true" if kwargs["quiet"] else "false"
+    path = os.path.abspath(kwargs["path"])
+    buildargs = {}
+    for buildarg in kwargs["build_arg"]:
+        var, value = buildarg.split("=", maxsplit=1)
+        buildargs[var] = value
+
+    mounts = [] if kwargs["mount"] is None else list(kwargs["mount"])
+    container_config = {
+        "name": None,
+        "cmd": None,
+        "image": kwargs["from"],
+        "user": kwargs["user"],
+        "env": list(kwargs["env"]),
+        "mounts": [decode_mount(mnt) for mnt in mounts],
+        "jail_param": list(kwargs["jailparam"]),
+        "network_driver": kwargs["driver"],
+    }
+
+    ip = "<auto>" if kwargs["ip"] is None else kwargs["ip"]
+    ip6 = "<auto>" if kwargs["ip6"] is None else kwargs["ip6"]
+
+    if kwargs["network"] is not None:
+        networks = [
+            EndPointConfig.from_dict(
+                {
+                    "container": "",
+                    "network": kwargs["network"],
+                    "ip_address": ip,
+                    "ip_address6": ip6,
+                }
+            )
+        ]
+    else:
+        networks = []
+
+    build_config = json.dumps(
+        {
+            "context": path,
+            "dockerfile": kwargs["file"],
+            "tag": kwargs["tag"],
+            "quiet": quiet,
+            "cleanup": kwargs["cleanup"],
+            "buildargs": buildargs,
+            "container_config": container_config,
+            "networks": networks,
+        }
+    )
+    try:
+        async with create_websocket(WS_IMAGE_BUILD_ENDPOINT) as websocket:
+            await websocket.send(build_config)
+            starting_frame = await websocket.recv()
+            start_msg = json.loads(starting_frame)
+            if start_msg["msg_type"] == "starting":
+                if start_msg["data"] != "":
+                    image_id = start_msg["data"]
+                    echo_bold(BUILD_START_MESSAGE.format(image_id=image_id))
+                try:
+                    closing_message = await listen_for_messages(
+                        websocket, message_processor=process_build_messages
+                    )
+                except json.JSONDecodeError:
+                    unexpected_error()
+                    sys.exit(1)
+
+                if closing_message["msg_type"] == "error":
+                    if closing_message["data"] != "":
+                        snapshot = closing_message["data"]
+                        echo_bold(
+                            BUILD_FAILED.format(snapshot=snapshot, image_id=image_id)
+                        )
+
+                elif closing_message["data"] == "":
+                    echo_bold(closing_message["message"])
+
+                else:
+                    echo_bold(closing_message["message"])
+                    echo_bold(closing_message["data"])
+
+            elif start_msg["msg_type"] == "error":
+                echo_bold(start_msg["message"])
+            else:
+                unexpected_error()
+
+    except websockets.exceptions.ConnectionClosedError:
+        connection_closed_unexpectedly()
+
+
+def _print_image_list(images):
+    images = [
+        [img.id, img.name, img.tag, human_duration(img.created) + " ago"]
+        for img in images
+    ]
+    print_table(images, IMAGE_LIST_COLUMNS)

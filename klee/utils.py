@@ -1,3 +1,4 @@
+import sys
 import json
 import datetime
 import dateutil.parser
@@ -9,6 +10,7 @@ from .connection import request
 from .printing import (
     echo,
     echo_bold,
+    echo_error,
     print_unable_to_connect,  # Message
     print_timeout,
     unexpected_error,  # Message
@@ -17,7 +19,7 @@ from .printing import (
 )
 
 
-async def listen_for_messages(websocket, newline=False):
+async def listen_for_messages(websocket, newline=False, message_processor=None):
     while True:
         try:
             message = await websocket.recv()
@@ -26,7 +28,10 @@ async def listen_for_messages(websocket, newline=False):
             echo("")
             return closing_message
 
-        echo(message, newline)
+        if message_processor is None:
+            echo(message, newline)
+        else:
+            message_processor(message)
 
 
 def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
@@ -74,6 +79,88 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
         unexpected_error()
 
     return response
+
+
+def decode_mount(mount):
+    sections = mount.split(":")
+    if len(sections) > 3:
+        echo_error(f"invalid mount format '{mount}'. Max 3 elements seperated by ':'.")
+        sys.exit(125)
+
+    if len(sections) < 2:
+        echo_error(
+            f"invalid mount format '{mount}'. Must have at least 2 elements seperated by ':'."
+        )
+        sys.exit(125)
+
+    if len(sections) == 3 and sections[-1] not in {"ro", "rw"}:
+        echo_error(
+            f"invalid mount format '{mount}'. Last element should be either 'ro' or 'rw'."
+        )
+        sys.exit(125)
+
+    if len(sections) == 3:
+        source, destination, mode = sections
+        read_only = True if mode == "ro" else False
+    else:
+        source, destination = sections
+        read_only = False
+
+    if source[:1] == "/":
+        mount_type = "nullfs"
+    else:
+        mount_type = "volume"
+
+    return {
+        "type": mount_type,
+        "source": source,
+        "destination": destination,
+        "read_only": read_only,
+    }
+
+
+def decode_public_ports(public_ports):
+    """
+    Decodes
+    - <HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>] and
+    - <INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]
+    """
+    for pub_port in public_ports:
+        pub_port, protocol = _extract_protocol(pub_port)
+        interfaces, host_port, container_port = _extract_ports_and_interface(pub_port)
+        yield {
+            "interfaces": interfaces,
+            "host_port": host_port,
+            "container_port": container_port,
+            "protocol": protocol,
+        }
+
+
+def _extract_protocol(pub_port_raw):
+    pub_port = pub_port_raw.split("/")
+    if len(pub_port) == 2:
+        return pub_port[0], pub_port[1]
+
+    if len(pub_port) == 1:
+        return pub_port[0], "tcp"
+
+    echo_error("could not decode port to publish: ", pub_port_raw)
+    sys.exit(1)
+
+
+def _extract_ports_and_interface(pub_port_raw):
+    pub_port = pub_port_raw.split(":")
+    if len(pub_port) == 3:
+        return [pub_port[0]], pub_port[1], pub_port[2]
+
+    if len(pub_port) == 2:
+        return [], pub_port[0], pub_port[1]
+
+    if len(pub_port) == 1:
+        return [], pub_port[0], pub_port[0]
+
+    echo_error("could not decode port to publish: ", pub_port_raw)
+    sys.exit(1)
 
 
 def human_duration(timestamp_iso):

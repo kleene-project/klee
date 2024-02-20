@@ -32,7 +32,7 @@ from .client.api.default.container_update import (
 
 from .client.models.container_config import ContainerConfig
 from .client.models.exec_config import ExecConfig
-from .network import connect_
+from .network import _connect
 from .printing import (
     echo_bold,
     echo_error,
@@ -46,10 +46,23 @@ from .printing import (
 )
 from .name_generator import random_name
 from .connection import create_websocket
-from .utils import human_duration, request_and_validate_response, listen_for_messages
+from .utils import (
+    human_duration,
+    request_and_validate_response,
+    listen_for_messages,
+    decode_mount,
+    decode_public_ports,
+)
 from .prune import prune_command
 from .inspect import inspect_command
 from .options import container_create_options, exec_options
+
+HELP_PUBLISH_FLAG = """
+Publish one or more ports using the syntax `<HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>]` or
+`<INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]`.
+`CONTAINER-PORT` defaults to `HOST-PORT` and `PROTOCOL` defaults to 'tcp'.
+"""
+
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
@@ -98,9 +111,13 @@ def container_create(name, hidden=False):
         _create_container_and_connect_to_network(**kwargs)
 
     create = container_create_options(create)
-    create.params.extend(
-        [click.Argument(["image"], nargs=1), click.Argument(["command"], nargs=-1)]
-    )
+    opts_args = [
+        click.Option(["--name"], default=None, help="Assign a name to the container"),
+        click.Option(["--publish", "-p"], multiple=True, help=HELP_PUBLISH_FLAG),
+        click.Argument(["image"], nargs=1),
+        click.Argument(["command"], nargs=-1),
+    ]
+    create.params.extend(opts_args)
     return create
 
 
@@ -362,9 +379,13 @@ def container_run(name, hidden=False):
 
     run = container_create_options(run)
     run = exec_options(run)
-    run.params.extend(
-        [click.Argument(["image"], nargs=1), click.Argument(["command"], nargs=-1)]
-    )
+    opts_args = [
+        click.Option(["--name"], default=None, help="Assign a name to the container"),
+        click.Option(["--publish", "-p"], multiple=True, help=HELP_PUBLISH_FLAG),
+        click.Argument(["image"], nargs=1),
+        click.Argument(["command"], nargs=-1),
+    ]
+    run.params.extend(opts_args)
     return run
 
 
@@ -399,20 +420,7 @@ root.add_command(container_run("run"), name="run")
 
 
 def _create_container_and_connect_to_network(**kwargs):
-    kwargs_create = {
-        "name": random_name() if kwargs["name"] is None else kwargs["name"],
-        "image": kwargs["image"],
-        "command": kwargs["command"],
-        "user": kwargs["user"],
-        "mount": kwargs["mount"],
-        "env": kwargs["env"],
-        "jailparam": kwargs["jailparam"],
-        "network_driver": kwargs["driver"],
-    }
-
-    kwargs_create["public_ports"] = list(_decode_public_ports(kwargs["publish"]))
-
-    response = _create(**kwargs_create)
+    response = _create(**kwargs)
 
     if response is None or response.status_code != 201:
         if response is not None:
@@ -430,7 +438,7 @@ def _create_container_and_connect_to_network(**kwargs):
         "network": kwargs["network"],
         "container": container_id,
     }
-    response = connect_(**kwargs_connect)
+    response = _connect(**kwargs_connect)
     if response is None or response.status_code != 204:
         echo_error(f"could not connect container: {response.parsed.message}")
         return None
@@ -438,63 +446,19 @@ def _create_container_and_connect_to_network(**kwargs):
     return container_id
 
 
-def _decode_public_ports(public_ports):
-    """
-    Decodes
-    - <HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>] and
-    - <INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]
-    """
-    for pub_port in public_ports:
-        pub_port, protocol = _extract_protocol(pub_port)
-        interfaces, host_port, container_port = _extract_ports_and_interface(pub_port)
-        yield {
-            "interfaces": interfaces,
-            "host_port": host_port,
-            "container_port": container_port,
-            "protocol": protocol,
-        }
-
-
-def _extract_protocol(pub_port_raw):
-    pub_port = pub_port_raw.split("/")
-    if len(pub_port) == 2:
-        return pub_port[0], pub_port[1]
-
-    if len(pub_port) == 1:
-        return pub_port[0], "tcp"
-
-    echo_error("could not decode port to publish: ", pub_port_raw)
-    sys.exit(1)
-
-
-def _extract_ports_and_interface(pub_port_raw):
-    pub_port = pub_port_raw.split(":")
-    if len(pub_port) == 3:
-        return [pub_port[0]], pub_port[1], pub_port[2]
-
-    if len(pub_port) == 2:
-        return [], pub_port[0], pub_port[1]
-
-    if len(pub_port) == 1:
-        return [], pub_port[0], pub_port[0]
-
-    echo_error("could not decode port to publish: ", pub_port_raw)
-    sys.exit(1)
-
-
 def _create(**kwargs):
     mounts = [] if kwargs["mount"] is None else list(kwargs["mount"])
 
     container_config = {
-        "name": kwargs["name"],
+        "name": random_name() if kwargs["name"] is None else kwargs["name"],
         "image": kwargs["image"],
         "cmd": list(kwargs["command"]),
         "user": kwargs["user"],
         "env": list(kwargs["env"]),
-        "mounts": [_decode_mount(mnt) for mnt in mounts],
+        "mounts": [decode_mount(mnt) for mnt in mounts],
         "jail_param": list(kwargs["jailparam"]),
-        "network_driver": kwargs["network_driver"],
-        "public_ports": kwargs["public_ports"],
+        "network_driver": kwargs["driver"],
+        "public_ports": list(decode_public_ports(kwargs["publish"])),
     }
     container_config = ContainerConfig.from_dict(container_config)
 
@@ -509,48 +473,13 @@ def _create(**kwargs):
     )
 
 
-def _decode_mount(mount):
-    sections = mount.split(":")
-    if len(sections) > 3:
-        echo_error(f"invalid mount format '{mount}'. Max 3 elements seperated by ':'.")
-        sys.exit(125)
-
-    if len(sections) < 2:
-        echo_error(
-            f"invalid mount format '{mount}'. Must have at least 2 elements seperated by ':'."
-        )
-        sys.exit(125)
-
-    if len(sections) == 3 and sections[-1] not in {"ro", "rw"}:
-        echo_error(
-            f"invalid mount format '{mount}'. Last element should be either 'ro' or 'rw'."
-        )
-        sys.exit(125)
-
-    if len(sections) == 3:
-        source, destination, mode = sections
-        read_only = True if mode == "ro" else False
-    else:
-        source, destination = sections
-        read_only = False
-
-    if source[:1] == "/":
-        mount_type = "nullfs"
-    else:
-        mount_type = "volume"
-
-    return {
-        "type": mount_type,
-        "source": source,
-        "destination": destination,
-        "read_only": read_only,
-    }
-
-
 def _print_container(response):
     containers = response.parsed
 
     def command_json2command_human(command_str):
+        if command_str is None:
+            return "Dockerfile"
+
         return " ".join(json.loads(command_str))
 
     containers = [
@@ -584,14 +513,14 @@ def _start(detach, interactive, tty, containers):
 
 
 def _stop(containers, silent=False):
-    def ssch(_):
+    def silent_(_):
         return ""
 
     def return_id(response):
         return response.parsed.id
 
     if silent:
-        response_200 = ssch
+        response_200 = silent_
     else:
         response_200 = return_id
 

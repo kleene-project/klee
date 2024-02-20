@@ -104,7 +104,8 @@ def sync_detailed(
     before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): Configuration for an image build.
+        json_body (ImageBuildConfig): Configuration for an image build, including container
+            configuration for the build container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -178,7 +179,8 @@ def sync(
     before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): Configuration for an image build.
+        json_body (ImageBuildConfig): Configuration for an image build, including container
+            configuration for the build container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -246,7 +248,8 @@ async def asyncio_detailed(
     before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): Configuration for an image build.
+        json_body (ImageBuildConfig): Configuration for an image build, including container
+            configuration for the build container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -317,7 +320,8 @@ async def asyncio(
     before any snapshots have been created.
 
     Args:
-        json_body (ImageBuildConfig): Configuration for an image build.
+        json_body (ImageBuildConfig): Configuration for an image build, including container
+            configuration for the build container.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
