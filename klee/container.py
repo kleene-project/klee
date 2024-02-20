@@ -49,29 +49,7 @@ from .connection import create_websocket
 from .utils import human_duration, request_and_validate_response, listen_for_messages
 from .prune import prune_command
 from .inspect import inspect_command
-
-HELP_DETACH_FLAG = """
-Do not output STDOUT/STDERR to the terminal.
-If this is set, Klee will exit and return the container ID when the container has been started.
-"""
-HELP_INTERACTIVE_FLAG = (
-    "Send terminal input to container's STDIN. If set, `--detach` will be ignored."
-)
-
-HELP_NETWORK_DRIVER_FLAG = """
-Network driver of the container.
-Possible values are `ipnet`, `host`, `vnet`, and `disabled`.
-"""
-
-HELP_IP_FLAG = "IPv4 address used for the container. If omitted, an unused ip is allocated from the IPv4 subnet of `--network`."
-
-HELP_IP6_FLAG = "IPv6 address used for the container. If omitted, an unused ip is allocated from the IPv6 subnet of `--network`."
-
-HELP_PUBLISH_FLAG = """
-Publish one or more ports using the syntax `<HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>]` or
-`<INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]`.
-`CONTAINER-PORT` defaults to `HOST-PORT` and `PROTOCOL` defaults to 'tcp'.
-"""
+from .options import container_create_options, exec_options
 
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
@@ -110,55 +88,6 @@ def container_create(name, hidden=False):
         context_settings={"ignore_unknown_options": True},
         no_args_is_help=True,
     )
-    @click.option("--name", default=None, help="Assign a name to the container")
-    @click.option(
-        "--user",
-        "-u",
-        metavar="text",
-        default="",
-        help="Alternate user that should be used for starting the container",
-    )
-    @click.option(
-        "--env",
-        "-e",
-        multiple=True,
-        default=None,
-        help="Set environment variables (e.g. --env FIRST=SomeValue --env SECOND=AnotherValue)",
-    )
-    @click.option(
-        "--mount",
-        "-m",
-        multiple=True,
-        default=None,
-        metavar="list",
-        help="""
-        Mount a volume/directory/file on the host filesystem into the container.
-        Mounts are specfied using a `--mount <source>:<destination>[:rw|ro]` syntax.
-        """,
-    )
-    @click.option(
-        "--jailparam",
-        "-J",
-        multiple=True,
-        default=["mount.devfs", 'exec.stop="/bin/sh /etc/rc.shutdown jail"'],
-        show_default=True,
-        help="Specify a jail parameters, see jail(8) for details",
-    )
-    @click.option(
-        "--driver",
-        "-l",
-        show_default=True,
-        default="ipnet",
-        help=HELP_NETWORK_DRIVER_FLAG,
-    )
-    @click.option(
-        "--network", "-n", default=None, help="Connect container to this network."
-    )
-    @click.option("--ip", default=None, help=HELP_IP_FLAG)
-    @click.option("--ip6", default=None, help=HELP_IP6_FLAG)
-    @click.option("--publish", "-p", multiple=True, help=HELP_PUBLISH_FLAG)
-    @click.argument("image", nargs=1)
-    @click.argument("command", nargs=-1)
     def create(**kwargs):
         """
         Create a new container. The **IMAGE** parameter syntax is:
@@ -166,161 +95,13 @@ def container_create(name, hidden=False):
 
         See the documentation for details.
         """
-        create_container_and_connect_to_network(**kwargs)
+        _create_container_and_connect_to_network(**kwargs)
 
-    return create
-
-
-root.add_command(container_create("create"), name="create")
-
-
-def create_container_and_connect_to_network(**kwargs):
-    kwargs_create = {
-        "name": random_name() if kwargs["name"] is None else kwargs["name"],
-        "image": kwargs["image"],
-        "command": kwargs["command"],
-        "user": kwargs["user"],
-        "mount": kwargs["mount"],
-        "env": kwargs["env"],
-        "jailparam": kwargs["jailparam"],
-        "network_driver": kwargs["driver"],
-    }
-
-    kwargs_create["public_ports"] = list(decode_public_ports(kwargs["publish"]))
-
-    response = create_(**kwargs_create)
-
-    if response is None or response.status_code != 201:
-        if response is not None:
-            echo_error(f"could not create container: {response.parsed.message}")
-        return None
-
-    container_id = response.parsed.id
-
-    if kwargs["network"] is None:
-        return container_id
-
-    kwargs_connect = {
-        "ip": kwargs["ip"],
-        "ip6": kwargs["ip6"],
-        "network": kwargs["network"],
-        "container": container_id,
-    }
-    response = connect_(**kwargs_connect)
-    if response is None or response.status_code != 204:
-        echo_error(f"could not connect container: {response.parsed.message}")
-        return None
-
-    return container_id
-
-
-def decode_public_ports(public_ports):
-    """
-    Decodes
-    - <HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>] and
-    - <INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]
-    """
-    for pub_port in public_ports:
-        pub_port, protocol = extract_protocol(pub_port)
-        interfaces, host_port, container_port = extract_ports_and_interface(pub_port)
-        yield {
-            "interfaces": interfaces,
-            "host_port": host_port,
-            "container_port": container_port,
-            "protocol": protocol,
-        }
-
-
-def extract_protocol(pub_port_raw):
-    pub_port = pub_port_raw.split("/")
-    if len(pub_port) == 2:
-        return pub_port[0], pub_port[1]
-
-    if len(pub_port) == 1:
-        return pub_port[0], "tcp"
-
-    echo_error("could not decode port to publish: ", pub_port_raw)
-    sys.exit(1)
-
-
-def extract_ports_and_interface(pub_port_raw):
-    pub_port = pub_port_raw.split(":")
-    if len(pub_port) == 3:
-        return [pub_port[0]], pub_port[1], pub_port[2]
-
-    if len(pub_port) == 2:
-        return [], pub_port[0], pub_port[1]
-
-    if len(pub_port) == 1:
-        return [], pub_port[0], pub_port[0]
-
-    echo_error("could not decode port to publish: ", pub_port_raw)
-    sys.exit(1)
-
-
-def create_(**kwargs):
-    mounts = [] if kwargs["mount"] is None else list(kwargs["mount"])
-
-    container_config = {
-        "name": kwargs["name"],
-        "image": kwargs["image"],
-        "cmd": list(kwargs["command"]),
-        "user": kwargs["user"],
-        "env": list(kwargs["env"]),
-        "mounts": [decode_mount(mnt) for mnt in mounts],
-        "jail_param": list(kwargs["jailparam"]),
-        "network_driver": kwargs["network_driver"],
-        "public_ports": kwargs["public_ports"],
-    }
-    container_config = ContainerConfig.from_dict(container_config)
-
-    return request_and_validate_response(
-        container_create_endpoint,
-        kwargs={"json_body": container_config},
-        statuscode2messsage={
-            201: lambda response: response.parsed.id,
-            404: lambda response: response.parsed.message,
-            500: lambda response: response.parsed,
-        },
+    create = container_create_options(create)
+    create.params.extend(
+        [click.Argument(["image"], nargs=1), click.Argument(["command"], nargs=-1)]
     )
-
-
-def decode_mount(mount):
-    sections = mount.split(":")
-    if len(sections) > 3:
-        echo_error(f"invalid mount format '{mount}'. Max 3 elements seperated by ':'.")
-        sys.exit(125)
-
-    if len(sections) < 2:
-        echo_error(
-            f"invalid mount format '{mount}'. Must have at least 2 elements seperated by ':'."
-        )
-        sys.exit(125)
-
-    if len(sections) == 3 and sections[-1] not in {"ro", "rw"}:
-        echo_error(
-            f"invalid mount format '{mount}'. Last element should be either 'ro' or 'rw'."
-        )
-        sys.exit(125)
-
-    if len(sections) == 3:
-        source, destination, mode = sections
-        read_only = True if mode == "ro" else False
-    else:
-        source, destination = sections
-        read_only = False
-
-    if source[:1] == "/":
-        mount_type = "nullfs"
-    else:
-        mount_type = "volume"
-
-    return {
-        "type": mount_type,
-        "source": source,
-        "destination": destination,
-        "read_only": read_only,
-    }
+    return create
 
 
 def container_list(name, hidden=False):
@@ -344,43 +125,6 @@ def container_list(name, hidden=False):
         )
 
     return listing
-
-
-root.add_command(container_list("ls"), name="ls")
-
-
-def _print_container(response):
-    containers = response.parsed
-
-    def command_json2command_human(command_str):
-        return " ".join(json.loads(command_str))
-
-    containers = [
-        [
-            c.id,
-            c.name,
-            print_image_column(c.image_name, c.image_tag, c.image_id),
-            command_json2command_human(c.cmd),
-            human_duration(c.created) + " ago",
-            is_running_str(c.running),
-            "" if c.jid is None else str(c.jid),
-        ]
-        for c in containers
-    ]
-
-    print_table(containers, CONTAINER_LIST_COLUMNS)
-
-
-root.add_command(
-    inspect_command(
-        name="inspect",
-        argument="container",
-        id_var="container_id",
-        docs="Display detailed information on a container.",
-        endpoint=container_inspect_endpoint,
-    ),
-    name="inspect",
-)
 
 
 def container_remove(name, hidden=False):
@@ -415,39 +159,17 @@ def container_remove(name, hidden=False):
     return remove
 
 
-root.add_command(container_remove("rm"), name="rm")
-
-
-root.add_command(
-    prune_command(
-        name="prune",
-        docs="Remove all stopped containers.",
-        warning="WARNING! This will remove all stopped containers.",
-        endpoint=container_prune_endpoint,
-    )
-)
-
-
 def container_start(name, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
-    @click.option("--detach", "-d", default=False, is_flag=True, help=HELP_DETACH_FLAG)
-    @click.option(
-        "--interactive", "-i", default=False, is_flag=True, help=HELP_INTERACTIVE_FLAG
-    )
-    @click.option(
-        "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
-    )
-    @click.argument("containers", required=True, nargs=-1)
     def start(detach, interactive, tty, containers):
         """Start one or more stopped containers.
         Attach only if a single container is started
         """
-        start_(detach, interactive, tty, containers)
+        _start(detach, interactive, tty, containers)
 
+    start = exec_options(start)
+    start.params.append(click.Argument(["containers"], required=True, nargs=-1))
     return start
-
-
-root.add_command(container_start("start"), name="start")
 
 
 def container_stop(name, hidden=False):
@@ -458,36 +180,6 @@ def container_stop(name, hidden=False):
         _stop(containers)
 
     return stop
-
-
-def _stop(containers, silent=False):
-    def ssch(_):
-        return ""
-
-    def return_id(response):
-        return response.parsed.id
-
-    if silent:
-        response_200 = ssch
-    else:
-        response_200 = return_id
-
-    for container_id in containers:
-        response = request_and_validate_response(
-            container_stop_endpoint,
-            kwargs={"container_id": container_id},
-            statuscode2messsage={
-                200: response_200,
-                304: lambda response: response.parsed.message,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
-            },
-        )
-        if response is None or response.status_code != 200:
-            break
-
-
-root.add_command(container_stop("stop"), name="stop")
 
 
 def container_restart(name, hidden=False):
@@ -509,7 +201,7 @@ def container_restart(name, hidden=False):
             if response is None or response.status_code != 200:
                 break
 
-            execution_create_and_start(
+            _execution_create_and_start(
                 response.parsed.id,
                 tty=False,
                 interactive=False,
@@ -518,9 +210,6 @@ def container_restart(name, hidden=False):
             )
 
     return restart
-
-
-root.add_command(container_restart("restart"), name="restart")
 
 
 def container_exec(name, hidden=False):
@@ -532,38 +221,35 @@ def container_exec(name, hidden=False):
         # We use this to avoid problems option-parts of the "command" argument, i.e., 'klee container exec -a /bin/sh -c echo lol
         context_settings={"ignore_unknown_options": True},
     )
-    @click.option("--detach", "-d", default=False, is_flag=True, help=HELP_DETACH_FLAG)
-    @click.option(
-        "--env",
-        "-e",
-        multiple=True,
-        default=None,
-        help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
-    )
-    @click.option(
-        "--interactive", "-i", default=False, is_flag=True, help=HELP_INTERACTIVE_FLAG
-    )
-    @click.option(
-        "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
-    )
-    @click.option(
-        "--user", "-u", default="", help="Username or UID of the executing user"
-    )
-    @click.argument("container", nargs=1)
-    @click.argument("command", nargs=-1)
-    def exec_(detach, env, interactive, tty, user, container, command):
+    def exec_(detach, interactive, tty, env, user, container, command):
         """
         Run a command in a container
         """
         start_container = "true"
-        execution_create_and_start(
+        _execution_create_and_start(
             container, tty, interactive, detach, start_container, command, env, user
         )
 
+    exec_ = exec_options(exec_)
+    exec_.params.extend(
+        [
+            click.Option(
+                ["--env", "-e"],
+                multiple=True,
+                default=None,
+                help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
+            ),
+            click.Option(
+                ["--user", "-u"],
+                default="",
+                help="Username or UID of the executing user",
+            ),
+            click.Argument(["container"], nargs=1),
+            click.Argument(["command"], nargs=-1),
+        ]
+    )
+
     return exec_
-
-
-root.add_command(container_exec("exec"), name="exec")
 
 
 def container_update(name, hidden=False):
@@ -624,9 +310,6 @@ def container_update(name, hidden=False):
     return update
 
 
-root.add_command(container_update("update"), name="update")
-
-
 def container_rename(name, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("container", nargs=1)
@@ -649,9 +332,6 @@ def container_rename(name, hidden=False):
     return rename
 
 
-root.add_command(container_rename("rename"), name="rename")
-
-
 def container_run(name, hidden=False):
     @click.command(
         cls=command_cls(),
@@ -661,61 +341,6 @@ def container_run(name, hidden=False):
         # 'ignore_unknown_options' because the user can supply an arbitrary command
         context_settings={"ignore_unknown_options": True},
     )
-    @click.option("--name", default=None, help="Assign a name to the container")
-    @click.option(
-        "--user",
-        "-u",
-        default="",
-        help="""
-        Alternate user that should be used for starting the container.
-        This parameter will be overwritten by the jail parameter `exec.jail_user` if it is set.
-        """,
-    )
-    @click.option(
-        "--mount",
-        "-m",
-        multiple=True,
-        default=None,
-        metavar="list",
-        help="""
-        Mount a volume/directory/file on the host filesystem into the container.
-        Mounts are specfied using a `--mount <source>:<destination>[:rw|ro]` syntax.
-        """,
-    )
-    @click.option(
-        "--env",
-        "-e",
-        multiple=True,
-        default=None,
-        help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
-    )
-    @click.option(
-        "--jailparam",
-        "-J",
-        multiple=True,
-        default=["mount.devfs"],
-        show_default=True,
-        help="""
-        Specify one or more jail parameters to use. See the `jail(8)` man-page for details.
-        If you do not want `exec.clean` and `mount.devfs` enabled, you must actively disable them.
-        """,
-    )
-    @click.option("--driver", "-l", default="ipnet", help=HELP_NETWORK_DRIVER_FLAG)
-    @click.option(
-        "--network", "-n", default=None, help="Connect a container to a network"
-    )
-    @click.option("--ip", default=None, help=HELP_IP_FLAG)
-    @click.option("--ip6", default=None, help=HELP_IP6_FLAG)
-    @click.option("--publish", "-p", multiple=True, help=HELP_PUBLISH_FLAG)
-    @click.option("--detach", "-d", default=False, is_flag=True, help=HELP_DETACH_FLAG)
-    @click.option(
-        "--interactive", "-i", default=False, is_flag=True, help=HELP_INTERACTIVE_FLAG
-    )
-    @click.option(
-        "--tty", "-t", default=False, is_flag=True, help="Allocate a pseudo-TTY"
-    )
-    @click.argument("image", nargs=1)
-    @click.argument("command", nargs=-1)
     def run(**kwargs):
         """
         Run a command in a new container.
@@ -728,20 +353,223 @@ def container_run(name, hidden=False):
             "tty": kwargs.pop("tty"),
         }
 
-        container_id = create_container_and_connect_to_network(**kwargs)
+        container_id = _create_container_and_connect_to_network(**kwargs)
         if container_id is None:
             return
 
         kwargs_start["containers"] = [container_id]
-        start_(**kwargs_start)
+        _start(**kwargs_start)
 
+    run = container_create_options(run)
+    run = exec_options(run)
+    run.params.extend(
+        [click.Argument(["image"], nargs=1), click.Argument(["command"], nargs=-1)]
+    )
     return run
 
 
+root.add_command(container_create("create"), name="create")
+root.add_command(container_list("ls"), name="ls")
+root.add_command(
+    inspect_command(
+        name="inspect",
+        argument="container",
+        id_var="container_id",
+        docs="Display detailed information on a container.",
+        endpoint=container_inspect_endpoint,
+    ),
+    name="inspect",
+)
+root.add_command(container_remove("rm"), name="rm")
+root.add_command(
+    prune_command(
+        name="prune",
+        docs="Remove all stopped containers.",
+        warning="WARNING! This will remove all stopped containers.",
+        endpoint=container_prune_endpoint,
+    )
+)
+root.add_command(container_start("start"), name="start")
+root.add_command(container_stop("stop"), name="stop")
+root.add_command(container_restart("restart"), name="restart")
+root.add_command(container_exec("exec"), name="exec")
+root.add_command(container_update("update"), name="update")
+root.add_command(container_rename("rename"), name="rename")
 root.add_command(container_run("run"), name="run")
 
 
-def start_(detach, interactive, tty, containers):
+def _create_container_and_connect_to_network(**kwargs):
+    kwargs_create = {
+        "name": random_name() if kwargs["name"] is None else kwargs["name"],
+        "image": kwargs["image"],
+        "command": kwargs["command"],
+        "user": kwargs["user"],
+        "mount": kwargs["mount"],
+        "env": kwargs["env"],
+        "jailparam": kwargs["jailparam"],
+        "network_driver": kwargs["driver"],
+    }
+
+    kwargs_create["public_ports"] = list(_decode_public_ports(kwargs["publish"]))
+
+    response = _create(**kwargs_create)
+
+    if response is None or response.status_code != 201:
+        if response is not None:
+            echo_error(f"could not create container: {response.parsed.message}")
+        return None
+
+    container_id = response.parsed.id
+
+    if kwargs["network"] is None:
+        return container_id
+
+    kwargs_connect = {
+        "ip": kwargs["ip"],
+        "ip6": kwargs["ip6"],
+        "network": kwargs["network"],
+        "container": container_id,
+    }
+    response = connect_(**kwargs_connect)
+    if response is None or response.status_code != 204:
+        echo_error(f"could not connect container: {response.parsed.message}")
+        return None
+
+    return container_id
+
+
+def _decode_public_ports(public_ports):
+    """
+    Decodes
+    - <HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>] and
+    - <INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]
+    """
+    for pub_port in public_ports:
+        pub_port, protocol = _extract_protocol(pub_port)
+        interfaces, host_port, container_port = _extract_ports_and_interface(pub_port)
+        yield {
+            "interfaces": interfaces,
+            "host_port": host_port,
+            "container_port": container_port,
+            "protocol": protocol,
+        }
+
+
+def _extract_protocol(pub_port_raw):
+    pub_port = pub_port_raw.split("/")
+    if len(pub_port) == 2:
+        return pub_port[0], pub_port[1]
+
+    if len(pub_port) == 1:
+        return pub_port[0], "tcp"
+
+    echo_error("could not decode port to publish: ", pub_port_raw)
+    sys.exit(1)
+
+
+def _extract_ports_and_interface(pub_port_raw):
+    pub_port = pub_port_raw.split(":")
+    if len(pub_port) == 3:
+        return [pub_port[0]], pub_port[1], pub_port[2]
+
+    if len(pub_port) == 2:
+        return [], pub_port[0], pub_port[1]
+
+    if len(pub_port) == 1:
+        return [], pub_port[0], pub_port[0]
+
+    echo_error("could not decode port to publish: ", pub_port_raw)
+    sys.exit(1)
+
+
+def _create(**kwargs):
+    mounts = [] if kwargs["mount"] is None else list(kwargs["mount"])
+
+    container_config = {
+        "name": kwargs["name"],
+        "image": kwargs["image"],
+        "cmd": list(kwargs["command"]),
+        "user": kwargs["user"],
+        "env": list(kwargs["env"]),
+        "mounts": [_decode_mount(mnt) for mnt in mounts],
+        "jail_param": list(kwargs["jailparam"]),
+        "network_driver": kwargs["network_driver"],
+        "public_ports": kwargs["public_ports"],
+    }
+    container_config = ContainerConfig.from_dict(container_config)
+
+    return request_and_validate_response(
+        container_create_endpoint,
+        kwargs={"json_body": container_config},
+        statuscode2messsage={
+            201: lambda response: response.parsed.id,
+            404: lambda response: response.parsed.message,
+            500: lambda response: response.parsed,
+        },
+    )
+
+
+def _decode_mount(mount):
+    sections = mount.split(":")
+    if len(sections) > 3:
+        echo_error(f"invalid mount format '{mount}'. Max 3 elements seperated by ':'.")
+        sys.exit(125)
+
+    if len(sections) < 2:
+        echo_error(
+            f"invalid mount format '{mount}'. Must have at least 2 elements seperated by ':'."
+        )
+        sys.exit(125)
+
+    if len(sections) == 3 and sections[-1] not in {"ro", "rw"}:
+        echo_error(
+            f"invalid mount format '{mount}'. Last element should be either 'ro' or 'rw'."
+        )
+        sys.exit(125)
+
+    if len(sections) == 3:
+        source, destination, mode = sections
+        read_only = True if mode == "ro" else False
+    else:
+        source, destination = sections
+        read_only = False
+
+    if source[:1] == "/":
+        mount_type = "nullfs"
+    else:
+        mount_type = "volume"
+
+    return {
+        "type": mount_type,
+        "source": source,
+        "destination": destination,
+        "read_only": read_only,
+    }
+
+
+def _print_container(response):
+    containers = response.parsed
+
+    def command_json2command_human(command_str):
+        return " ".join(json.loads(command_str))
+
+    containers = [
+        [
+            c.id,
+            c.name,
+            print_image_column(c.image_name, c.image_tag, c.image_id),
+            command_json2command_human(c.cmd),
+            human_duration(c.created) + " ago",
+            is_running_str(c.running),
+            "" if c.jid is None else str(c.jid),
+        ]
+        for c in containers
+    ]
+
+    print_table(containers, CONTAINER_LIST_COLUMNS)
+
+
+def _start(detach, interactive, tty, containers):
     if interactive:
         detach = False
 
@@ -750,12 +578,39 @@ def start_(detach, interactive, tty, containers):
     else:
         for container in containers:
             start_container = True
-            execution_create_and_start(
+            _execution_create_and_start(
                 container, tty, interactive, detach, start_container
             )
 
 
-def execution_create_and_start(
+def _stop(containers, silent=False):
+    def ssch(_):
+        return ""
+
+    def return_id(response):
+        return response.parsed.id
+
+    if silent:
+        response_200 = ssch
+    else:
+        response_200 = return_id
+
+    for container_id in containers:
+        response = request_and_validate_response(
+            container_stop_endpoint,
+            kwargs={"container_id": container_id},
+            statuscode2messsage={
+                200: response_200,
+                304: lambda response: response.parsed.message,
+                404: lambda response: response.parsed.message,
+                500: "kleened backend error",
+            },
+        )
+        if response is None or response.status_code != 200:
+            break
+
+
+def _execution_create_and_start(
     container_id, tty, interactive, detach, start_container, cmd=None, env=None, user=""
 ):
     cmd = [] if cmd is None else cmd
