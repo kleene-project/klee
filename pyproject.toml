@@ -3,8 +3,18 @@ name = "klee"
 version = "0.0.1"
 description = "Kleene's CLI tool."
 authors = ["Lasse Grinderslev Andersen <lasse@philomath.dk>"]
+maintainers = [
+    "Lasse Grinderslev Andersen <lasse@philomath.dk>",
+]
 license = "BSD-2-Clause"
 readme = "README.md"
+homepage = "https://kleene.dev/"
+repository = "https://github.com/kleene/klee"
+documentation = "https://kleene.dev/"
+keywords = ["container", "FreeBSD", "deployment"]
+classifiers = [
+    "Topic :: Software Development :: Build Tools"
+]
 
 [tool.poetry.dependencies]
 python = "^3.9"
