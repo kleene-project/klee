@@ -1,5 +1,3 @@
-vim
 Klee.egg-info
-update_client_code.sh
-vim_*
 __pycache__
+/dist/*
