@@ -11,7 +11,8 @@ HELP_IP_FLAG = "IPv4 address used for the container. If omitted, an unused ip is
 HELP_IP6_FLAG = "IPv6 address used for the container. If omitted, an unused ip is allocated from the IPv6 subnet of `--network`."
 HELP_NETWORK_DRIVER_FLAG = """
 Network driver of the container.
-Possible values are `ipnet`, `host`, `vnet`, and `disabled`.
+Possible values: `ipnet`, `host`, `vnet`, and `disabled`. If no network and no network driver is supplied,
+the network driver is set to `host`. If a network is specfied but no network driver, it is set to `ipnet`,
 """
 
 
@@ -41,7 +42,7 @@ def container_create_options(cmd):
             metavar="text",
             default="",
             help="""
-            Alternate user that should be used for starting the container.
+            Default user used when running commands in the container.
             This parameter will be overwritten by the jail parameter `exec.jail_user` if it is set.
             """,
         ),
@@ -58,23 +59,23 @@ def container_create_options(cmd):
             metavar="list",
             help="""
             Mount a volume/directory/file on the host filesystem into the container.
-            Mounts are specfied using a `--mount <source>:<destination>[:rw|ro]` syntax.
+            Mounts are specfied using a `--mount SOURCE:DESTINATION[:rw|ro]` syntax.
             """,
         ),
         click.Option(
             ["--jailparam", "-J"],
             multiple=True,
-            default=["mount.devfs", 'exec.stop="/bin/sh /etc/rc.shutdown jail"'],
+            default=[],
             show_default=True,
             help="""
-            Specify one or more jail parameters to use. See the `jail(8)` man-page for details.
-            If you do not want `exec.clean` and `mount.devfs` enabled, you must actively disable them.
+            Specify one or more jail parameters to use.
+            If you do not want `mount.devfs`, `exec.clean`, and `exec.stop="/bin/sh /etc/rc.shutdown"` enabled, you must actively disable them.
             """,
         ),
         click.Option(
             ["--driver", "-l"],
             show_default=True,
-            default="host",
+            default=None,
             help=HELP_NETWORK_DRIVER_FLAG,
         ),
         click.Option(

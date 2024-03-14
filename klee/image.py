@@ -48,7 +48,7 @@ IMAGE_LIST_COLUMNS = [
 ]
 
 BUILD_START_MESSAGE = "Started to build image with ID {image_id}"
-BUILD_FAILED = "Failed to build image {image_id}. Last valid snapshot is {snapshot}"
+BUILD_FAILED = "Failed to build image {image_id}. Most recent snapshot is {snapshot}"
 
 
 # pylint: disable=unused-argument
@@ -156,10 +156,10 @@ def image_build(name, hidden=False):
             help="Suppress the build output and print image ID on success",
         ),
         click.Option(
-            ["--cleanup/--no-cleanup", "-l"],
+            ["--rm"],
             is_flag=True,
-            default=True,
-            help="Whether or not to remove the build-container if the build fails",
+            default=False,
+            help="Whether or not to remove the image if the build fails",
         ),
         click.Option(
             ["--build-arg"],
@@ -367,6 +367,7 @@ def process_build_messages(message):
 
 async def _build_image_and_listen_for_messages(**kwargs):
     quiet = "true" if kwargs["quiet"] else "false"
+    network_driver = kwargs["driver"] if kwargs["driver"] is not None else "host"
     path = os.path.abspath(kwargs["path"])
     buildargs = {}
     for buildarg in kwargs["build_arg"]:
@@ -382,13 +383,14 @@ async def _build_image_and_listen_for_messages(**kwargs):
         "env": list(kwargs["env"]),
         "mounts": [decode_mount(mnt) for mnt in mounts],
         "jail_param": list(kwargs["jailparam"]),
-        "network_driver": kwargs["driver"],
+        "network_driver": network_driver,
     }
 
     ip = "<auto>" if kwargs["ip"] is None else kwargs["ip"]
     ip6 = "<auto>" if kwargs["ip6"] is None else kwargs["ip6"]
 
     if kwargs["network"] is not None:
+        container_config["network_driver"] = _default_if_none(kwargs, "driver", "ipnet")
         networks = [
             EndPointConfig.from_dict(
                 {
@@ -400,6 +402,7 @@ async def _build_image_and_listen_for_messages(**kwargs):
             )
         ]
     else:
+        container_config["network_driver"] = _default_if_none(kwargs, "driver", "host")
         networks = []
 
     build_config = json.dumps(
@@ -408,7 +411,7 @@ async def _build_image_and_listen_for_messages(**kwargs):
             "dockerfile": kwargs["file"],
             "tag": kwargs["tag"],
             "quiet": quiet,
-            "cleanup": kwargs["cleanup"],
+            "cleanup": kwargs["rm"],
             "buildargs": buildargs,
             "container_config": container_config,
             "networks": networks,
@@ -452,6 +455,13 @@ async def _build_image_and_listen_for_messages(**kwargs):
 
     except websockets.exceptions.ConnectionClosedError:
         connection_closed_unexpectedly()
+
+
+def _default_if_none(kwargs, key, default):
+    if kwargs[key] is None:
+        kwargs[key] = default
+
+    return kwargs[key]
 
 
 def _print_image_list(images):

@@ -18,6 +18,22 @@ the context. The path is interpreted relative to the context `PATH`.
 In most cases, it's best to put each Dockerfile in an empty directory. Then,
 add to that directory only the files needed for building the Dockerfile.
 
+### Build container configuration
+
+Just like you can configure the container environment with networking,
+jail-parameters and mounts you can configure the build container used when
+creating images. The parameters used to configure the build container is
+mostly identical to parameters used for `klee run`. A few differences to keep in
+mind, however:
+
+- `--from`: Override the image in the `FROM`-instruction.
+- `--user`: If it is not set, the user of the build container will be inherited
+  from the parent image. `USER`-instructions overrides this parameter.
+- `--env`: `ENV`-instructions override the values of this parameter.
+- `--jailparam`: `USER`-instructions can be affected if the
+  `exec.system_user`/`exec.jail_user`/`exec.system_jail_user` jail parameters
+  are manually set.
+
 ## Examples
 ### Build with PATH
 

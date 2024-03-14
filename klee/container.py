@@ -283,7 +283,7 @@ def container_update(name, hidden=False):
         "-u",
         metavar="text",
         default=None,
-        help="Alternate user that should be used for starting the container",
+        help="Default user used when running commands in the container.",
     )
     @click.option(
         "--env",
@@ -420,6 +420,12 @@ root.add_command(container_run("run"), name="run")
 
 
 def _create_container_and_connect_to_network(**kwargs):
+    if kwargs["network"] is None and kwargs["driver"] is None:
+        kwargs["driver"] = "host"
+
+    if kwargs["network"] is not None and kwargs["driver"] is None:
+        kwargs["driver"] = "ipnet"
+
     response = _create(**kwargs)
 
     if response is None or response.status_code != 201:
