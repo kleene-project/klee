@@ -42,6 +42,16 @@ class TestContainerSubcommand:
 
         empty_container_list()
 
+    def test_invalid_container_name(self):
+        def error(name):
+            msg = "could not create container: {name} does not match /?[a-zA-Z0-9][a-zA-Z0-9_.-]+$"
+            return [msg.format(name=name), ""]
+
+        cmd = "container create --name {} FreeBSD:testing"
+        assert error(".test") == run(cmd.format(".test"), exit_code=1)
+        assert error("-test") == run(cmd.format("-test"), exit_code=1)
+        assert error("tes:t") == run(cmd.format("tes:t"), exit_code=1)
+
     def test_remove_running_container(self):
         name = "remove_running_container"
         container_id = create_container(name=name, command="sleep 10")

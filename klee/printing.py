@@ -10,6 +10,7 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 from rich.markdown import Markdown
+from rich.markup import escape
 from rich import box
 
 
@@ -43,7 +44,7 @@ def echo_error(msg):
     if config.theme == THEME_FANCY:
         style = "bold red"
 
-    console.print(msg, style=style)
+    console.print(escape(msg), style=style)
 
 
 def connection_closed_unexpectedly():

@@ -431,7 +431,7 @@ def _create_container_and_connect_to_network(**kwargs):
     if response is None or response.status_code != 201:
         if response is not None:
             echo_error(f"could not create container: {response.parsed.message}")
-        return None
+            sys.exit(1)
 
     container_id = response.parsed.id
 
@@ -447,7 +447,7 @@ def _create_container_and_connect_to_network(**kwargs):
     response = _connect(**kwargs_connect)
     if response is None or response.status_code != 204:
         echo_error(f"could not connect container: {response.parsed.message}")
-        return None
+        sys.exit(1)
 
     return container_id
 

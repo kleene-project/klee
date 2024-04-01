@@ -40,24 +40,24 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
 
     except httpx.ConnectError as e:
         print_unable_to_connect(e)
-        return None
+        sys.exit(1)
 
     except httpx.ReadError as e:
         print_unable_to_connect(e)
-        return None
+        sys.exit(1)
 
     except httpx.UnsupportedProtocol as e:
         # Request URL has an unsupported protocol 'unix://' as e:
         print_unable_to_connect(e)
-        return None
+        sys.exit(1)
 
     except httpx.ReadTimeout:
         print_timeout()
-        return
+        sys.exit(1)
 
     except json.decoder.JSONDecodeError:
         print_unexpected_response()
-        return None
+        sys.exit(1)
 
     if response is None:
         return None
@@ -77,6 +77,7 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
 
     if not isinstance(return_message, str):
         unexpected_error()
+        sys.exit(1)
 
     return response
 
