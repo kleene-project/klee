@@ -46,7 +46,7 @@ def default_connection_configured():
 
 
 def htyp_configured():
-    output = run("container ls")
+    output = run("container ls", exit_code=1)
     assert output[:-1] == [HTYP_ERROR]
 
 
@@ -70,7 +70,7 @@ class TestFileConfiguration:
         config_low_priority = {"host": DEFAULT_HOST}
         _create_config_file(config_high_priority, "cwd")
         _create_config_file(config_low_priority, "homedir")
-        output = run("container ls")
+        output = run("container ls", exit_code=1)
         assert "".join(output) == CERTIFICATE_REQUIRED_ERROR
 
     def test_envvar_takes_priority(self):

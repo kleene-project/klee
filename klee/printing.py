@@ -71,8 +71,24 @@ def print_unexpected_response():
     echo_error("Error! Unexpected response received from Kleened.")
 
 
-def print_id_list(id_list):
-    id_list = "\n".join(id_list)
+def print_nothing(_response):
+    pass
+
+
+def print_response_id(response):
+    echo_bold(response.parsed.id)
+
+
+def print_response_msg(response):
+    echo_bold(response.parsed.message)
+
+
+def print_backend_error(_response):
+    echo_bold("unknown backend error")
+
+
+def print_id_list(response):
+    id_list = "\n".join(response.parsed)
     echo_bold(id_list)
 
 
@@ -81,16 +97,16 @@ def print_websocket_closing(msg, attributes):
         echo_bold(msg[attrib])
 
 
-def print_json(json_obj):
+def print_json(response):
     if config.theme == THEME_FANCY:
-        console.print_json(json.dumps(json_obj.to_dict()))
+        console.print_json(json.dumps(response.parsed.to_dict()))
 
     elif config.theme == THEME_SIMPLE:
-        click.echo(json.dumps(json_obj.to_dict(), indent=2))
+        click.echo(json.dumps(response.parsed.to_dict(), indent=2))
 
     # # OpenAPI-spec printing
     # from rich.pretty import pprint
-    # pprint(json_obj)
+    # pprint(response.parsed)
 
 
 def print_image_column(name, tag, id_):

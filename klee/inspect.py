@@ -1,20 +1,20 @@
 import click
 
-from .utils import request_and_validate_response
-from .printing import command_cls, print_json
+from .utils import request_and_print_response
+from .printing import command_cls, print_json, print_response_msg, print_backend_error
 
 
 def inspect_command(name, docs, argument, id_var, endpoint, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden, help=docs)
     @click.argument(argument, nargs=1)
     def inspect(**kwargs):
-        request_and_validate_response(
+        request_and_print_response(
             endpoint,
             kwargs={id_var: kwargs[argument]},
-            statuscode2messsage={
-                200: lambda response: print_json(response.parsed),
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
+            statuscode2printer={
+                200: print_json,
+                404: print_response_msg,
+                500: print_backend_error,
             },
         )
 

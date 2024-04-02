@@ -44,13 +44,16 @@ class TestContainerSubcommand:
 
     def test_invalid_container_name(self):
         def error(name):
-            msg = "could not create container: {name} does not match /?[a-zA-Z0-9][a-zA-Z0-9_.-]+$"
-            return [msg.format(name=name), ""]
+            msg = "could not create container: {name} does not match /?[a-zA-Z0-9][a-zA-Z0-9_.-]+$\n"
+            return msg.format(name=name)
 
-        cmd = "container create --name {} FreeBSD:testing"
-        assert error(".test") == run(cmd.format(".test"), exit_code=1)
-        assert error("-test") == run(cmd.format("-test"), exit_code=1)
-        assert error("tes:t") == run(cmd.format("tes:t"), exit_code=1)
+        def cmd(name):
+            cmd = "container create --name {} FreeBSD:testing"
+            return "\n".join(run(cmd.format(name), exit_code=1))
+
+        assert error(".test") == cmd(".test")
+        assert error("-test") == cmd("-test")
+        assert error("tes:t") == cmd("tes:t")
 
     def test_remove_running_container(self):
         name = "remove_running_container"
@@ -188,15 +191,15 @@ class TestContainerSubcommand:
         assert output[2] == "touch: /kl_mount_test/test.txt: Read-only file system"
 
     def test_run_a_container_with_nullfs_mount(self):
-        shell("rm /host/text.txt")
+        shell("rm /mnt/text.txt")
         output = run(
-            f"container run -m /host:/kl_mount_test {TEST_IMG} touch /kl_mount_test/test.txt"
+            f"container run -m /mnt:/kl_mount_test {TEST_IMG} touch /kl_mount_test/test.txt"
         )
         expected_exit = "container exited with exit-code 0"
         idx = -len(expected_exit)
         assert output[3][idx:] == expected_exit
-        assert shell("cat /host/test.txt").returncode == 0
-        assert shell("cat /host/test.txt").stdout == b""
+        assert shell("cat /mnt/test.txt").returncode == 0
+        assert shell("cat /mnt/test.txt").stdout == b""
 
 
 def container_is_running(container_id):

@@ -13,10 +13,18 @@ from .client.api.default.network_prune import sync_detailed as network_prune_end
 from .client.models.end_point_config import EndPointConfig
 from .client.models.network_config import NetworkConfig
 
-from .printing import echo_bold, print_table, group_cls, command_cls
+from .printing import (
+    print_table,
+    group_cls,
+    command_cls,
+    print_response_id,
+    print_response_msg,
+    print_backend_error,
+    print_nothing,
+)
 from .prune import prune_command
 from .inspect import inspect_command
-from .utils import request_and_validate_response
+from .utils import request_and_print_response
 
 NETWORK_LIST_COLUMNS = [
     ("ID", {"style": "cyan"}),
@@ -111,13 +119,13 @@ def create(**config):
 
     network_config = NetworkConfig.from_dict(config)
 
-    request_and_validate_response(
+    request_and_print_response(
         network_create,
         kwargs={"json_body": network_config},
-        statuscode2messsage={
-            201: lambda response: response.parsed.id,
-            409: lambda response: response.parsed.message,
-            500: "kleened backend error",
+        statuscode2printer={
+            201: print_response_id,
+            409: print_response_msg,
+            500: print_backend_error,
         },
     )
 
@@ -129,13 +137,13 @@ def remove(networks):
     Remove one or more networks. Any connected containers will be disconnected.
     """
     for network_id in networks:
-        response = request_and_validate_response(
+        response = request_and_print_response(
             network_remove,
             kwargs={"network_id": network_id},
-            statuscode2messsage={
-                200: lambda response: response.parsed.id,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
+            statuscode2printer={
+                200: print_response_id,
+                404: print_response_msg,
+                500: print_backend_error,
             },
         )
         if response is None or response.status_code != 200:
@@ -153,20 +161,17 @@ root.add_command(
 
 
 def network_list(name, hidden=False):
-    def _print_networks(networks):
-        networks = [[nw.id, nw.name, nw.type, nw.subnet] for nw in networks]
+    def _print_networks(response):
+        networks = [[nw.id, nw.name, nw.type, nw.subnet] for nw in response.parsed]
         print_table(networks, NETWORK_LIST_COLUMNS)
 
     @root.command(cls=command_cls(), name=name, hidden=hidden)
     def listing():
         """List networks"""
-        request_and_validate_response(
+        request_and_print_response(
             network_list_endpoint,
             kwargs={},
-            statuscode2messsage={
-                200: lambda response: _print_networks(response.parsed),
-                500: "kleened backend error",
-            },
+            statuscode2printer={200: _print_networks, 500: print_backend_error},
         )
 
     return listing
@@ -222,14 +227,14 @@ def _connect(ip, ip6, network, container):
     else:
         endpoint_config = EndPointConfig.from_dict({"container": container})
 
-    return request_and_validate_response(
+    return request_and_print_response(
         network_connect,
         kwargs={"network_id": network, "json_body": endpoint_config},
-        statuscode2messsage={
-            204: "OK",
-            404: lambda response: response.parsed.message,
-            409: lambda response: response.parsed.message,
-            500: "kleened backend error",
+        statuscode2printer={
+            204: print_nothing,
+            404: print_response_msg,
+            409: print_response_msg,
+            500: print_backend_error,
         },
     )
 
@@ -243,12 +248,12 @@ def disconnect(network, container):
 
     The container must be stopped before it can be disconnected.
     """
-    request_and_validate_response(
+    request_and_print_response(
         network_disconnect,
         kwargs={"network_id": network, "container_id": container},
-        statuscode2messsage={
-            204: "OK",
-            404: lambda response: response.parsed.message,
-            500: "kleened backend error",
+        statuscode2printer={
+            204: print_nothing,
+            404: print_response_msg,
+            500: print_backend_error,
         },
     )

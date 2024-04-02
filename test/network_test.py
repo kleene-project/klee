@@ -173,7 +173,8 @@ class TestNetworkSubcommand:
 
     def test_create_container_using_nonexisting_network(self):
         output = run(
-            "container create --name invalid_network --network nonexisting FreeBSD:testing /bin/ls"
+            "container create --name invalid_network --network nonexisting FreeBSD:testing /bin/ls",
+            exit_code=1,
         )
         assert [
             "network not found",

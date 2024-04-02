@@ -38,6 +38,10 @@ from .printing import (
     echo_error,
     command_cls,
     group_cls,
+    print_response_id,
+    print_response_msg,
+    print_backend_error,
+    print_nothing,
     print_websocket_closing,
     print_image_column,
     is_running_str,
@@ -48,7 +52,7 @@ from .name_generator import random_name
 from .connection import create_websocket
 from .utils import (
     human_duration,
-    request_and_validate_response,
+    request_and_print_response,
     listen_for_messages,
     decode_mount,
     decode_public_ports,
@@ -132,13 +136,10 @@ def container_list(name, hidden=False):
     )
     def listing(**kwargs):
         """List containers"""
-        request_and_validate_response(
+        request_and_print_response(
             container_list_endpoint,
             kwargs={"all_": kwargs["all"]},
-            statuscode2messsage={
-                200: lambda response: _print_container(response),
-                500: "kleened backend error",
-            },
+            statuscode2printer={200: _print_container, 500: print_backend_error},
         )
 
     return listing
@@ -160,14 +161,14 @@ def container_remove(name, hidden=False):
             if force:
                 _stop([container_id], silent=True)
 
-            response = request_and_validate_response(
+            response = request_and_print_response(
                 container_remove_endpoint,
                 kwargs={"container_id": container_id},
-                statuscode2messsage={
-                    200: lambda response: response.parsed.id,
-                    404: lambda response: response.parsed.message,
-                    409: lambda response: response.parsed.message,
-                    500: "kleened backend error",
+                statuscode2printer={
+                    200: print_response_id,
+                    404: print_response_msg,
+                    409: print_response_msg,
+                    500: print_backend_error,
                 },
             )
             if response is None or response.status_code != 200:
@@ -205,14 +206,14 @@ def container_restart(name, hidden=False):
     def restart(containers):
         """Restart one or more containers"""
         for container_id in containers:
-            response = request_and_validate_response(
+            response = request_and_print_response(
                 container_stop_endpoint,
                 kwargs={"container_id": container_id},
-                statuscode2messsage={
-                    200: lambda response: response.parsed.id,
-                    304: lambda response: response.parsed.message,
-                    404: lambda response: response.parsed.message,
-                    500: "kleened backend error",
+                statuscode2printer={
+                    200: print_response_id,
+                    304: print_response_msg,
+                    404: print_response_msg,
+                    500: print_backend_error,
                 },
             )
             if response is None or response.status_code != 200:
@@ -314,13 +315,13 @@ def container_update(name, hidden=False):
         }
         config["cmd"] = None if len(command) == 0 else list(command)
         config = ContainerConfig.from_dict(config)
-        request_and_validate_response(
+        request_and_print_response(
             container_update_endpoint,
             kwargs={"container_id": container, "json_body": config},
-            statuscode2messsage={
-                201: lambda response: response.parsed.id,
-                409: lambda response: response.parsed.message,
-                404: lambda response: response.parsed.message,
+            statuscode2printer={
+                201: print_response_id,
+                409: print_response_msg,
+                404: print_response_msg,
             },
         )
 
@@ -336,13 +337,13 @@ def container_rename(name, hidden=False):
         Rename a container.
         """
         config = ContainerConfig.from_dict({"name": name})
-        request_and_validate_response(
+        request_and_print_response(
             container_update_endpoint,
             kwargs={"container_id": container, "json_body": config},
-            statuscode2messsage={
-                201: lambda response: response.parsed.id,
-                409: lambda response: response.parsed.message,
-                404: lambda response: response.parsed.message,
+            statuscode2printer={
+                201: print_response_id,
+                409: print_response_msg,
+                404: print_response_msg,
             },
         )
 
@@ -468,13 +469,13 @@ def _create(**kwargs):
     }
     container_config = ContainerConfig.from_dict(container_config)
 
-    return request_and_validate_response(
+    return request_and_print_response(
         container_create_endpoint,
         kwargs={"json_body": container_config},
-        statuscode2messsage={
-            201: lambda response: response.parsed.id,
-            404: lambda response: response.parsed.message,
-            500: lambda response: response.parsed,
+        statuscode2printer={
+            201: print_response_id,
+            404: print_nothing,
+            500: print_nothing,
         },
     )
 
@@ -522,23 +523,20 @@ def _stop(containers, silent=False):
     def silent_(_):
         return ""
 
-    def return_id(response):
-        return response.parsed.id
-
     if silent:
         response_200 = silent_
     else:
-        response_200 = return_id
+        response_200 = print_response_id
 
     for container_id in containers:
-        response = request_and_validate_response(
+        response = request_and_print_response(
             container_stop_endpoint,
             kwargs={"container_id": container_id},
-            statuscode2messsage={
+            statuscode2printer={
                 200: response_200,
-                304: lambda response: response.parsed.message,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
+                304: print_response_msg,
+                404: print_response_msg,
+                500: print_backend_error,
             },
         )
         if response is None or response.status_code != 200:
@@ -567,13 +565,13 @@ def _create_exec_instance(container_id, tty, cmd, env, user):
     exec_config = ExecConfig.from_dict(
         {"container_id": container_id, "cmd": cmd, "env": env, "user": user, "tty": tty}
     )
-    response = request_and_validate_response(
+    response = request_and_print_response(
         exec_create_endpoint,
         kwargs={"json_body": exec_config},
-        statuscode2messsage={
-            201: lambda response: "",
-            404: lambda response: response.parsed.message,
-            500: lambda response: response.parsed,
+        statuscode2printer={
+            201: print_nothing,
+            404: print_response_msg,
+            500: print_backend_error,
         },
     )
     if response.status_code == 201:

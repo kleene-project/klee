@@ -7,10 +7,17 @@ from .client.api.default.volume_remove import sync_detailed as volume_remove
 from .client.api.default.volume_prune import sync_detailed as volume_prune_endpoint
 
 from .client.models.volume_config import VolumeConfig
-from .printing import print_table, command_cls, group_cls
+from .printing import (
+    print_table,
+    command_cls,
+    group_cls,
+    print_response_id,
+    print_response_msg,
+    print_backend_error,
+)
 from .prune import prune_command
 from .inspect import inspect_command
-from .utils import human_duration, request_and_validate_response
+from .utils import human_duration, request_and_print_response
 
 # pylint: disable=unused-argument
 @click.group(cls=group_cls())
@@ -25,39 +32,35 @@ def create(volume_name):
     Create a new volume. If the volume name already exists nothing happens.
     """
     config = VolumeConfig.from_dict({"name": volume_name})
-    request_and_validate_response(
+    request_and_print_response(
         volume_create,
         kwargs={"json_body": config},
-        statuscode2messsage={
-            201: lambda response: response.parsed.id,
-            500: "kleened backend error",
-        },
+        statuscode2printer={201: print_response_id, 500: print_backend_error},
     )
 
 
 def volume_list(name, hidden=False):
+    @root.command(cls=command_cls(), name=name, hidden=hidden)
+    def listing():
+        """List volumes"""
+        request_and_print_response(
+            volume_list_endpoint,
+            kwargs={},
+            statuscode2printer={200: _print_volumes, 500: print_backend_error},
+        )
+
+    return listing
+
+
+def _print_volumes(response):
     VOLUME_LIST_COLUMNS = [
         ("VOLUME NAME", {"style": "bold aquamarine1"}),
         ("CREATED", {"style": "bright_white"}),
     ]
-
-    def _print_volumes(volumes):
-        volumes = [[vol.name, human_duration(vol.created) + " ago"] for vol in volumes]
-        print_table(volumes, VOLUME_LIST_COLUMNS)
-
-    @root.command(cls=command_cls(), name=name, hidden=hidden)
-    def listing():
-        """List volumes"""
-        request_and_validate_response(
-            volume_list_endpoint,
-            kwargs={},
-            statuscode2messsage={
-                200: lambda response: _print_volumes(response.parsed),
-                500: "kleened backend error",
-            },
-        )
-
-    return listing
+    volumes = [
+        [vol.name, human_duration(vol.created) + " ago"] for vol in response.parsed
+    ]
+    print_table(volumes, VOLUME_LIST_COLUMNS)
 
 
 root.add_command(volume_list("ls"), name="ls")
@@ -79,13 +82,13 @@ root.add_command(
 def remove(volumes):
     """Remove one or more volumes. You cannot remove a volume that is in use by a container."""
     for volume_name in volumes:
-        response = request_and_validate_response(
+        response = request_and_print_response(
             volume_remove,
             kwargs={"volume_name": volume_name},
-            statuscode2messsage={
-                200: lambda response: response.parsed.id,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
+            statuscode2printer={
+                200: print_response_id,
+                404: print_response_msg,
+                500: print_backend_error,
             },
         )
         if response is None or response.status_code != 200:

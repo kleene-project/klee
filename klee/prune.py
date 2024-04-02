@@ -1,5 +1,5 @@
 import click
-from .utils import request_and_validate_response
+from .utils import request_and_print_response
 from .printing import command_cls, print_id_list
 
 
@@ -16,10 +16,8 @@ def prune_command(docs, warning, endpoint, name, hidden=False):
         if not force:
             click.echo(warning)
             click.confirm("Are you sure you want to continue?", abort=True)
-        request_and_validate_response(
-            endpoint,
-            kwargs={},
-            statuscode2messsage={200: lambda response: print_id_list(response.parsed)},
+        request_and_print_response(
+            endpoint, kwargs={}, statuscode2printer={200: print_id_list}
         )
 
     return prune

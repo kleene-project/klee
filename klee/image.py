@@ -22,6 +22,9 @@ from .printing import (
     command_cls,
     print_table,
     print_websocket_closing,
+    print_response_msg,
+    print_response_id,
+    print_backend_error,
     print_id_list,
     connection_closed_unexpectedly,
     unexpected_error,
@@ -30,7 +33,7 @@ from .inspect import inspect_command
 from .utils import (
     human_duration,
     listen_for_messages,
-    request_and_validate_response,
+    request_and_print_response,
     decode_mount,
 )
 from .name_generator import random_name
@@ -178,13 +181,10 @@ def image_list(name, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden)
     def _image_list():
         """List images"""
-        request_and_validate_response(
+        request_and_print_response(
             image_list_endpoint,
             kwargs={},
-            statuscode2messsage={
-                200: lambda response: _print_image_list(response.parsed),
-                500: "kleened backend error",
-            },
+            statuscode2printer={200: _print_image_list, 500: print_backend_error},
         )
 
     return _image_list
@@ -196,13 +196,13 @@ def image_remove(name, hidden=False):
     def remove(images):
         """Remove one or more images"""
         for image_id in images:
-            response = request_and_validate_response(
+            response = request_and_print_response(
                 image_remove_endpoint,
                 kwargs={"image_id": image_id},
-                statuscode2messsage={
-                    200: lambda response: response.parsed.id,
-                    404: lambda response: response.parsed.message,
-                    500: "kleened backend error",
+                statuscode2printer={
+                    200: print_response_id,
+                    404: print_response_msg,
+                    500: print_backend_error,
                 },
             )
             if response is None or response.status_code != 200:
@@ -232,10 +232,10 @@ def image_prune(name, hidden=False):
         if not kwargs["force"]:
             click.echo("WARNING! This will remove all unused images.")
             click.confirm("Are you sure you want to continue?", abort=True)
-        request_and_validate_response(
+        request_and_print_response(
             image_prune_endpoint,
             kwargs={"all_": kwargs["all"]},
-            statuscode2messsage={200: lambda response: print_id_list(response.parsed)},
+            statuscode2printer={200: print_id_list},
         )
 
     return prune
@@ -257,13 +257,13 @@ def image_tag(name, hidden=False):
 
         **NAMETAG** uses the `name:tag` format. If `:tag` is omitted, `:latest` is used.
         """
-        request_and_validate_response(
+        request_and_print_response(
             image_tag_endpoint,
             kwargs={"image_id": source_image, "nametag": nametag},
-            statuscode2messsage={
-                200: lambda response: response.parsed.id,
-                404: lambda response: response.parsed.message,
-                500: "kleened backend error",
+            statuscode2printer={
+                200: print_response_id,
+                404: print_response_msg,
+                500: print_backend_error,
             },
         )
 
@@ -464,9 +464,9 @@ def _default_if_none(kwargs, key, default):
     return kwargs[key]
 
 
-def _print_image_list(images):
+def _print_image_list(response):
     images = [
         [img.id, img.name, img.tag, human_duration(img.created) + " ago"]
-        for img in images
+        for img in response.parsed
     ]
     print_table(images, IMAGE_LIST_COLUMNS)

@@ -34,7 +34,7 @@ async def listen_for_messages(websocket, newline=False, message_processor=None):
             message_processor(message)
 
 
-def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
+def request_and_print_response(endpoint, kwargs, statuscode2printer):
     try:
         response = request(endpoint, kwargs)
 
@@ -62,22 +62,13 @@ def request_and_validate_response(endpoint, kwargs, statuscode2messsage):
     if response is None:
         return None
 
-    # Try validating the response
     try:
-        return_message = statuscode2messsage[response.status_code]
+        message_printer = statuscode2printer[response.status_code]
     except KeyError:
         unrecognized_status_code(status_code=response.status_code)
         return response
 
-    if callable(return_message):
-        return_message = return_message(response)
-        if return_message != "" and return_message is not None:
-            echo_bold(return_message)
-        return response
-
-    if not isinstance(return_message, str):
-        unexpected_error()
-        sys.exit(1)
+    message_printer(response)
 
     return response
 
