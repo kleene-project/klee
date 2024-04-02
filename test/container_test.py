@@ -142,6 +142,18 @@ class TestContainerSubcommand:
         assert container_id == container_id_again
         remove_container(container_id)
 
+    def test_default_drivers_for_containers(self):
+        # Creating a container not connected to a network without using the `--driver` option
+        run("create --name DefaultDriverHost FreeBSD:testing")
+        container_inspect = inspect("container", "DefaultDriverHost")
+        assert "host" == container_inspect["container"]["network_driver"]
+
+        # Creating a container connected to a network without using the '--driver' option
+        run("network create --subnet 10.45.56.0/24 testnet")
+        run("create --network testnet --name DefaultDriverIPNet FreeBSD:testing")
+        container_inspect = inspect("container", "DefaultDriverIPNet")
+        assert "ipnet" == container_inspect["container"]["network_driver"]
+
     def test_start_attached_container(self):
         name = "test_attached_container"
         container_id = create_container(name=name, command="/usr/bin/uname")
