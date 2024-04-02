@@ -38,6 +38,16 @@ def create_dockerfile(instructions, name="Dockerfile"):
         f.write("\n".join(instructions))
 
 
+def stat(file_name):
+    """
+    Example:
+
+    $ stat -f "%Dm %Sm %Sp" ~/Makefile
+    1712050233 apr.  2 09:30:33 2024 -rw-r--r--
+    """
+    return f"stat -f %Dm,%Sm,%Sp {file_name}"
+
+
 def build_image(
     tag=None,
     dockerfile="Dockerfile",

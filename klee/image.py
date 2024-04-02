@@ -440,6 +440,7 @@ async def _build_image_and_listen_for_messages(**kwargs):
                         echo_bold(
                             BUILD_FAILED.format(snapshot=snapshot, image_id=image_id)
                         )
+                    sys.exit(1)
 
                 elif closing_message["data"] == "":
                     echo_bold(closing_message["message"])
@@ -450,8 +451,10 @@ async def _build_image_and_listen_for_messages(**kwargs):
 
             elif start_msg["msg_type"] == "error":
                 echo_bold(start_msg["message"])
+                sys.exit(1)
             else:
                 unexpected_error()
+                sys.exit(1)
 
     except websockets.exceptions.ConnectionClosedError:
         connection_closed_unexpectedly()

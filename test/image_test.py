@@ -10,6 +10,7 @@ from testutils import (
     remove_all_containers,
     remove_all_images,
     remove_image,
+    stat,
     inspect,
     prune,
     run,
@@ -117,6 +118,48 @@ class TestImageSubcommand:
         ]
         verify_build_output(expected_log, build_log)
         assert succesfully_remove_image(image_id)
+
+    def test_build_using_dockerfile_containing_a_line_with_only_a_space(self):
+        create_dockerfile(["FROM FreeBSD:testing", " ", "RUN touch /passed"])
+        run(f"build -t StrangeDockerfile {os.getcwd()}")
+        output = run(f"run StrangeDockerfile {stat('/passed')}")
+        stat_output = output[2].split(",")
+        file_permissions = stat_output[-1]
+        assert "-rw-r--r--" == file_permissions
+
+    def test_build_invalid_instruction(self):
+        create_dockerfile(["FRO FreeBSD:testing", "RUN echo 'doest not run'"])
+        output = run(f"build -t InvalidDockerfile {os.getcwd()}", exit_code=1)
+        assert ["error in 'FRO FreeBSD:testing': invalid instruction", ""] == output
+
+    def test_build_image_from_snapshot(self):
+        dockerfile = dockerfile_from_str(
+            """
+            FROM FreeBSD:testing
+            RUN touch /media/step1
+            RUN touch /media/step2
+            """
+        )
+        create_dockerfile(dockerfile)
+        run(f"build -t WithSnapshots {os.getcwd()}")
+
+        image = inspect("image", "WithSnapshots")
+        instruction, snapshot = image["instructions"][1]
+        assert instruction == "RUN touch /media/step1"
+
+        for nametag in ["WithSnapshots", "WithSnapshots:latest", image["id"]]:
+            print("using namtag: ", nametag)
+            dockerfile = dockerfile_from_str(
+                f"""
+                FROM {nametag}{snapshot}
+                RUN echo "testing"
+                """
+            )
+            create_dockerfile(dockerfile)
+            run(f"build -t FromSnapshot {os.getcwd()}")
+            output = set(run("run FromSnapshot ls /media"))
+            assert "step1" in output
+            assert "step2" not in output
 
     def test_failed_build_without_cleanup(self):
         instructions = [
@@ -275,6 +318,10 @@ class TestImageCreateSubcommand:
             "image creation failed: invalid dataset",
             "",
         ]
+
+
+def dockerfile_from_str(dockerfile):
+    return [line.strip() for line in dockerfile.split("\n")]
 
 
 def resolv_conf_exist(image_id):
