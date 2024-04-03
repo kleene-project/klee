@@ -1,3 +1,4 @@
+import time
 import json
 
 from testutils import (
@@ -64,7 +65,7 @@ class TestNetworkSubcommand:
         assert network_id2 == network_id2_again
         assert_empty_network_list()
 
-    def test_create_container_connected_to_custom_network_with_ipnet_driver(self):
+    def test_connectivity_of_container_connected_to_ipnet_network(self):
         network_id, _ = run("network create --subnet 10.13.37.0/24 test_conn")
         container_id, _ = run(
             "create -n test_conn -l ipnet FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
@@ -73,7 +74,7 @@ class TestNetworkSubcommand:
         remove_container(container_id)
         remove_network(network_id)
 
-    def test_create_container_connected_to_custom_vnet_network(self):
+    def test_connectivity_of_container_connected_to_vnet_network(self):
         network_id, _ = run("network create -t bridge --subnet 10.13.37.0/24 test_vnet")
         container_id, _ = run(
             "container create --name disconn_network --driver vnet --network test_vnet FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
@@ -82,9 +83,9 @@ class TestNetworkSubcommand:
         remove_container(container_id)
         remove_network(network_id)
 
-    def test_connection_and_disconnecting_container_to_loopback_network(self):
+    def test_connectivity_when_connecting_and_disconnecting_to_loopback_network(self):
         network_name = "test_nw_disconn"
-        network_id, _ = run(f"network create --subnet 10.13.37.0/24 {network_name}")
+        network_id, _ = run(f"network create --subnet 10.13.38.0/24 {network_name}")
         cmd = f"container create --name disconn_network --network {network_id} -l ipnet FreeBSD:testing /usr/bin/host -t A freebsd.org 1.1.1.1"
         container_id, _ = run(cmd)
         container_is_connected(container_id)
@@ -93,7 +94,7 @@ class TestNetworkSubcommand:
         remove_container(container_id)
         remove_network(network_id)
 
-    def test_connection_and_disconnecting_container_to_vnet_network(self):
+    def test_connectivity_when_connecting_and_disconnecting_to_vnet_network(self):
         network_name = "test_nw_disconn"
         cmd = f"network create -t bridge --subnet 10.13.37.0/24 {network_name}"
         network_id, _ = run(cmd)
@@ -105,6 +106,32 @@ class TestNetworkSubcommand:
         container_is_disconnected(container_id)
         remove_container(container_id)
         remove_network(network_id)
+
+    def test_connect_and_disconnect_of_running_ipnet_container(self):
+        run("network create -t loopback --subnet 10.13.37.0/24 test-ipnet")
+        run("run --name disconn_ipnet -d -l ipnet FreeBSD:testing sleep 10")
+
+        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
+        assert [""] == run("network connect test-ipnet disconn_ipnet")
+        assert ip_in_container("disconn_ipnet", "10.13.37.1")
+        assert [""] == run("network disconnect test-ipnet disconn_ipnet")
+        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
+        run("rmc -f disconn_ipnet")
+        remove_network("test-ipnet")
+
+    def test_disconnect_of_running_vnet_container(self):
+        run("network create -t bridge --subnet 10.13.37.0/24 test-vnet")
+        run("run --name disconn_vnet -n test-vnet -d -l vnet FreeBSD:testing sleep 10")
+        time.sleep(1)  # Takes time to add the IP, default gw etc. inside the jail
+
+        # 10.13.37.2 since 10.13.37.1 is taken by the default gw
+        assert ip_in_container("disconn_vnet", "10.13.37.2")
+        assert interface_in_container("disconn_vnet", "epair0b")
+        assert [""] == run("network disconnect test-vnet disconn_vnet")
+        assert not ip_in_container("disconn_vnet", "10.13.37.2")
+        assert not interface_in_container("disconn_vnet", "epair0b")
+        run("rmc -f disconn_vnet")
+        remove_network("test-vnet")
 
     def test_create_container_with_user_defined_ip_loopback(self):
         container_name = "custom_ip1"
@@ -250,6 +277,26 @@ def assert_empty_network_list():
     expected_output = [" ID   NAME   TYPE   SUBNET ", "───────────────────────────", ""]
     output = run("network ls")
     assert expected_output == output
+
+
+def ip_in_container(container, ip):
+    netstat_json = run(["exec", container, "/bin/sh", "-c", "netstat --libxo json -i"])
+    interface_info = json.loads(netstat_json[1])
+    addresses = {
+        address_info["address"]
+        for address_info in interface_info["statistics"]["interface"]
+    }
+    return ip in addresses
+
+
+def interface_in_container(container, interface):
+    netstat_json = run(["exec", container, "/bin/sh", "-c", "netstat --libxo json -i"])
+    interface_info = json.loads(netstat_json[1])
+    interfaces = {
+        address_info["name"]
+        for address_info in interface_info["statistics"]["interface"]
+    }
+    return interface in interfaces
 
 
 def remove_network(network_id):

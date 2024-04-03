@@ -34,11 +34,12 @@ class TestHTTPConnections:
         )
         assert SELF_SIGNED_ERROR == "".join(
             http_connection(
-                "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
+                "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem",
+                exit_code=1,
             )
         )
         assert CERTIFICATE_REQUIRED_ERROR == "".join(
-            http_connection("--host https://127.0.0.1:8085 --no-tlsverify")
+            http_connection("--host https://127.0.0.1:8085 --no-tlsverify", exit_code=1)
         )
 
 
@@ -47,8 +48,8 @@ def successful_http_connection(connection_config):
     assert result == EMPTY_LIST
 
 
-def http_connection(connection_config):
-    return run(connection_config + " container ls")
+def http_connection(connection_config, exit_code=0):
+    return run(connection_config + " container ls", exit_code=exit_code)
 
 
 class TestWebsocketConnections:
@@ -78,11 +79,14 @@ class TestWebsocketConnections:
 
         assert SELF_SIGNED_ERROR == "".join(
             ws_connection(
-                "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
+                "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem",
+                exit_code=1,
             )
         )
         assert CERTIFICATE_REQUIRED_ERROR == "".join(
-            run("--host https://127.0.0.1:8085 --no-tlsverify container ls")
+            run(
+                "--host https://127.0.0.1:8085 --no-tlsverify container ls", exit_code=1
+            )
         )
 
 
@@ -91,5 +95,8 @@ def successful_ws_connection(connection_config):
     assert output[2] == "/etc/hosts"
 
 
-def ws_connection(connection_config):
-    return run(connection_config + " run FreeBSD:testing /bin/ls /etc/hosts")
+def ws_connection(connection_config, exit_code=0):
+    return run(
+        connection_config + " run FreeBSD:testing /bin/ls /etc/hosts",
+        exit_code=exit_code,
+    )

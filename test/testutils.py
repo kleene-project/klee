@@ -133,7 +133,7 @@ def remove_all_containers():
         container_ids.append(container_id)
 
     if len(container_ids) != 0:
-        run("container rm " + " ".join(container_ids))
+        run("container rm -f " + " ".join(container_ids))
 
 
 def remove_all_images():
@@ -227,11 +227,14 @@ def remove_container(name_or_id):
 
 
 def run(command, exit_code=0):
+    if isinstance(command, str):
+        command = command.split(" ")
+
     clear_config()
     runner = CliRunner()
     cli = create_cli()
     print(f'running command: "{command}"')
-    result = runner.invoke(cli, command.split(" "), catch_exceptions=False)
+    result = runner.invoke(cli, command, catch_exceptions=False)
     print(f"exited with code {result.exit_code}:\n{result.output}")
     assert result.exit_code == exit_code
     return result.output.split("\n")

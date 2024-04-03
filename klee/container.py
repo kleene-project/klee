@@ -467,6 +467,7 @@ def _create(**kwargs):
         "network_driver": kwargs["driver"],
         "public_ports": list(decode_public_ports(kwargs["publish"])),
     }
+
     container_config = ContainerConfig.from_dict(container_config)
 
     return request_and_print_response(
