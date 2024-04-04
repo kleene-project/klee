@@ -5,8 +5,8 @@ annotations in the Klee source code. Generating the files for Klee's reference d
 can be done by invoking a simple script:
 
 ```console
-# Assuming you are in the klee repos and are using pipenv:
-$ pipenv shell
+# Assuming you are in the klee repos and are using Poetry:
+$ poetry shell
 $ python scripts/generate_yaml_docs.py /path/to/kleene-docs/_data/engine-cli
 ... script output here ...
 ```

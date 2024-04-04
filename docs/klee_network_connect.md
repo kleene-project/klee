@@ -2,13 +2,12 @@
 This command is used to provide access for containers to one og more networks.
 Once connected, the container can communicate with other containers in the same network.
 For a discussion of the different types of network drivers, see
-[the container networking section](/run/networkingcontainers/).
+[the container networking section](/network/).
 
 > **Note**
 > Since the network drivers represent fundamentally different approaches to
 > connectivity in FreeBSD, they are incompatible.
-> Therefore, a container can only be connected to networks using the same kind of
-> driver.
+> Thus, a container can only use of kind kind of network driver.
 
 When a container connects to a network, an IP-address from the network's subnet
 is allocated for the container. The IP-address is reserved for the container
@@ -19,6 +18,10 @@ a container will result in an error.
 It is possible to pick a specific IP-address when connecting a container using
 the `--ip` option. If the given address is already taken, the connection fails
 with an error.
+
+In general, it is only possible to connect running containers that uses the
+`ipnet` network driver. However, both running `ipnet` and `vnet` containers
+can be disconnected from a network while running.
 
 To verify if a container is connected, and by which IP-address, use the
 `klee network inspect` command. The `network_endpoints` section lists
