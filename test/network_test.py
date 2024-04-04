@@ -14,11 +14,9 @@ from testutils import (
 class TestNetworkSubcommand:
     # pylint: disable=no-self-use, unused-argument
     def test_assert_empty_network_listing_of_networks(self, testimage):
-        # We need to create the test image on the first test,
-        # otherwise the 'host_state["zfs"]' will be initialized before the test image is created.
         assert_empty_network_list()
 
-    def test_add_remove_and_list_networks(self, host_state):
+    def test_add_remove_and_list_networks(self, testimage):
         name = "test_arl_networks"
 
         cmd = f"network create --interface testif --subnet 10.13.37.0/24 {name}"
@@ -34,7 +32,7 @@ class TestNetworkSubcommand:
 
         assert_empty_network_list()
 
-    def test_inspect_network(self, host_state):
+    def test_inspect_network(self, testimage):
         name = "test_network_inspect"
         cmd = f"network create --interface testif --subnet 10.13.37.0/24 {name}"
         network_id, _ = run(cmd)
@@ -43,90 +41,42 @@ class TestNetworkSubcommand:
         assert network_endpoints["network"]["name"] == name
         run(f"network rm {network_id}")
 
-    def test_prune_network(self, host_state):
+    def test_prune_network(self, testimage):
         cmd = "network create --interface testif1 --subnet 10.13.37.0/24 test_prune1"
         network_id1, _ = run(cmd)
         cmd = "network create --interface testif2 --subnet 10.13.38.0/24 test_prune2"
         network_id2, _ = run(cmd)
         assert set(prune("network")) == set([network_id1, network_id2])
 
-    def test_remove_network_by_id(self, host_state):
+    def test_remove_network_by_different_idents(self, testimage):
         network_id1, _ = run("network create --subnet 10.13.37.0/24 test_rm1")
         network_id2, _ = run("network create --subnet 10.13.38.0/24 test_rm2")
+        network_id3, _ = run("network create --subnet 10.13.38.0/24 test_rm3")
         network_id1_again, _ = run(f"network rm {network_id1}")
         network_id2_again, _ = run(f"network rm {network_id2[:8]}")
+        network_id3_again, _ = run("network rm test_rm3")
         assert network_id1 == network_id1_again
         assert network_id2 == network_id2_again
+        assert network_id3 == network_id3_again
         assert_empty_network_list()
 
-    def test_connectivity_of_container_connected_to_ipnet_network(self, testimage):
-        network_id, _ = run("network create --subnet 10.13.37.0/24 test_conn")
-        container_id, _ = run(
-            "create -n test_conn -l ipnet FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
+    def test_create_a_internal_network(self, testimage):
+        run("network create --internal --type loopback --subnet=10.13.38.0/24 testnet")
+        network = inspect("network", "testnet")
+        run("network rm testnet")
+        assert network["network"]["internal"]
+
+    def test_create_container_using_nonexisting_network(self, testimage):
+        output = run(
+            "container create --name invalid_network --network nonexisting FreeBSD /bin/ls",
+            exit_code=1,
         )
-        container_is_connected(container_id)
-        run(f"rmc {container_id}")
-        run(f"network rm {network_id}")
-
-    def test_connectivity_of_container_connected_to_vnet_network(self, testimage):
-        network_id, _ = run("network create -t bridge --subnet 10.13.37.0/24 test_vnet")
-        container_id, _ = run(
-            "container create --name disconn_network --driver vnet --network test_vnet FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
-        )
-        container_is_connected(container_id, driver="vnet")
-        run(f"rmc {container_id}")
-        run(f"network rm {network_id}")
-
-    def test_connectivity_when_connecting_and_disconnecting_to_loopback_network(
-        self, testimage_and_cleanup
-    ):
-        network_name = "test_nw_disconn"
-        run(f"network create --subnet 10.13.38.0/24 {network_name}")
-        container_id, _ = run(
-            f"container create --network {network_name} -l ipnet FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
-        )
-        container_is_connected(container_id)
-        assert [""] == run(f"network disconnect {network_name} {container_id}")
-        container_is_disconnected(container_id)
-
-    def test_connectivity_when_connecting_and_disconnecting_to_vnet_network(
-        self, testimage_and_cleanup
-    ):
-        network_name = "test_nw_disconn"
-        cmd = f"network create -t bridge --subnet 10.13.37.0/24 {network_name}"
-        run(cmd)
-
-        cmd = f"container create --driver vnet --network {network_name} FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
-        container_id, _ = run(cmd)
-        container_is_connected(container_id, driver="vnet")
-        assert [""] == run(f"network disconnect {network_name} {container_id}")
-        container_is_disconnected(container_id)
-
-    def test_connect_and_disconnect_of_running_ipnet_container(self, testimage):
-        run("network create -t loopback --subnet 10.13.37.0/24 test-ipnet")
-        run("run --name disconn_ipnet -d -l ipnet FreeBSD sleep 10")
-
-        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
-        assert [""] == run("network connect test-ipnet disconn_ipnet")
-        assert ip_in_container("disconn_ipnet", "10.13.37.1")
-        assert [""] == run("network disconnect test-ipnet disconn_ipnet")
-        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
-        run("rmc -f disconn_ipnet")
-        run("network rm test-ipnet")
-
-    def test_disconnect_of_running_vnet_container(self, testimage):
-        run("network create -t bridge --subnet 10.13.37.0/24 test-vnet")
-        run("run --name disconn_vnet -n test-vnet -d -l vnet FreeBSD sleep 10")
-        time.sleep(1)  # Takes time to add the IP, default gw etc. inside the jail
-
-        # 10.13.37.2 since 10.13.37.1 is taken by the default gw
-        assert ip_in_container("disconn_vnet", "10.13.37.2")
-        assert interface_in_container("disconn_vnet", "epair0b")
-        assert [""] == run("network disconnect test-vnet disconn_vnet")
-        assert not ip_in_container("disconn_vnet", "10.13.37.2")
-        assert not interface_in_container("disconn_vnet", "epair0b")
-        run("rmc -f disconn_vnet")
-        run("network rm test-vnet")
+        assert [
+            "network not found",
+            "could not connect container: network not found",
+            "",
+        ] == output[1:]
+        run("rmc invalid_network")
 
     def test_create_container_with_user_defined_ip_loopback(
         self, testimage_and_cleanup
@@ -176,23 +126,102 @@ class TestNetworkSubcommand:
         run(f"rmc {container_id}")
         run(f"network rm {network_name}")
 
-    def test_create_a_internal_network(self, host_state):
-        run("network create --internal --type loopback --subnet=10.13.38.0/24 testnet")
-        network = inspect("network", "testnet")
-        run("network rm testnet")
-        assert network["network"]["internal"]
+    def test_connect_and_disconnect_of_running_ipnet_container(self, testimage):
+        run("network create -t loopback --subnet 10.13.37.0/24 test-ipnet")
+        run("run --name disconn_ipnet -d -l ipnet FreeBSD sleep 10")
 
-    def test_create_container_using_nonexisting_network(self, host_state):
-        output = run(
-            "container create --name invalid_network --network nonexisting FreeBSD /bin/ls",
-            exit_code=1,
+        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
+        assert [""] == run("network connect test-ipnet disconn_ipnet")
+        assert ip_in_container("disconn_ipnet", "10.13.37.1")
+        assert [""] == run("network disconnect test-ipnet disconn_ipnet")
+        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
+        run("rmc -f disconn_ipnet")
+        run("network rm test-ipnet")
+
+    def test_disconnect_of_running_vnet_container(self, testimage):
+        run("network create -t bridge --subnet 10.13.37.0/24 test-vnet")
+        run("run --name disconn_vnet -n test-vnet -d -l vnet FreeBSD sleep 10")
+        time.sleep(1)  # Takes time to add the IP, default gw etc. inside the jail
+
+        # 10.13.37.2 since 10.13.37.1 is taken by the default gw
+        assert ip_in_container("disconn_vnet", "10.13.37.2")
+        assert interface_in_container("disconn_vnet", "epair0b")
+        assert [""] == run("network disconnect test-vnet disconn_vnet")
+        assert not ip_in_container("disconn_vnet", "10.13.37.2")
+        assert not interface_in_container("disconn_vnet", "epair0b")
+        run("rmc -f disconn_vnet")
+        run("network rm test-vnet")
+
+    def test_remove_network_with_ipnet_running_stopped_containers_connected(
+        self, testimage_and_cleanup
+    ):
+        run("network create -t bridge --subnet 10.20.30.0/24 testnet")
+        run("run --name con_ipnet1 -n testnet -d -l ipnet FreeBSD sleep 10")
+        run("run --name con_ipnet2 -n testnet -l ipnet FreeBSD /bin/ls")
+        assert ip_in_container("con_ipnet1", "10.20.30.2")
+        assert ip_in_container("con_ipnet2", "10.20.30.3")
+        run("network rm testnet")
+        assert not ip_in_container("con_ipnet1", "10.20.30.2")
+        assert not ip_in_container("con_ipnet2", "10.20.30.3")
+        run("stop con_ipnet1")
+
+    def test_remove_network_with_vnet_running_stopped_containers_connected(
+        self, testimage_and_cleanup
+    ):
+        run("network create -t bridge --subnet 10.20.30.0/24 testnet")
+        run("run --name con_vnet1 -n testnet -l vnet FreeBSD sleep 10")
+        run("run --name con_vnet2 -n testnet -d -l vnet FreeBSD /bin/ls")
+        assert ip_in_container("con_vnet1", "10.20.30.2")
+        assert ip_in_container("con_vnet2", "10.20.30.3")
+        assert interface_in_container("con_vnet1", "epair0b")
+        run("network rm testnet")
+        assert not ip_in_container("con_vnet1", "10.20.30.2")
+        assert not ip_in_container("con_vnet2", "10.20.30.3")
+        assert not interface_in_container("con_vnet1", "epair0b")
+        run("stop con_vnet1")
+
+    def test_connectivity_of_container_connected_to_ipnet_network(self, testimage):
+        network_id, _ = run("network create --subnet 10.13.37.0/24 test_conn")
+        container_id, _ = run(
+            "create -n test_conn -l ipnet FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
         )
-        assert [
-            "network not found",
-            "could not connect container: network not found",
-            "",
-        ] == output[1:]
-        run("rmc invalid_network")
+        container_is_connected(container_id)
+        run(f"rmc {container_id}")
+        run(f"network rm {network_id}")
+
+    def test_connectivity_of_container_connected_to_vnet_network(self, testimage):
+        network_id, _ = run("network create -t bridge --subnet 10.13.37.0/24 test_vnet")
+        container_id, _ = run(
+            "container create --name disconn_network --driver vnet --network test_vnet FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
+        )
+        container_is_connected(container_id, driver="vnet")
+        run(f"rmc {container_id}")
+        run(f"network rm {network_id}")
+
+    def test_connectivity_when_connecting_and_disconnecting_to_loopback_network(
+        self, testimage_and_cleanup
+    ):
+        network_name = "test_nw_disconn"
+        run(f"network create --subnet 10.13.38.0/24 {network_name}")
+        container_id, _ = run(
+            f"container create --network {network_name} -l ipnet FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
+        )
+        container_is_connected(container_id)
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
+        container_is_disconnected(container_id)
+
+    def test_connectivity_when_connecting_and_disconnecting_to_vnet_network(
+        self, testimage_and_cleanup
+    ):
+        network_name = "test_nw_disconn"
+        cmd = f"network create -t bridge --subnet 10.13.37.0/24 {network_name}"
+        run(cmd)
+
+        cmd = f"container create --driver vnet --network {network_name} FreeBSD /usr/bin/host -t A freebsd.org 1.1.1.1"
+        container_id, _ = run(cmd)
+        container_is_connected(container_id, driver="vnet")
+        assert [""] == run(f"network disconnect {network_name} {container_id}")
+        container_is_disconnected(container_id)
 
 
 def container_is_connected(container_id, driver="loopback"):
@@ -257,8 +286,9 @@ def assert_empty_network_list():
 
 
 def ip_in_container(container, ip):
-    netstat_json = run(["exec", container, "/bin/sh", "-c", "netstat --libxo json -i"])
-    interface_info = json.loads(netstat_json[1])
+    output = run(["exec", container, "/bin/sh", "-c", "netstat --libxo json -i"])
+    netstat_json = _first_non_klee_message(output)
+    interface_info = json.loads(netstat_json)
     addresses = {
         address_info["address"]
         for address_info in interface_info["statistics"]["interface"]
@@ -267,10 +297,24 @@ def ip_in_container(container, ip):
 
 
 def interface_in_container(container, interface):
-    netstat_json = run(["exec", container, "/bin/sh", "-c", "netstat --libxo json -i"])
-    interface_info = json.loads(netstat_json[1])
+    output = run(["exec", container, "/bin/sh", "-c", "netstat --libxo json -i"])
+    netstat_json = _first_non_klee_message(output)
+    interface_info = json.loads(netstat_json)
     interfaces = {
         address_info["name"]
         for address_info in interface_info["statistics"]["interface"]
     }
     return interface in interfaces
+
+
+def _first_non_klee_message(output):
+    def remove_standard_messages(line):
+        if line.startswith("created execution instance"):
+            return False
+
+        if line.startswith("add net default: gateway"):
+            return False
+
+        return True
+
+    return next(filter(remove_standard_messages, output))

@@ -161,8 +161,12 @@ def rich_render(message):
     return capture.get()
 
 
-def prune(obj_type):
-    output = run(f"{obj_type} prune -f")
+def prune(obj_type, all_=False):
+    if all_:
+        output = run(f"{obj_type} prune --all -f")
+    else:
+        output = run(f"{obj_type} prune -f")
+
     return output[:-1]
 
 
@@ -175,8 +179,8 @@ def inspect(obj_type, identifier):
         return output
 
 
-def list_containers(all_=True):
-    kwargs = {"params": {"all_": all_}}
+def list_images():
+    kwargs = {}
     response = image_list_endpoint(
         httpx.HTTPTransport(uds="/var/run/kleened.sock"),
         client=Client(base_url="http://localhost"),
@@ -185,8 +189,12 @@ def list_containers(all_=True):
     return response.parsed
 
 
+def container_netstat(container_id):
+    return run(f"container exec {container_id} /usr/bin/netstat --libxo json -i -4")
+
+
 def container_get_netstat_info(container_id, driver):
-    output = run(f"container start {container_id}")
+    output = run(f"container exec {container_id}")
     if driver == "vnet":
         netstat_info = "".join(output[2:-3])
 

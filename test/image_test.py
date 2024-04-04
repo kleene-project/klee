@@ -6,7 +6,7 @@ from testutils import (
     build_image,
     decode_valid_image_build,
     decode_invalid_image_build,
-    list_containers,
+    list_images,
     stat,
     inspect,
     prune,
@@ -14,20 +14,17 @@ from testutils import (
 )
 
 # pylint: disable=no-self-use, unused-argument
+instructions = ["FROM FreeBSD", 'RUN echo "lol" > /root/test.txt', "CMD /usr/bin/uname"]
+
+cwd = os.getcwd()
 
 
 class TestImageSubcommand:
-    instructions = [
-        "FROM FreeBSD",
-        'RUN echo "lol" > /root/test.txt',
-        "CMD /usr/bin/uname",
-    ]
-
     def test_empty_listing_of_images(self, testimage):
         assert_only_test_image()
 
     def test_build_remove_and_list_images(self, testimage):
-        create_dockerfile(self.instructions)
+        create_dockerfile(instructions)
         result = build_image()
         image_id, _build_log = decode_valid_image_build(result)
         image_id_listed = image_id_from_list(0)
@@ -36,7 +33,7 @@ class TestImageSubcommand:
         assert_only_test_image()
 
     def test_inspect_image(self, testimage):
-        create_dockerfile(self.instructions)
+        create_dockerfile(instructions)
         result = build_image()
         image_id, _build_log = decode_valid_image_build(result)
         assert inspect("image", "notexist") == "image not found"
@@ -44,18 +41,8 @@ class TestImageSubcommand:
         assert image_endpoints["id"] == image_id
         run(f"rmi {image_id}")
 
-    def test_prune_image(self, testimage):
-        create_dockerfile(self.instructions)
-        result = build_image()
-        image_id1, _build_log = decode_valid_image_build(result)
-
-        create_dockerfile(self.instructions)
-        result = build_image()
-        image_id2, _build_log = decode_valid_image_build(result)
-        assert prune("image") == [image_id2, image_id1]
-
     def test_update_tag(self, testimage):
-        create_dockerfile(self.instructions)
+        create_dockerfile(instructions)
         result = build_image(tag="test:re-tagging")
         image_id, _build_log = decode_valid_image_build(result)
         output = run(f"image tag {image_id} test2:newtag")
@@ -66,7 +53,7 @@ class TestImageSubcommand:
         run(f"rmi {image_id}")
 
     def test_build_image_receive_build_messages(self, testimage):
-        create_dockerfile(self.instructions)
+        create_dockerfile(instructions)
         result = build_image(quiet=False)
         image_id, build_log = decode_valid_image_build(result)
         expected_log = [
@@ -83,13 +70,13 @@ class TestImageSubcommand:
         assert_only_test_image()
 
     def test_build_and_remove_and_with_a_tag(self, testimage):
-        create_dockerfile(self.instructions)
+        create_dockerfile(instructions)
         result = build_image(tag="testlol:testest")
         image_id, _build_log = decode_valid_image_build(result)
         image_id_listed = image_id_from_list(0)
         assert image_id == image_id_listed
         assert (
-            list_images()[0]
+            run("lsi")[2]
             == f" {image_id}   testlol   testest   Less than a second ago "
         )
         run(f"rmi {image_id}")
@@ -318,6 +305,33 @@ class TestImageCreateSubcommand:
         ]
 
 
+class TestImagePruning:
+    def test_pruning_snapshot_image(self, host_state):
+        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
+        self.image("FreeBSD", "Parent")
+        self.image_fail("Parent", "Parent:not_happening")
+        image = inspect("image", "Parent:failed")
+        _instruction, snapshot = image["instructions"][1]
+        self.image(f"Parent:failed{snapshot}")
+
+        images = {image.id for image in list_images()}
+        assert set(prune("image", all_=True)) == images
+
+    def image(self, parent, nametag=None):
+        create_dockerfile([f"FROM {parent}", 'RUN echo "hello" > /world.txt'])
+        if nametag is None:
+            return run(f"image build {cwd}")
+
+        return run(f"image build -t {nametag} {cwd}")
+
+    def image_fail(self, parent, nametag=None):
+        create_dockerfile([f"FROM {parent}", 'RUN echo "testing"', "RUN ls notexists"])
+        if nametag is None:
+            return run(f"image build {cwd}", exit_code=1)
+
+        return run(f"image build -t {nametag} {cwd}", exit_code=1)
+
+
 def dockerfile_from_str(dockerfile):
     return [line.strip() for line in dockerfile.split("\n")]
 
@@ -332,19 +346,13 @@ def verify_build_output(expected_log, build_log):
         assert log[: len(expected)] == expected
 
 
-def list_images():
-    _, _, *images = run("image ls")
-    return images
-
-
 def image_id_from_list(index):
     images = list_images()
-    image_id = images[index][1:13]
-    return image_id
+    return images[index].id
 
 
 def assert_only_test_image():
-    containers = list_containers()
-    assert len(containers) == 1
-    assert containers[0].name == "FreeBSD"
-    assert containers[0].tag == "latest"
+    images = list_images()
+    assert len(images) == 1
+    assert images[0].name == "FreeBSD"
+    assert images[0].tag == "latest"
