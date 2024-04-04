@@ -2,15 +2,24 @@ import subprocess
 import json
 import os
 
+import httpx
 from click.testing import CliRunner
 from rich.console import Console
 
+from klee.client.api.default.image_list import sync_detailed as image_list_endpoint
+from klee.client.client import Client
 from klee.root import create_cli
 from klee.image import BUILD_START_MESSAGE
 
 SELF_SIGNED_ERROR = "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain (_ssl.c:1134)"
 
 CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required (_ssl.c:2638)"
+
+EMPTY_CONTAINER_LIST = [
+    " CONTAINER ID    NAME   IMAGE   COMMAND   CREATED   STATUS   JID ",
+    "─────────────────────────────────────────────────────────────────",
+    "",
+]
 
 
 def jail_info():
@@ -21,6 +30,10 @@ def jail_info():
 
 
 def shell(cmd):
+    return shell_raw(cmd).stdout.decode("utf8")
+
+
+def shell_raw(cmd):
     return subprocess.run(args=cmd, shell=True, check=False, capture_output=True)
 
 
@@ -91,51 +104,6 @@ def decode_valid_image_build(result):
     return image_id, build_log
 
 
-def create_image(method, tag=None, url=None, dataset=None, dns=True):
-    tag = "" if tag is None else f"--tag={tag} "
-    dns = "" if dns else "--no-dns "
-
-    if method in {"zfs-copy", "zfs-clone"}:
-        return run(f"image create {dns}{tag}{method} {dataset}")
-
-    if method == "fetch":
-        return run(f"image create {dns}{tag}{method} {url}")
-
-    if method == "fetch-auto":
-        return "fetch-auto method not supported"
-
-    return f"unknown method type {method}"
-
-
-def remove_image(image_id):
-    return run(f"image rm {image_id}")
-
-
-def _extract_id(result):
-    result_line = result[0]
-    prefix = rich_render(BUILD_START_MESSAGE.format(image_id=""))
-
-    id_ = None
-    n = len(prefix)
-    if result_line[:n] == prefix:
-        id_ = result_line[n:]
-    return id_
-
-
-def remove_all_containers():
-    _header, _lines, *containers = run("container ls -a")
-    container_ids = []
-    for line in containers[:-1]:
-        lines = line.split(" ")
-        container_id = lines[1]
-        if container_id == "":
-            continue
-        container_ids.append(container_id)
-
-    if len(container_ids) != 0:
-        run("container rm -f " + " ".join(container_ids))
-
-
 def remove_all_images():
     _header, _lines, *images = run("image ls")
     image_ids = []
@@ -143,7 +111,7 @@ def remove_all_images():
         image_id, name, tag, *_rest = line.split(" ")
         if image_id == "":
             continue
-        if name == "FreeBSD" and tag == "testing":
+        if name == "FreeBSD" and tag == "latest":
             continue
         image_ids.append(image_id)
 
@@ -152,7 +120,7 @@ def remove_all_images():
 
 
 def create_container(
-    image="FreeBSD:testing",
+    image="FreeBSD:latest",
     name=None,
     command="/bin/ls",
     volumes=None,
@@ -207,6 +175,16 @@ def inspect(obj_type, identifier):
         return output
 
 
+def list_containers(all_=True):
+    kwargs = {"params": {"all_": all_}}
+    response = image_list_endpoint(
+        httpx.HTTPTransport(uds="/var/run/kleened.sock"),
+        client=Client(base_url="http://localhost"),
+        **kwargs,
+    )
+    return response.parsed
+
+
 def container_get_netstat_info(container_id, driver):
     output = run(f"container start {container_id}")
     if driver == "vnet":
@@ -220,17 +198,11 @@ def container_get_netstat_info(container_id, driver):
     return interface_info
 
 
-def remove_container(name_or_id):
-    container_id, _ = run(f"container rm {name_or_id}")
-    assert len(container_id) == 12
-    return container_id
-
-
 def run(command, exit_code=0):
     if isinstance(command, str):
         command = command.split(" ")
 
-    clear_config()
+    _clear_config()
     runner = CliRunner()
     cli = create_cli()
     print(f'running command: "{command}"')
@@ -240,7 +212,7 @@ def run(command, exit_code=0):
     return result.output.split("\n")
 
 
-def clear_config():
+def _clear_config():
     from klee.config import config
 
     # To be sure, we clean the configuration parameters, because
@@ -254,3 +226,14 @@ def clear_config():
             continue
 
         setattr(config, param, None)
+
+
+def _extract_id(result):
+    result_line = result[0]
+    prefix = rich_render(BUILD_START_MESSAGE.format(image_id=""))
+
+    id_ = None
+    n = len(prefix)
+    if result_line[:n] == prefix:
+        id_ = result_line[n:]
+    return id_

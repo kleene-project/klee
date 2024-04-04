@@ -1,16 +1,4 @@
-from testutils import (
-    create_dockerfile,
-    build_image,
-    decode_valid_image_build,
-    extract_exec_id,
-    remove_all_containers,
-    remove_container,
-    remove_image,
-    inspect,
-    prune,
-    run,
-    container_stopped_msg,
-)
+from testutils import inspect, prune, run
 
 
 class TestVolumeSubcommand:
@@ -19,12 +7,6 @@ class TestVolumeSubcommand:
         "RUN mkdir /testdir1",
         "RUN mkdir /testdir2",
     ]
-
-    # pylint: disable=no-self-use
-    @classmethod
-    def setup_class(cls):
-        remove_all_containers()
-        remove_all_volumes()
 
     def test_add_remove_and_listing_volumes(self):
         name = "test_arl_volumes"
