@@ -167,7 +167,42 @@ class TestContainerSubcommand:
         assert container_output == expected_output
         run("rmc {container_id}")
 
-    def test_running_containers_with_mounts(self, testimage_and_cleanup):
+    def test_run_a_container_with_readonly_volume(self, testimage_and_cleanup):
+        output = run(
+            f"container run --name voltest1 -m new_volume:/kl_mount_test:ro {TEST_IMG} touch /kl_mount_test/test.txt"
+        )
+        assert output[2] == "touch: /kl_mount_test/test.txt: Read-only file system"
+        run("rmc voltest1")
+        run("volume rm new_volume")
+
+    def test_run_a_container_with_nullfs_directory_mount(self, testimage_and_cleanup):
+        shell("rm /mnt/text.txt")
+        output = run(
+            f"container run -m /mnt:/kl_mount_test {TEST_IMG} touch /kl_mount_test/test.txt"
+        )
+        expected_exit = "container exited with exit-code 0"
+        idx = -len(expected_exit)
+        assert output[3][idx:] == expected_exit
+        assert shell_raw("cat /mnt/test.txt").returncode == 0
+        assert shell("cat /mnt/test.txt") == ""
+
+    def test_run_a_container_with_nullfs_file_mount(self, testimage_and_cleanup):
+        shell("rm /mnt/testfile.txt")
+        shell("echo 'hello' > /mnt/testfile.txt")
+        output = run(
+            f"container run --name mtest1 -m /mnt/testfile.txt:/mounted_file_test {TEST_IMG} cat /mounted_file_test"
+        )
+        assert output[2] == "hello"
+
+        # Create directory path of destination
+        output = run(
+            f"container run --name mtest2 -m /mnt/testfile.txt:/create_me/mounted_file_test {TEST_IMG} cat /create_me/mounted_file_test"
+        )
+        assert output[2] == "hello"
+        run("rmc mtest1 mtest2")
+        shell("rm /mnt/testfile.txt")
+
+    def test_try_running_containers_with_invalid_mounts(self, testimage_and_cleanup):
         output = run(
             f"container create -m too:many:colons:here {TEST_IMG}", exit_code=125
         )
@@ -193,25 +228,6 @@ class TestContainerSubcommand:
             "either 'ro' or 'rw'.",
             "",
         ]
-
-    def test_run_a_container_with_readonly_volume(self, testimage_and_cleanup):
-        output = run(
-            f"container run --name voltest1 -m new_volume:/kl_mount_test:ro {TEST_IMG} touch /kl_mount_test/test.txt"
-        )
-        assert output[2] == "touch: /kl_mount_test/test.txt: Read-only file system"
-        run("rmc voltest1")
-        run("volume rm new_volume")
-
-    def test_run_a_container_with_nullfs_mount(self, testimage_and_cleanup):
-        shell("rm /mnt/text.txt")
-        output = run(
-            f"container run -m /mnt:/kl_mount_test {TEST_IMG} touch /kl_mount_test/test.txt"
-        )
-        expected_exit = "container exited with exit-code 0"
-        idx = -len(expected_exit)
-        assert output[3][idx:] == expected_exit
-        assert shell_raw("cat /mnt/test.txt").returncode == 0
-        assert shell("cat /mnt/test.txt") == ""
 
 
 def container_is_running(container_id):
