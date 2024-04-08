@@ -48,7 +48,7 @@ def extract_exec_id(container_output):
 def create_dockerfile(instructions, name="Dockerfile"):
     dockerfile = os.path.join(os.getcwd(), name)
     with open(dockerfile, "w", encoding="utf8") as f:
-        f.write("\n".join(instructions))
+        f.write("\n".join(instructions) + "\n")
 
 
 def stat(file_name):

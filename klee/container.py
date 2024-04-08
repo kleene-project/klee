@@ -427,33 +427,6 @@ def _create_container_and_connect_to_network(**kwargs):
     if kwargs["network"] is not None and kwargs["driver"] is None:
         kwargs["driver"] = "ipnet"
 
-    response = _create(**kwargs)
-
-    if response is None or response.status_code != 201:
-        if response is not None:
-            echo_error(f"could not create container: {response.parsed.message}")
-            sys.exit(1)
-
-    container_id = response.parsed.id
-
-    if kwargs["network"] is None:
-        return container_id
-
-    kwargs_connect = {
-        "ip": kwargs["ip"],
-        "ip6": kwargs["ip6"],
-        "network": kwargs["network"],
-        "container": container_id,
-    }
-    response = _connect(**kwargs_connect)
-    if response is None or response.status_code != 204:
-        echo_error(f"could not connect container: {response.parsed.message}")
-        sys.exit(1)
-
-    return container_id
-
-
-def _create(**kwargs):
     mounts = [] if kwargs["mount"] is None else list(kwargs["mount"])
 
     container_config = {
@@ -468,9 +441,16 @@ def _create(**kwargs):
         "public_ports": list(decode_public_ports(kwargs["publish"])),
     }
 
-    container_config = ContainerConfig.from_dict(container_config)
+    try:
+        container_config = ContainerConfig.from_dict(container_config)
+    except ValueError as error_msg:
+        echo_bold(
+            f"[red]Error![/red] Could not validate container configuration: {error_msg}"
+        )
+        sys.exit(1)
 
-    return request_and_print_response(
+    # Create container
+    response = request_and_print_response(
         container_create_endpoint,
         kwargs={"json_body": container_config},
         statuscode2printer={
@@ -479,6 +459,30 @@ def _create(**kwargs):
             500: print_nothing,
         },
     )
+
+    if response is None or response.status_code != 201:
+        if response is not None:
+            echo_error(f"could not create container: {response.parsed.message}")
+            sys.exit(1)
+
+    container_id = response.parsed.id
+
+    if kwargs["network"] is None:
+        return container_id
+
+    # Connect to network,
+    kwargs_connect = {
+        "ip": kwargs["ip"],
+        "ip6": kwargs["ip6"],
+        "network": kwargs["network"],
+        "container": container_id,
+    }
+    response = _connect(**kwargs_connect)
+    if response is None or response.status_code != 204:
+        echo_error(f"could not connect container: {response.parsed.message}")
+        sys.exit(1)
+
+    return container_id
 
 
 def _print_container(response):
