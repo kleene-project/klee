@@ -7,14 +7,13 @@ can be done by invoking a simple script:
 ```console
 # Assuming you are in the klee repos and are using Poetry:
 $ poetry shell
-$ python scripts/generate_yaml_docs.py /path/to/kleene-docs/_data/engine-cli
+$ python scripts/generate_yaml_docs.py /path/to/kleene-docs/_data/klee-reference
 ... script output here ...
 ```
 
-The script takes one argument: The output directory where the generated YAML-files
-should be stored, which in this example is `/path/to/kleene-docs/_data/engine-cli`.
-The directory should be subdirectory `_data/engine-cli` in the kleene documentation
-repos, which is `/path/to/kleene-docs` in this example.
+The script takes as a single argument the output directory where the generated YAML-files
+should be stored. The location is the subdirectory `_data/klee-reference` in the Kleene
+documentation repos, which is `/path/to/kleene-docs` in this example.
 
 The generated YAML-files are compiled from two sources:
 
