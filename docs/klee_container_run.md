@@ -7,7 +7,7 @@ previous changes intact using `klee container start`.
 Use `klee container ls -a` to view a list of all containers.
 
 For information on connecting a container to a network, see the
-["*Kleene network overview*"](/config/containers/container-networking/).
+["*Kleene network overview*"](/run/network/).
 
 ## Examples
 

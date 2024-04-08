@@ -24,7 +24,7 @@ If `<tag>` is omitted `latest` is assumed. For example,
 - `48fa55889b0f` use the image having ID `48fa55889b0f`
 - `48fa55889b0f@2028818d6f06` use the image as above but create the container from the snapshot `2028818d6f06`
 
-For more information about snapshots see the [Build snapshots](/build/building/snapshots/) section.
+For more information about snapshots see the [Build snapshots](/building/snapshots/) section.
 
 ### Specifying mounts
 When creating containers it is also possible to mount volumes/directories/files
@@ -60,12 +60,12 @@ Combinining `klee container create` and `klee container start` is equivalent to
 `klee container run`.
 
 The `klee create` command shares most of its options with the `klee run`
-command. Refer to the [`klee container run` command](container_run.md) section
+command. Refer to the [`klee container run` command](/reference/klee/container_run/) section
 for details on the available flags and options.
 
 ## Examples
 
-More examples available at the [`klee container run` command](container_run.md) documentation.
+More examples available at the [`klee container run` command](/reference/klee/container_run/) documentation.
 
 ### Create and start a container
 

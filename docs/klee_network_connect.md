@@ -2,7 +2,7 @@
 This command is used to provide access for containers to one og more networks.
 Once connected, the container can communicate with other containers in the same network.
 For a discussion of the different types of network drivers, see
-[the container networking section](/network/).
+[the container networking section](/run/network/).
 
 > **Note**
 > Since the network drivers represent fundamentally different approaches to

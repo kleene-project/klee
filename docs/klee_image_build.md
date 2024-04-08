@@ -2,7 +2,7 @@
 The `klee image build` command builds images from a Dockerfile and a
 "context". A build's context is the set of files and directories located in
 the specified `PATH`. The build process can refer to any of the files in the
-context. For example, your build can use a [*COPY*](../builder.md#copy)
+context. For example, your build can use a [*COPY*](/reference/dockerfile/#copy)
 instruction to copy a file from the context path into the build container.
 
 Note that `PATH` refers to a location in the filesystem on the host where Kleened
@@ -84,8 +84,7 @@ $ klee image build -t nginx:1.24.0_13 .
 ```
 
 This will build like the previous example, but it will then tag the resulting
-image. The image name will be `apache` and the tag will be `2.0`.
-[Read more about valid tags](tag.md).
+image `nginx:1.24.0_13`.
 
 ### Specify a Dockerfile (-f, --file)
 
@@ -129,4 +128,4 @@ Using this flag will not alter the output you see when the `ARG` lines from the
 Dockerfile are echoed during the build process.
 
 For detailed information on using `ARG` and `ENV` instructions, see the
-[Dockerfile reference](../builder.md).
+[Dockerfile reference](/reference/dockerfile).

@@ -1,7 +1,7 @@
 ## Description
 `klee image ls` (or, shorthand: `klee lsi`) will show all images.
 
-Image snapshots, however, are not shown. Use [`klee image inspect`](klee_image_ls.md) instead.
+Image snapshots, however, are not shown. Use [`klee image inspect`](/reference/klee/image_inspect/) instead.
 
 ## Examples
 ### List all images

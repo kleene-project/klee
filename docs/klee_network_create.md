@@ -13,7 +13,7 @@ When creating a `loopback` network it is also possible to give a custom name,
 using the `--ifname` option, to the loopback interface created for the network.
 
 For an in-depth discussion of the different types of network drivers and other
-topics related to container networking, see [the container networking section](/run/networkingcontainers/).
+topics related to container networking, see [the container networking section](/run/network/).
 
 ## Examples
 

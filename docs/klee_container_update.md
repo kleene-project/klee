@@ -18,9 +18,9 @@ to take effect.
 {: .warning }
 
 Connecting/disconnecting a container to networks can be done using the
-[`klee network` subcommands](klee_network.md).
+[`klee network` subcommands](/reference/klee/network/).
 Mounting/unmount a volume inside a container can be done using the
-[`klee volume` subcommands](klee_volume.md).
+[`klee volume` subcommands](/reference/klee/volume/).
 
 
 > **Hint**
