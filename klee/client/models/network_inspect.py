@@ -15,10 +15,10 @@ T = TypeVar("T", bound="NetworkInspect")
 
 @_attrs_define
 class NetworkInspect:
-    """Detailed information on a volume.
+    """Detailed information on a network.
 
     Attributes:
-        network (Union[Unset, Network]): summary description of a network
+        network (Union[Unset, Network]): Kleene network
         network_endpoints (Union[Unset, List['EndPoint']]): Endpoints of the network.
     """
 

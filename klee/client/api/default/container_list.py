@@ -68,12 +68,8 @@ def sync_detailed(
 ) -> Response[List["ContainerSummary"]]:
     """container list
 
-     Returns a list of containers. For details on the format, see
-    [inspect endpoint](#operation/ContainerInspect) for detailed information
-    about a container.
-
-    Note that it uses a different, smaller representation of a container
-    than inspecting a single container.
+     Returns a list of container summaries. For detailed information about a container,
+    use [Container.Inspect](#operation/Container.Inspect).
 
     Args:
         all_ (Union[Unset, None, bool]):
@@ -105,12 +101,8 @@ def sync(
 ) -> Optional[List["ContainerSummary"]]:
     """container list
 
-     Returns a list of containers. For details on the format, see
-    [inspect endpoint](#operation/ContainerInspect) for detailed information
-    about a container.
-
-    Note that it uses a different, smaller representation of a container
-    than inspecting a single container.
+     Returns a list of container summaries. For detailed information about a container,
+    use [Container.Inspect](#operation/Container.Inspect).
 
     Args:
         all_ (Union[Unset, None, bool]):
@@ -136,12 +128,8 @@ async def asyncio_detailed(
 ) -> Response[List["ContainerSummary"]]:
     """container list
 
-     Returns a list of containers. For details on the format, see
-    [inspect endpoint](#operation/ContainerInspect) for detailed information
-    about a container.
-
-    Note that it uses a different, smaller representation of a container
-    than inspecting a single container.
+     Returns a list of container summaries. For detailed information about a container,
+    use [Container.Inspect](#operation/Container.Inspect).
 
     Args:
         all_ (Union[Unset, None, bool]):
@@ -170,12 +158,8 @@ async def asyncio(
 ) -> Optional[List["ContainerSummary"]]:
     """container list
 
-     Returns a list of containers. For details on the format, see
-    [inspect endpoint](#operation/ContainerInspect) for detailed information
-    about a container.
-
-    Note that it uses a different, smaller representation of a container
-    than inspecting a single container.
+     Returns a list of container summaries. For detailed information about a container,
+    use [Container.Inspect](#operation/Container.Inspect).
 
     Args:
         all_ (Union[Unset, None, bool]):

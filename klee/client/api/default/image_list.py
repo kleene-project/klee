@@ -55,8 +55,8 @@ def sync_detailed(
 ) -> Response[List["Image"]]:
     """image list
 
-     Returns a list of images on the server. Note that it uses a different, smaller representation of an
-    image than inspecting a single image.
+     List the images. Use the [image inspect](#operation/Image.Inspect) endpoint
+            to get detailed information about an image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -80,8 +80,8 @@ def sync(
 ) -> Optional[List["Image"]]:
     """image list
 
-     Returns a list of images on the server. Note that it uses a different, smaller representation of an
-    image than inspecting a single image.
+     List the images. Use the [image inspect](#operation/Image.Inspect) endpoint
+            to get detailed information about an image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -102,8 +102,8 @@ async def asyncio_detailed(
 ) -> Response[List["Image"]]:
     """image list
 
-     Returns a list of images on the server. Note that it uses a different, smaller representation of an
-    image than inspecting a single image.
+     List the images. Use the [image inspect](#operation/Image.Inspect) endpoint
+            to get detailed information about an image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -126,8 +126,8 @@ async def asyncio(
 ) -> Optional[List["Image"]]:
     """image list
 
-     Returns a list of images on the server. Note that it uses a different, smaller representation of an
-    image than inspecting a single image.
+     List the images. Use the [image inspect](#operation/Image.Inspect) endpoint
+            to get detailed information about an image.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

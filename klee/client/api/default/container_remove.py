@@ -69,7 +69,7 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container remove
 
-     Delete a container.
+     Remove a container.
 
     Args:
         container_id (str):
@@ -101,7 +101,7 @@ def sync(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container remove
 
-     Delete a container.
+     Remove a container.
 
     Args:
         container_id (str):
@@ -127,7 +127,7 @@ async def asyncio_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container remove
 
-     Delete a container.
+     Remove a container.
 
     Args:
         container_id (str):
@@ -156,7 +156,7 @@ async def asyncio(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container remove
 
-     Delete a container.
+     Remove a container.
 
     Args:
         container_id (str):

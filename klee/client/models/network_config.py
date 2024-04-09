@@ -15,28 +15,27 @@ class NetworkConfig:
 
     Attributes:
         name (str): Name of the network. Example: westnet.
-        type (NetworkConfigType): What kind of network should be created. Possible values are 'bridge', 'loopback', and
-            'custom'.
-             Example: bridge.
-        gateway (Union[Unset, str]): Only for bridge networks. The default IPv4 router that is added to 'vnet'
-            containers connecting to bridged networks.
+        type (NetworkConfigType): What kind of network should be created. Example: bridge.
+        gateway (Union[Unset, str]): **`bridge` networks only**
+
+            The default (IPv4) router that is added to `vnet` containers connecting to bridged networks.
             If set to `""` no gateway is used. If set to `"<auto>"` the first IP of the subnet is added to `interface` and
             used as gateway.
              Default: ''. Example: 192.168.1.1.
-        gateway6 (Union[Unset, str]): Only for bridge networks. The default IPv6 router that is added to 'vnet'
-            containers connecting to bridged networks.
+        gateway6 (Union[Unset, str]): **`bridge` networks only**
+
+            The default IPv6 router that is added to `vnet` containers connecting to bridged networks.
             See `gateway` for details.
              Default: ''. Example: 2001:db8:8a2e:370:7334::1.
-        icc (Union[Unset, bool]): Whether or not to enable connectivity between containers within the same network.
-            Default: True.
+        icc (Union[Unset, bool]): Inter-container connectvity: Whether or not to enable connectivity between containers
+            within the same network. Default: True.
         interface (Union[Unset, str]): Name of the host interface used for the network.
-            If set to `""` the name is set to `kleened` prefixed with an integer.
-            If `type` is set to `custom` the value of `interface` must refer to an existing interface.
-            The name must not exceed 15 characters.
+            If set to `""` the name is set to `kleened` postfixed with an integer.
+            If `type` is set to `custom` the value of `interface` must refer to an existing interface,
+            otherwise it is created by Kleened.
              Default: ''. Example: kleene0.
-        internal (Union[Unset, bool]): Whether or not the network is internal, i.e., not allowing outgoing upstream
-            traffic
-        nat (Union[Unset, str]): Which interface should be used for NAT'ing outgoing traffic from the network.
+        internal (Union[Unset, bool]): Whether or not outgoing traffic is allowed on the network.
+        nat (Union[Unset, str]): Interface used for NAT'ing outgoing traffic from the network.
             If set to `"<host-gateway>"` the hosts gateway interface is used, if it exists.
             If set to `""` no NAT'ing is configured.
              Default: '<host-gateway>'. Example: igb0.

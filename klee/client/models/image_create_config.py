@@ -16,25 +16,30 @@ class ImageCreateConfig:
     Attributes:
         method (ImageCreateConfigMethod): There are four methods for creating a new base image:
 
-            - `"fetch"`: Fetch a release/snapshot of the base system and use it for image creation.
-            - `"fetch-auto"`: Automatically fetch a release/snapshot from the offical FreeBSD mirrors, based on information
+            - `fetch`: Fetch a release/snapshot of the base system from `url` and use it for image creation.
+            - `fetch-auto`: Automatically fetch a release/snapshot from the offical FreeBSD mirrors, based on information
             from `uname(1)`.
-            - `"zfs-copy"`: Create the base image based on a copy of `zfs_dataset`.
-            - `"zfs-clone"`: Create the base image based on a clone of `zfs_dataset`.
-        autotag (Union[Unset, bool]): Whether or not to auto-genereate a nametag `FreeBSD-<version>:latest` based on
-            `uname(1)`.
-            Overrides `tag` if set to true`. *Method `"fetch-auto"` only*.
+            - `zfs-copy`: Create the base image based on a copy of `zfs_dataset`.
+            - `zfs-clone`: Create the base image based on a clone of `zfs_dataset`.
+        autotag (Union[Unset, bool]): **`fetch-auto` method only**
+
+            Whether or not to auto-genereate a nametag `FreeBSD-<version>:latest` based on `uname(1)`.
+            Overrides `tag` if set to `true`.
         dns (Union[Unset, bool]): Whether or not to copy `/etc/resolv.conf` from the host to the new image. Default:
             True.
-        force (Union[Unset, bool]): Ignore any discrepancies detected when using `uname(1)` to fetch the base system.
-            *Method `"fetch-auto"` only*.
-        tag (Union[Unset, str]): Name and optionally a tag in the `name:tag` format.
+        force (Union[Unset, bool]): **`fetch-auto` method only**
+
+            Ignore any discrepancies in the output of `uname(1)` when determining the FreeBSD version.
+        tag (Union[Unset, str]): Name and optionally a tag in the `name:tag` format. If `tag` is omitted, the default
+            value `latest` is used.
              Default: ''.
-        url (Union[Unset, str]): URL to a remote location where the base system (as a base.txz file) is stored.
-            *Method `"fetch"` only*.
+        url (Union[Unset, str]): **`fetch` method only**
+
+            URL to the base system (a `base.txz` file) that Kleened should use to create the base image.
              Default: ''.
-        zfs_dataset (Union[Unset, str]): ZFS dataset that the image should be based on.
-            *Method `"zfs-*"` only*.
+        zfs_dataset (Union[Unset, str]): **`zfs-*` methods only**
+
+            ZFS dataset that the image should be based on.
              Default: ''.
     """
 

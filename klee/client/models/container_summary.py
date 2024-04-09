@@ -10,10 +10,10 @@ T = TypeVar("T", bound="ContainerSummary")
 
 @_attrs_define
 class ContainerSummary:
-    """summary description of a container
+    """Summary description of a container
 
     Attributes:
-        cmd (Union[Unset, str]): Command being used when starting the container
+        cmd (Union[Unset, str]): Command to run when the container is started
         created (Union[Unset, str]): When the container was created
         id (Union[Unset, str]): The id of this container
         image_id (Union[Unset, str]): The id of the image that this container was created from
@@ -21,7 +21,7 @@ class ContainerSummary:
         image_tag (Union[Unset, str]): Tag of the image that this container was created from
         jid (Union[Unset, None, int]): Jail ID if it is a running container
         name (Union[Unset, str]): Name of the container
-        running (Union[Unset, bool]): whether or not the container is running
+        running (Union[Unset, bool]): Whether or not the container is running
     """
 
     cmd: Union[Unset, str] = UNSET

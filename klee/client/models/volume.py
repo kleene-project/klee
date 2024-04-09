@@ -13,8 +13,8 @@ class Volume:
     """Volume object used for persistent storage in containers.
 
     Attributes:
-        created (Union[Unset, str]): when the volume was created
-        dataset (Union[Unset, str]): ZFS dataset used for the volume
+        created (Union[Unset, str]): When the volume was created
+        dataset (Union[Unset, str]): ZFS dataset of the volume
         mountpoint (Union[Unset, str]): Mountpoint of `dataset`
         name (Union[Unset, str]): Name of the volume
     """

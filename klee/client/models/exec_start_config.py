@@ -12,8 +12,8 @@ class ExecStartConfig:
 
     Attributes:
         attach (bool): Whether to receive output from `stdin` and `stderr`.
-        exec_id (str): id of the execution instance to start
-        start_container (bool): Whether to start the container if it is not running.
+        exec_id (str): ID of the execution instance to start
+        start_container (bool): Whether to start the container if it is not already running.
     """
 
     attach: bool

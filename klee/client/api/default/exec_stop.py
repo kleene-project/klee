@@ -78,7 +78,7 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """exec stop
 
-     Stop and/or destroy an execution instance.
+     Stop and destroy an execution instance.
 
     Args:
         exec_id (str):
@@ -116,7 +116,7 @@ def sync(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """exec stop
 
-     Stop and/or destroy an execution instance.
+     Stop and destroy an execution instance.
 
     Args:
         exec_id (str):
@@ -148,7 +148,7 @@ async def asyncio_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """exec stop
 
-     Stop and/or destroy an execution instance.
+     Stop and destroy an execution instance.
 
     Args:
         exec_id (str):
@@ -183,7 +183,7 @@ async def asyncio(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """exec stop
 
-     Stop and/or destroy an execution instance.
+     Stop and destroy an execution instance.
 
     Args:
         exec_id (str):

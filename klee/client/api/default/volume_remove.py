@@ -61,7 +61,7 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """volume remove
 
-     Remove one or more volumes. You cannot remove a volume that is in use by a container.
+     Remove one or more volumes. A volume that is in use by a container cannot be removed.
 
     Args:
         volume_name (str):
@@ -93,7 +93,7 @@ def sync(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """volume remove
 
-     Remove one or more volumes. You cannot remove a volume that is in use by a container.
+     Remove one or more volumes. A volume that is in use by a container cannot be removed.
 
     Args:
         volume_name (str):
@@ -119,7 +119,7 @@ async def asyncio_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """volume remove
 
-     Remove one or more volumes. You cannot remove a volume that is in use by a container.
+     Remove one or more volumes. A volume that is in use by a container cannot be removed.
 
     Args:
         volume_name (str):
@@ -148,7 +148,7 @@ async def asyncio(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """volume remove
 
-     Remove one or more volumes. You cannot remove a volume that is in use by a container.
+     Remove one or more volumes. A volume that is in use by a container cannot be removed.
 
     Args:
         volume_name (str):

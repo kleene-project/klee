@@ -14,17 +14,17 @@ class ExecConfig:
     corresponding parameters if they are defined in the container.
 
         Attributes:
-            cmd (Union[Unset, List[str]]): Command to execute whithin the container. If no command is specified the command
-                from the container is used. Example: ['/bin/sh', '-c', 'ls /'].
-            container_id (Union[Unset, str]): Id of the container used for creating the exec instance.
+            cmd (Union[Unset, List[str]]): Command to execute whithin the container. If `cmd` is set to `[]` the command
+                will be inherited from the container. Example: ['/bin/sh', '-c', 'ls /'].
+            container_id (Union[Unset, str]): Identifier of the container used as environemnt for the exec instance.
             env (Union[Unset, List[str]]): A list of environment variables in the form `["VAR=value", ...]` that is set when
                 the command is executed.
-                This list will be merged with environment variables defined by the container.
-                The values in this list takes precedence if the variable is defined in both places.",
+                This list will be merged with environment variables defined in the container.
+                The values in this list takes precedence if the variable is defined in both.
                  Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
-            tty (Union[Unset, bool]): Allocate a pseudo-TTY
-            user (Union[Unset, str]): User that executes the command in the container. If no user is set the user from the
-                container will be used. Default: ''.
+            tty (Union[Unset, bool]): Allocate a pseudo-TTY for the process.
+            user (Union[Unset, str]): User that executes the command in the container. If the user is set to `""`, the user
+                will be inherited from the container. Default: ''.
     """
 
     cmd: Union[Unset, List[str]] = UNSET

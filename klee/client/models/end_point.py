@@ -14,8 +14,10 @@ class EndPoint:
 
     Attributes:
         container_id (Union[Unset, str]): ID of the container that this endpoint belongs to.
-        epair (Union[Unset, None, str]): epair used for endpoint in case of a VNET network
-        id (Union[Unset, str]): EndPoint ID
+        epair (Union[Unset, None, str]): **`vnet` containers only**
+
+            `epair(4)` interfaces connecting the container to the network.
+        id (Union[Unset, str]): Endpoint ID
         ip_address (Union[Unset, str]): The IPv4 address of the container. Example: 10.13.37.33.
         ip_address6 (Union[Unset, str]): The IPv6 address of the container. Example: 2610:1c1:1:606c::50:15.
         network_id (Union[Unset, str]): Name of the network that this endpoint belongs to.

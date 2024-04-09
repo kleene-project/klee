@@ -19,7 +19,7 @@ class ContainerInspect:
     """Detailed information on a container.
 
     Attributes:
-        container (Union[Unset, Container]): Summary description of a container
+        container (Union[Unset, Container]): Kleene container
         container_endpoints (Union[Unset, List['EndPoint']]): Endpoints of the container.
         container_mountpoints (Union[Unset, List['MountPoint']]): Mountpoints of the container.
     """

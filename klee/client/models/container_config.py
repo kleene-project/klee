@@ -18,8 +18,8 @@ T = TypeVar("T", bound="ContainerConfig")
 class ContainerConfig:
     """
     Attributes:
-        cmd (Union[Unset, None, List[str]]): Command to execute when the container is started. If no command is
-            specified the command from the image is used. Example: ['/bin/sh', '-c', 'ls /'].
+        cmd (Union[Unset, None, List[str]]): Command to execute when the container is started. If `[]` is specified the
+            command from the image is used. Example: ['/bin/sh', '-c', 'ls /'].
         env (Union[Unset, None, List[str]]): List of environment variables when using the container. This list will be
             merged with environment variables defined by the image. The values in this list takes precedence if the variable
             is defined in both. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
@@ -34,26 +34,24 @@ class ContainerConfig:
              Example: ['FreeBSD:13.2-STABLE', 'FreeBSD:13.2-STABLE@6b3c821605d4', '48fa55889b0f',
             '48fa55889b0f@2028818d6f06'].
         jail_param (Union[Unset, None, List[str]]): List of jail parameters to use for the container.
-            See the [`jails manual page`](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
-
-            A few parameters have some special behavior in Kleene:
-
-            - `exec.jail_user`: If not explicitly set, the value of the `user` parameter will be used.
-            - `mount.devfs`/`exec.clean`: If not explicitly set, `mount.devfs=true`/`exec.clean=true` will be used.
-
-            So, if you do not want `exec.clean` and `mount.devfs` enabled, you must actively disable them.
+            See the [jails manual page](https://man.freebsd.org/cgi/man.cgi?query=jail) for an explanation of what jail
+            parameters is,
+            and the [Kleene documentation](/run/jail-parameters/) for an explanation of how they are used by Kleene.
              Example: ['allow.raw_sockets=true', 'osrelease=kleenejail'].
         mounts (Union[Unset, None, List['MountPointConfig']]): List of files/directories/volumes on the host filesystem
-            that should be mounted into the container.
+            that should be mounted into the container. Example: [{'destination': '/mnt/db', 'source': 'database', 'type':
+            'volume'}, {'destination': '/webapp', 'source': '/home/me/develop/webapp', 'type': 'nullfs'}].
         name (Union[Unset, None, str]): Name of the container. Must match `/?[a-zA-Z0-9][a-zA-Z0-9_.-]+`.
         network_driver (Union[Unset, ContainerConfigNetworkDriver]): What kind of network driver should the container
             use.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.
              Default: ContainerConfigNetworkDriver.IPNET. Example: host.
-        public_ports (Union[Unset, List['PublishedPortConfig']]): List of listening ports that should accept traffic
-            from sources external to the container.
+        public_ports (Union[Unset, None, List['PublishedPortConfig']]): Listening ports on network interfaces that
+            redirect incoming traffic to the container. Example: [{'container_port': '8000', 'host_port': '8080',
+            'interfaces': ['em0'], 'properties': 'tcp'}].
         user (Union[Unset, None, str]): User that executes the command (cmd).
-            If no user is set, the user from the image will be used, which in turn is 'root' if no user is specified there.
+            If user is set to `""`, the user from the image will be used, which in turn is 'root' if no user is specified
+            there.
 
             This parameter will be overwritten by the jail parameter `exec.jail_user` if it is set.
              Default: ''.
@@ -68,7 +66,7 @@ class ContainerConfig:
     network_driver: Union[Unset, ContainerConfigNetworkDriver] = (
         ContainerConfigNetworkDriver.IPNET
     )
-    public_ports: Union[Unset, List["PublishedPortConfig"]] = UNSET
+    public_ports: Union[Unset, None, List["PublishedPortConfig"]] = UNSET
     user: Union[Unset, None, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -111,13 +109,16 @@ class ContainerConfig:
         if not isinstance(self.network_driver, Unset):
             network_driver = self.network_driver.value
 
-        public_ports: Union[Unset, List[Dict[str, Any]]] = UNSET
+        public_ports: Union[Unset, None, List[Dict[str, Any]]] = UNSET
         if not isinstance(self.public_ports, Unset):
-            public_ports = []
-            for public_ports_item_data in self.public_ports:
-                public_ports_item = public_ports_item_data.to_dict()
+            if self.public_ports is None:
+                public_ports = None
+            else:
+                public_ports = []
+                for public_ports_item_data in self.public_ports:
+                    public_ports_item = public_ports_item_data.to_dict()
 
-                public_ports.append(public_ports_item)
+                    public_ports.append(public_ports_item)
 
         user = self.user
 

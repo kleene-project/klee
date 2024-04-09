@@ -15,7 +15,6 @@ from .id_response import IdResponse
 from .image import Image
 from .image_build_config import ImageBuildConfig
 from .image_build_config_buildargs import ImageBuildConfigBuildargs
-from .image_buildargs import ImageBuildargs
 from .image_create_config import ImageCreateConfig
 from .image_create_config_method import ImageCreateConfigMethod
 from .mount_point import MountPoint
@@ -51,7 +50,6 @@ __all__ = (
     "ExecStartConfig",
     "IdResponse",
     "Image",
-    "ImageBuildargs",
     "ImageBuildConfig",
     "ImageBuildConfigBuildargs",
     "ImageCreateConfig",

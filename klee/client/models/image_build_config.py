@@ -20,19 +20,19 @@ class ImageBuildConfig:
 
     Attributes:
         container_config (ContainerConfig):
-        context (str): Path on the Kleened host of the context that is used for the build.
-        buildargs (Union[Unset, ImageBuildConfigBuildargs]): Object of string pairs for build-time ARG-variables.
-            Kleened uses the buildargs as the environment variables for, e.g., the RUN instruction, or for variable
-            expansion in other Dockerfile instructions. This is not meant for passing secret values. Example:
-            {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}.
+        context (str): Location path on the Kleened host of the context used for the image build.
+        buildargs (Union[Unset, ImageBuildConfigBuildargs]): Additional `ARG`-variables given as an object of string
+            pairs.
+            See the [`ARG` instruction documentation](/reference/dockerfile/#arg) for details.
+             Example: {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}.
         cleanup (Union[Unset, bool]): Whether or not to remove the image in case of a build failure. Default: True.
         dockerfile (Union[Unset, str]): Path of the Dockerfile used for the build. The path is relative to the context
             path. Default: 'Dockerfile'.
         networks (Union[Unset, List['EndPointConfig']]): List of endpoint-configs for the networks that the build
             container will be connected to.
-        quiet (Union[Unset, bool]): Whether or not to emit status messages of the build process.
-        tag (Union[Unset, str]): A name and optional tag to apply to the image in the name:tag format. If you omit the
-            tag the default latest value is assumed. Default: ''.
+        quiet (Union[Unset, bool]): Whether or not to send status messages of the build process to the client.
+        tag (Union[Unset, str]): A name and optional tag to apply to the image in the `name:tag` format. If `tag` is
+            omitted, the default value `latest` is used. Default: ''.
     """
 
     container_config: "ContainerConfig"

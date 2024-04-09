@@ -52,7 +52,7 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, List[str]]]:
     """network prune
 
-     Remove all networks that are not being used by any containers.
+     Remove all networks that are not used by any containers.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -76,7 +76,7 @@ def sync(
 ) -> Optional[Union[ErrorResponse, List[str]]]:
     """network prune
 
-     Remove all networks that are not being used by any containers.
+     Remove all networks that are not used by any containers.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -97,7 +97,7 @@ async def asyncio_detailed(
 ) -> Response[Union[ErrorResponse, List[str]]]:
     """network prune
 
-     Remove all networks that are not being used by any containers.
+     Remove all networks that are not used by any containers.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -120,7 +120,7 @@ async def asyncio(
 ) -> Optional[Union[ErrorResponse, List[str]]]:
     """network prune
 
-     Remove all networks that are not being used by any containers.
+     Remove all networks that are not used by any containers.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

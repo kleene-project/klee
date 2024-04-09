@@ -10,13 +10,13 @@ T = TypeVar("T", bound="WebSocketMessage")
 
 @_attrs_define
 class WebSocketMessage:
-    """The request have been validated and the request is being processed.
+    """Protocol messages sent from Kleened's websocket endpoints
 
     Example:
         {'data': '', 'message': 'succesfully started execution instance in detached mode', 'msg_type': 'closing'}
 
     Attributes:
-        data (str): Any data that might have been created by the process such as an image id. Default: ''.
+        data (str): Any data that might have been created by the process such as an image ID. Default: ''.
         message (str): A useful message to tell the client what has happened. Default: ''.
         msg_type (WebSocketMessageMsgType): Which type of message.
     """

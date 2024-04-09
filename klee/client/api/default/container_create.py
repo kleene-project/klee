@@ -68,6 +68,12 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container create
 
+     Create a container.
+
+    Note that it is not possible to set any of the properties in the request body to `null`.
+    This is only possible when updating containers using the
+    [Container.Update](#operation/Container.Update) endpoint.
+
     Args:
         json_body (ContainerConfig):
 
@@ -98,6 +104,12 @@ def sync(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container create
 
+     Create a container.
+
+    Note that it is not possible to set any of the properties in the request body to `null`.
+    This is only possible when updating containers using the
+    [Container.Update](#operation/Container.Update) endpoint.
+
     Args:
         json_body (ContainerConfig):
 
@@ -121,6 +133,12 @@ async def asyncio_detailed(
     json_body: ContainerConfig,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container create
+
+     Create a container.
+
+    Note that it is not possible to set any of the properties in the request body to `null`.
+    This is only possible when updating containers using the
+    [Container.Update](#operation/Container.Update) endpoint.
 
     Args:
         json_body (ContainerConfig):
@@ -148,6 +166,12 @@ async def asyncio(
     json_body: ContainerConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container create
+
+     Create a container.
+
+    Note that it is not possible to set any of the properties in the request body to `null`.
+    This is only possible when updating containers using the
+    [Container.Update](#operation/Container.Update) endpoint.
 
     Args:
         json_body (ContainerConfig):

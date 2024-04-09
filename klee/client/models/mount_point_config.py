@@ -11,9 +11,9 @@ T = TypeVar("T", bound="MountPointConfig")
 
 @_attrs_define
 class MountPointConfig:
-    """Create a mount point between sthe host file system and a container.
+    """Configuration for a mount point between the host file system and a container.
 
-    There are two `type`'s of mount points:
+    There are two types of mount points:
 
     - `nullfs`: Mount a user-specified file or directory from the host machine into the container.
     - `volume`: Mount a Kleene volume into the container.
@@ -23,9 +23,9 @@ class MountPointConfig:
             read_only (Union[Unset, bool]): Whether the mountpoint should be read-only.
             source (Union[Unset, str]): Source used for the mount. Depends on `method`:
 
-                - If `method="volume"` then `source` should be a volume name
-                - If `method="nullfs"`  then `source` should be a (absolute) path on the host
-            type (Union[Unset, MountPointConfigType]): Kind of mount to create: `nullfs` or `volume`.
+                - If `method` is `"volume"` then `source` should be a volume name
+                - If `method`is `"nullfs"` then `source` should be an absolute path on the host
+            type (Union[Unset, MountPointConfigType]): Type of mountpoint to create.
     """
 
     destination: Union[Unset, str] = UNSET

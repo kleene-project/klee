@@ -64,7 +64,7 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """volume create
 
-     Create a volume. The underlying volume zfs dataset will be located at `{kleened root path}/volumes`.
+     Create a new volume.
 
     Args:
         json_body (VolumeConfig): Volume configuration
@@ -96,7 +96,7 @@ def sync(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """volume create
 
-     Create a volume. The underlying volume zfs dataset will be located at `{kleened root path}/volumes`.
+     Create a new volume.
 
     Args:
         json_body (VolumeConfig): Volume configuration
@@ -122,7 +122,7 @@ async def asyncio_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """volume create
 
-     Create a volume. The underlying volume zfs dataset will be located at `{kleened root path}/volumes`.
+     Create a new volume.
 
     Args:
         json_body (VolumeConfig): Volume configuration
@@ -151,7 +151,7 @@ async def asyncio(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """volume create
 
-     Create a volume. The underlying volume zfs dataset will be located at `{kleened root path}/volumes`.
+     Create a new volume.
 
     Args:
         json_body (VolumeConfig): Volume configuration

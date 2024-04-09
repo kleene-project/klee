@@ -13,12 +13,20 @@ class PublishedPort:
     """A published port of a container, i.e., opening up the port for incoming traffic from external sources.
 
     Attributes:
-        container_port (str): port or portrange on the host that accepts traffic from `host_port`.
-        host_port (str): source port or portrange on the host where incoming traffic is redirected
+        container_port (str): Destination port (or portrange) of the container that accepts traffic from `host_port`.
+
+            `container_port` can take two forms, depending on `host_port`:
+            - A single portnumber `"PORTNUMBER"` if `host_port` is a single port number
+            - A portrange `"PORTNUMBER_START:*"` if `host_port` is a port range
+        host_port (str): Source port (or portrange) on the host where incoming traffic is redirected.
+
+            `host_port` can take one of two forms:
+            - A single portnumber `"PORTNUMBER"`
+            - A portrange `"PORTNUMBER_START:PORTNUMBER_END"`
         interfaces (List[str]): List of host interfaces where incoming traffic to `host_port` is redirected to the
             container at `ip_address` and/or `ip_address6` on `container_port`.
-        ip_address (str): ipv4 address within the container that receives traffic from the public port
-        ip_address6 (str): ipv6 address within the container that receives traffic from the public port
+        ip_address (str): ipv4 address within the container that receives traffic to `container_port`
+        ip_address6 (str): ipv6 address within the container that receives traffic to `container_port`
         protocol (PublishedPortProtocol): tcp or udp
     """
 

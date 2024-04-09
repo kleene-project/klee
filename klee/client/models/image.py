@@ -1,13 +1,9 @@
-from typing import TYPE_CHECKING, Any, Dict, List, Type, TypeVar, Union, cast
+from typing import Any, Dict, List, Type, TypeVar, Union, cast
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
-
-if TYPE_CHECKING:
-    from ..models.image_buildargs import ImageBuildargs
-
 
 T = TypeVar("T", bound="Image")
 
@@ -17,10 +13,6 @@ class Image:
     """the image metadata
 
     Attributes:
-        buildargs (Union[Unset, ImageBuildargs]): Object of string pairs for build-time variables. Users pass these
-            values at build-time. Kleened uses the buildargs as the environment context for commands run via the Dockerfile
-            RUN instruction, or for variable expansion in other Dockerfile instructions. This is not meant for passing
-            secret values. Example: {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}.
         cmd (Union[Unset, List[str]]): Default command used when creating a container from this image Example:
             ['/bin/sh', '-c', '/bin/ls'].
         created (Union[Unset, str]): When the image was created
@@ -28,18 +20,17 @@ class Image:
         env (Union[Unset, List[str]]): Environment variables and their values to set before running command. Example:
             ['PWD=/roo/', 'JAIL_MGMT_ENGINE=kleene'].
         id (Union[Unset, str]): The id of the image
-        instructions (Union[Unset, List[List[str]]]): Instructions and their corresponding snapshots, if any, used for
-            creating the image.
-            Each item in the array is comprised of a 2-element array of the form `["<instruction>","<snapshot>"]`
-            containing a instruction and its snapshot.
-            The latter will only be present if it is a `RUN` or `COPY` instruction that executed succesfully.
-            Otherwise `<snapshot>` will be an empty string.
+        instructions (Union[Unset, List[List[str]]]): Instructions and their corresponding snapshots (if they exist)
+            that were used to build the image.
+            Each item in the array consists of a 2-element array `["<instruction>","<snapshot>"]`
+            containing one instruction and possibly its snapshot.
+            The latter is only be present with `RUN` or `COPY` instructions that ran succesfully.
+            Otherwise `<snapshot>` is empty.
         name (Union[Unset, str]): Name of the image
         tag (Union[Unset, str]): Tag of the image
-        user (Union[Unset, str]): user used when executing the command
+        user (Union[Unset, str]): User used for running `cmd`
     """
 
-    buildargs: Union[Unset, "ImageBuildargs"] = UNSET
     cmd: Union[Unset, List[str]] = UNSET
     created: Union[Unset, str] = UNSET
     dataset: Union[Unset, str] = UNSET
@@ -52,10 +43,6 @@ class Image:
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        buildargs: Union[Unset, Dict[str, Any]] = UNSET
-        if not isinstance(self.buildargs, Unset):
-            buildargs = self.buildargs.to_dict()
-
         cmd: Union[Unset, List[str]] = UNSET
         if not isinstance(self.cmd, Unset):
             cmd = self.cmd
@@ -82,8 +69,6 @@ class Image:
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
-        if buildargs is not UNSET:
-            field_dict["buildargs"] = buildargs
         if cmd is not UNSET:
             field_dict["cmd"] = cmd
         if created is not UNSET:
@@ -107,16 +92,7 @@ class Image:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
-        from ..models.image_buildargs import ImageBuildargs
-
         d = src_dict.copy()
-        _buildargs = d.pop("buildargs", UNSET)
-        buildargs: Union[Unset, ImageBuildargs]
-        if isinstance(_buildargs, Unset):
-            buildargs = UNSET
-        else:
-            buildargs = ImageBuildargs.from_dict(_buildargs)
-
         cmd = cast(List[str], d.pop("cmd", UNSET))
 
         created = d.pop("created", UNSET)
@@ -141,7 +117,6 @@ class Image:
         user = d.pop("user", UNSET)
 
         image = cls(
-            buildargs=buildargs,
             cmd=cmd,
             created=created,
             dataset=dataset,

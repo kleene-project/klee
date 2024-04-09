@@ -55,7 +55,7 @@ def sync_detailed(
 ) -> Response[List["Volume"]]:
     """volume list
 
-     Returns a compact listing of existing volumes.
+     List volumes.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -79,7 +79,7 @@ def sync(
 ) -> Optional[List["Volume"]]:
     """volume list
 
-     Returns a compact listing of existing volumes.
+     List volumes.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -100,7 +100,7 @@ async def asyncio_detailed(
 ) -> Response[List["Volume"]]:
     """volume list
 
-     Returns a compact listing of existing volumes.
+     List volumes.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -123,7 +123,7 @@ async def asyncio(
 ) -> Optional[List["Volume"]]:
     """volume list
 
-     Returns a compact listing of existing volumes.
+     List volumes.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

@@ -11,7 +11,7 @@ class IdResponse:
     """Response to an API call that returns just an Id
 
     Attributes:
-        id (str): The id of the created/modified/destroyed object.
+        id (str): ID of the created/modified/removed object.
     """
 
     id: str

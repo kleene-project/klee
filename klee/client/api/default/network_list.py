@@ -60,11 +60,9 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, List["Network"]]]:
     """network list
 
-     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
-    for detailed information about a specific network.
-
-    Note that it uses a different, smaller representation of a network than
-    inspecting a single network.
+     Returns a list of networks.
+    Use the [network inspect](#operation/Network.Inspect) endpoint
+    to get detailed information about a network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -88,11 +86,9 @@ def sync(
 ) -> Optional[Union[ErrorResponse, List["Network"]]]:
     """network list
 
-     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
-    for detailed information about a specific network.
-
-    Note that it uses a different, smaller representation of a network than
-    inspecting a single network.
+     Returns a list of networks.
+    Use the [network inspect](#operation/Network.Inspect) endpoint
+    to get detailed information about a network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -113,11 +109,9 @@ async def asyncio_detailed(
 ) -> Response[Union[ErrorResponse, List["Network"]]]:
     """network list
 
-     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
-    for detailed information about a specific network.
-
-    Note that it uses a different, smaller representation of a network than
-    inspecting a single network.
+     Returns a list of networks.
+    Use the [network inspect](#operation/Network.Inspect) endpoint
+    to get detailed information about a network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -140,11 +134,9 @@ async def asyncio(
 ) -> Optional[Union[ErrorResponse, List["Network"]]]:
     """network list
 
-     Returns a list of networks. Use [network inspect endpoint](#operation/Network.Inspect)
-    for detailed information about a specific network.
-
-    Note that it uses a different, smaller representation of a network than
-    inspecting a single network.
+     Returns a list of networks.
+    Use the [network inspect](#operation/Network.Inspect) endpoint
+    to get detailed information about a network.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

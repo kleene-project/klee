@@ -11,10 +11,10 @@ T = TypeVar("T", bound="Network")
 
 @_attrs_define
 class Network:
-    """summary description of a network
+    """Kleene network
 
     Attributes:
-        gateway (Union[Unset, str]): The default IPv4 router that is added to 'vnet' containers connecting to the
+        gateway (Union[Unset, str]): The default IPv4 router that is added to `vnet` containers connecting to the
             network.
             If `""` no gateway is used.
              Default: ''. Example: 192.168.1.1.
@@ -22,15 +22,12 @@ class Network:
             network.
             If `""` no gateway is used.
              Default: ''. Example: 2001:db8:8a2e:370:7334::1.
-        icc (Union[Unset, bool]): Whether or not to enable connectivity between containers within the network. Default:
-            True.
-        id (Union[Unset, str]): The id of the network
+        icc (Union[Unset, bool]): Inter-container connectvity: Whether or not to enable connectivity between containers
+            within the network. Default: True.
+        id (Union[Unset, str]): ID of the network
         interface (Union[Unset, str]): Name for the interface that is being used for the network.
-            If the `type` property is set to `custom` the value of `interface` must be the name of an existing interface.
-            The name must not exceed 15 characters.
              Default: ''. Example: kleene0.
-        internal (Union[Unset, bool]): Whether or not the network is internal, i.e., not allowing outgoing upstream
-            traffic Default: True.
+        internal (Union[Unset, bool]): Whether or not outgoing traffic is allowed on the network. Default: True.
         name (Union[Unset, str]): Name of the network. Example: westnet.
         nat (Union[Unset, str]): Which interface should be used for NAT'ing outgoing traffic from the network.
             If set to `""` no NAT'ing is configured.
@@ -39,9 +36,7 @@ class Network:
             10.13.37.0/24.
         subnet6 (Union[Unset, str]): The IPv6 subnet (in CIDR-format) that is used for the network. Example:
             2001:db8:8a2e:370:7334::/64.
-        type (Union[Unset, NetworkType]): What kind of network this is.
-            Possible values are `bridge`, `loopback`, `custom`, and `host` networks.
-             Example: bridge.
+        type (Union[Unset, NetworkType]): Network type. Example: bridge.
     """
 
     gateway: Union[Unset, str] = ""

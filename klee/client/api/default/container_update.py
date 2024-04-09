@@ -76,6 +76,16 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container update
 
+     Re-configure a container.
+
+    The JSON request body is identical to [Container.Create](#operation/Container.Create),
+    and is being interpreted as follows:
+
+    - The `image` property is ignored.
+    - All other properties will replace the existing ones, if they are not `null`.
+
+    Some of the changes might require a running container to be restarted.
+
     Args:
         container_id (str):
         json_body (ContainerConfig):
@@ -109,6 +119,16 @@ def sync(
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container update
 
+     Re-configure a container.
+
+    The JSON request body is identical to [Container.Create](#operation/Container.Create),
+    and is being interpreted as follows:
+
+    - The `image` property is ignored.
+    - All other properties will replace the existing ones, if they are not `null`.
+
+    Some of the changes might require a running container to be restarted.
+
     Args:
         container_id (str):
         json_body (ContainerConfig):
@@ -135,6 +155,16 @@ async def asyncio_detailed(
     json_body: ContainerConfig,
 ) -> Response[Union[ErrorResponse, IdResponse]]:
     """container update
+
+     Re-configure a container.
+
+    The JSON request body is identical to [Container.Create](#operation/Container.Create),
+    and is being interpreted as follows:
+
+    - The `image` property is ignored.
+    - All other properties will replace the existing ones, if they are not `null`.
+
+    Some of the changes might require a running container to be restarted.
 
     Args:
         container_id (str):
@@ -165,6 +195,16 @@ async def asyncio(
     json_body: ContainerConfig,
 ) -> Optional[Union[ErrorResponse, IdResponse]]:
     """container update
+
+     Re-configure a container.
+
+    The JSON request body is identical to [Container.Create](#operation/Container.Create),
+    and is being interpreted as follows:
+
+    - The `image` property is ignored.
+    - All other properties will replace the existing ones, if they are not `null`.
+
+    Some of the changes might require a running container to be restarted.
 
     Args:
         container_id (str):

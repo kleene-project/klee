@@ -11,17 +11,24 @@ T = TypeVar("T", bound="PublishedPortConfig")
 
 @_attrs_define
 class PublishedPortConfig:
-    """Necessary configurations for publishing a port of a container and opening it up for incoming traffic from external
-    sources.
+    """Configuration for publishing a port of a container.
 
-        Attributes:
-            container_port (str): port or portrange on the host that accepts traffic from `host_port`.
-            host_port (str): source port or portrange on the host where incoming traffic is redirected
-            interfaces (List[str]): List of host interfaces where the port is published, i.e., where traffic to the
-                designated `host_port` is redirected to the container's ip4/ip6 addresses on the specified network. If the list
-                is empty, the hosts gateway interface is used.
-            protocol (Union[Unset, PublishedPortConfigProtocol]): Whether to use TCP or UDP as transport protocol Default:
-                PublishedPortConfigProtocol.TCP.
+    Attributes:
+        container_port (str): Destination port (or portrange) of the container that accepts traffic from `host_port`.
+
+            `container_port` can take two forms, depending on `host_port`:
+            - A single portnumber `"PORTNUMBER"` if `host_port` is a single port number
+            - A portrange `"PORTNUMBER_START:*"` if `host_port` is a port range
+        host_port (str): Source port (or portrange) on the host where incoming traffic is redirected.
+
+            `host_port` can take one of two forms:
+            - A single portnumber `"PORTNUMBER"`
+            - A portrange `"PORTNUMBER_START:PORTNUMBER_END"`
+        interfaces (List[str]): List of host interfaces where the port is published, i.e.,
+            where traffic to `host_port` is redirected to `container_port` (on a random IP-address).
+            If set to `[]` the host's gateway interface is used.
+        protocol (Union[Unset, PublishedPortConfigProtocol]): Whether to use TCP or UDP as transport protocol Default:
+            PublishedPortConfigProtocol.TCP.
     """
 
     container_port: str

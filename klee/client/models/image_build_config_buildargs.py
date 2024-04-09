@@ -8,9 +8,8 @@ T = TypeVar("T", bound="ImageBuildConfigBuildargs")
 
 @_attrs_define
 class ImageBuildConfigBuildargs:
-    """Object of string pairs for build-time ARG-variables. Kleened uses the buildargs as the environment variables for,
-    e.g., the RUN instruction, or for variable expansion in other Dockerfile instructions. This is not meant for passing
-    secret values.
+    """Additional `ARG`-variables given as an object of string pairs.
+    See the [`ARG` instruction documentation](/reference/dockerfile/#arg) for details.
 
         Example:
             {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}

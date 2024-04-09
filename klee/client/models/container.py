@@ -15,27 +15,31 @@ T = TypeVar("T", bound="Container")
 
 @_attrs_define
 class Container:
-    """Summary description of a container
+    """Kleene container
 
     Attributes:
-        cmd (Union[Unset, List[str]]): Command being used when starting the container
+        cmd (Union[Unset, List[str]]): Command used when starting the container
         created (Union[Unset, str]): When the container was created
         dataset (Union[Unset, str]): ZFS dataset of the container
-        env (Union[Unset, List[str]]): List of environment variables used when the container is used. This list will be
-            merged with environment variables defined by the image. The values in this list takes precedence if the variable
-            is defined in both places. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
+        env (Union[Unset, List[str]]): List of environment variables. The list will be merged with environment variables
+            defined by the image. The values in this list takes precedence if the variable is defined in both. Example:
+            ['DEBUG=0', 'LANG=da_DK.UTF-8'].
         id (Union[Unset, str]): The id of the container
-        image_id (Union[Unset, str]): The id of the image that this container was created from
-        jail_param (Union[Unset, List[str]]): List of jail parameters (see jail(8) for details) Example:
-            ['allow.raw_sockets=true', 'osrelease=kleenejail'].
+        image_id (Union[Unset, str]): ID of the image that this container was created from
+        jail_param (Union[Unset, List[str]]): List of jail parameters to use for the container.
+            See the [jails manual page](https://man.freebsd.org/cgi/man.cgi?query=jail) for an explanation of what jail
+            parameters is,
+            and the [Kleene documentation](/run/jail-parameters/) for an explanation of how they are used by Kleene.
+             Example: ['allow.raw_sockets=true', 'osrelease=kleenejail'].
         name (Union[Unset, str]): Name of the container.
-        network_driver (Union[Unset, ContainerNetworkDriver]): What kind of network driver is the container using.
+        network_driver (Union[Unset, ContainerNetworkDriver]): What kind of network driver the container uses.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.
              Example: ipnet.
-        public_ports (Union[Unset, List['PublishedPort']]): List of listening ports that should accept traffic from
-            sources external to the container.
+        public_ports (Union[Unset, List['PublishedPort']]): Listening ports on network interfaces that redirect incoming
+            traffic to the container. Example: [{'container_port': '8000', 'host_port': '8080', 'interfaces': ['em0'],
+            'properties': 'tcp'}].
         running (Union[Unset, bool]): whether or not the container is running
-        user (Union[Unset, str]): The default user used when creating execution instances in the container.
+        user (Union[Unset, str]): Default user used when creating execution instances in the container.
     """
 
     cmd: Union[Unset, List[str]] = UNSET

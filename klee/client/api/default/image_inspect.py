@@ -61,7 +61,7 @@ def sync_detailed(
 ) -> Response[Union[ErrorResponse, Image]]:
     """image inspect
 
-     Inspect a image and its endpoints.
+     Inspect an image.
 
     Args:
         image_id (str):
@@ -93,7 +93,7 @@ def sync(
 ) -> Optional[Union[ErrorResponse, Image]]:
     """image inspect
 
-     Inspect a image and its endpoints.
+     Inspect an image.
 
     Args:
         image_id (str):
@@ -119,7 +119,7 @@ async def asyncio_detailed(
 ) -> Response[Union[ErrorResponse, Image]]:
     """image inspect
 
-     Inspect a image and its endpoints.
+     Inspect an image.
 
     Args:
         image_id (str):
@@ -148,7 +148,7 @@ async def asyncio(
 ) -> Optional[Union[ErrorResponse, Image]]:
     """image inspect
 
-     Inspect a image and its endpoints.
+     Inspect an image.
 
     Args:
         image_id (str):
