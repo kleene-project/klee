@@ -11,7 +11,6 @@ from ...types import Response
 
 
 def _get_kwargs(
-    network_id: str,
     *,
     json_body: EndPointConfig,
 ) -> Dict[str, Any]:
@@ -22,9 +21,7 @@ def _get_kwargs(
 
     return {
         "method": "post",
-        "url": "/networks/{network_id}/connect".format(
-            network_id=network_id,
-        ),
+        "url": "/networks/connect",
         "json": json_json_body,
     }
 
@@ -66,7 +63,6 @@ def _build_response(
 
 def sync_detailed(
     transport,
-    network_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
     json_body: EndPointConfig,
@@ -77,7 +73,6 @@ def sync_detailed(
      Connect a container to a network
 
     Args:
-        network_id (str):
         json_body (EndPointConfig): Configuration of a connection between a network to a
             container.
 
@@ -91,7 +86,6 @@ def sync_detailed(
 
     kwargs.update(
         _get_kwargs(
-            network_id=network_id,
             json_body=json_body,
         )
     )
@@ -103,7 +97,6 @@ def sync_detailed(
 
 
 def sync(
-    network_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
     json_body: EndPointConfig,
@@ -113,7 +106,6 @@ def sync(
      Connect a container to a network
 
     Args:
-        network_id (str):
         json_body (EndPointConfig): Configuration of a connection between a network to a
             container.
 
@@ -126,14 +118,12 @@ def sync(
     """
 
     return sync_detailed(
-        network_id=network_id,
         client=client,
         json_body=json_body,
     ).parsed
 
 
 async def asyncio_detailed(
-    network_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
     json_body: EndPointConfig,
@@ -143,7 +133,6 @@ async def asyncio_detailed(
      Connect a container to a network
 
     Args:
-        network_id (str):
         json_body (EndPointConfig): Configuration of a connection between a network to a
             container.
 
@@ -156,7 +145,6 @@ async def asyncio_detailed(
     """
 
     kwargs = _get_kwargs(
-        network_id=network_id,
         json_body=json_body,
     )
 
@@ -166,7 +154,6 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    network_id: str,
     *,
     client: Union[AuthenticatedClient, Client],
     json_body: EndPointConfig,
@@ -176,7 +163,6 @@ async def asyncio(
      Connect a container to a network
 
     Args:
-        network_id (str):
         json_body (EndPointConfig): Configuration of a connection between a network to a
             container.
 
@@ -190,7 +176,6 @@ async def asyncio(
 
     return (
         await asyncio_detailed(
-            network_id=network_id,
             client=client,
             json_body=json_body,
         )

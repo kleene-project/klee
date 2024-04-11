@@ -222,14 +222,21 @@ def _connect(ip, ip6, network, container):
 
     if ip is not None:
         endpoint_config = EndPointConfig.from_dict(
-            {"container": container, "ip_address": ip, "ip_address6": ip6}
+            {
+                "network": network,
+                "container": container,
+                "ip_address": ip,
+                "ip_address6": ip6,
+            }
         )
     else:
-        endpoint_config = EndPointConfig.from_dict({"container": container})
+        endpoint_config = EndPointConfig.from_dict(
+            {"network": network, "container": container}
+        )
 
     return request_and_print_response(
         network_connect,
-        kwargs={"network_id": network, "json_body": endpoint_config},
+        kwargs={"json_body": endpoint_config},
         statuscode2printer={
             204: print_nothing,
             404: print_response_msg,
