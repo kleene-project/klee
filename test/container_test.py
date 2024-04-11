@@ -1,4 +1,7 @@
+from functools import partial
+from multiprocessing import Process
 import subprocess
+import json
 import time
 
 from testutils import (
@@ -50,6 +53,11 @@ class TestContainerSubcommand:
         assert error(".test") == cmd(".test")
         assert error("-test") == cmd("-test")
         assert error("tes:t") == cmd("tes:t")
+
+    def test_invalid_network_driver(self, testimage_and_cleanup):
+        output = run("run -l lolnet FreeBSD /bin/ls", exit_code=1)
+        error = "Error! Could not validate container configuration: 'lolnet' is not a valid ContainerConfigNetworkDriver"
+        assert error == "".join(output)
 
     def test_remove_running_container(self, testimage_and_cleanup):
         name = "remove_running_container"
@@ -139,6 +147,34 @@ class TestContainerSubcommand:
         container_id_again, _ = run(f"container stop {container_id[:8]}")
         assert container_id == container_id_again
         run(f"rmc {container_id}")
+
+    def test_attached_client_exits_abruptly_and_container_process_continues(
+        self, testimage_and_cleanup
+    ):
+        # Only the process '/usr/sbin/jail ...' is killed, not the jailed process itself
+        def listening_port_exist(port):
+            output = json.loads(shell("netstat --libxo json -l4na -p tcp"))
+            for socket in output["statistics"]["socket"]:
+                if socket["local"]["port"] == port:
+                    return True
+
+            return False
+
+        command = "run --name myname FreeBSD /bin/sh -c".split(" ") + ["nc -l 4000"]
+        nc_server = Process(target=run, args=(command,), daemon=False)
+        nc_server.start()
+        time.sleep(0.5)
+        assert nc_server.is_alive()
+        assert listening_port_exist("4000")
+        assert nc_server.is_alive()
+        nc_server.terminate()
+        time.sleep(0.5)
+        assert not nc_server.is_alive()
+
+        result = shell_raw("nc -v -z localhost 4000")
+        assert (
+            b"Connection to localhost 4000 port [tcp/*] succeeded!\n" == result.stderr
+        )
 
     def test_default_drivers_for_containers(self, testimage_and_cleanup):
         # Creating a container not connected to a network without using the `--driver` option
