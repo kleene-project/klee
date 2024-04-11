@@ -4,6 +4,7 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..models.container_config_network_driver import ContainerConfigNetworkDriver
+from ..models.container_config_restart_policy import ContainerConfigRestartPolicy
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
@@ -46,9 +47,15 @@ class ContainerConfig:
             use.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.
              Default: ContainerConfigNetworkDriver.IPNET. Example: host.
+        persist (Union[Unset, None, bool]): Whether or not this container will be removed by pruning. Example: True.
         public_ports (Union[Unset, None, List['PublishedPortConfig']]): Listening ports on network interfaces that
             redirect incoming traffic to the container. Example: [{'container_port': '8000', 'host_port': '8080',
             'interfaces': ['em0'], 'properties': 'tcp'}].
+        restart_policy (Union[Unset, None, ContainerConfigRestartPolicy]): Restarting behavior of the container:
+
+            - `"no"`: There is no automatic restart of the container
+            - `"on-startup"`: The container is started each time Kleened is.
+             Default: ContainerConfigRestartPolicy.NO. Example: on-startup.
         user (Union[Unset, None, str]): User that executes the command (cmd).
             If user is set to `""`, the user from the image will be used, which in turn is 'root' if no user is specified
             there.
@@ -66,7 +73,11 @@ class ContainerConfig:
     network_driver: Union[Unset, ContainerConfigNetworkDriver] = (
         ContainerConfigNetworkDriver.IPNET
     )
+    persist: Union[Unset, None, bool] = False
     public_ports: Union[Unset, None, List["PublishedPortConfig"]] = UNSET
+    restart_policy: Union[Unset, None, ContainerConfigRestartPolicy] = (
+        ContainerConfigRestartPolicy.NO
+    )
     user: Union[Unset, None, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
@@ -109,6 +120,7 @@ class ContainerConfig:
         if not isinstance(self.network_driver, Unset):
             network_driver = self.network_driver.value
 
+        persist = self.persist
         public_ports: Union[Unset, None, List[Dict[str, Any]]] = UNSET
         if not isinstance(self.public_ports, Unset):
             if self.public_ports is None:
@@ -119,6 +131,10 @@ class ContainerConfig:
                     public_ports_item = public_ports_item_data.to_dict()
 
                     public_ports.append(public_ports_item)
+
+        restart_policy: Union[Unset, None, str] = UNSET
+        if not isinstance(self.restart_policy, Unset):
+            restart_policy = self.restart_policy.value if self.restart_policy else None
 
         user = self.user
 
@@ -139,8 +155,12 @@ class ContainerConfig:
             field_dict["name"] = name
         if network_driver is not UNSET:
             field_dict["network_driver"] = network_driver
+        if persist is not UNSET:
+            field_dict["persist"] = persist
         if public_ports is not UNSET:
             field_dict["public_ports"] = public_ports
+        if restart_policy is not UNSET:
+            field_dict["restart_policy"] = restart_policy
         if user is not UNSET:
             field_dict["user"] = user
 
@@ -176,12 +196,23 @@ class ContainerConfig:
         else:
             network_driver = ContainerConfigNetworkDriver(_network_driver)
 
+        persist = d.pop("persist", UNSET)
+
         public_ports = []
         _public_ports = d.pop("public_ports", UNSET)
         for public_ports_item_data in _public_ports or []:
             public_ports_item = PublishedPortConfig.from_dict(public_ports_item_data)
 
             public_ports.append(public_ports_item)
+
+        _restart_policy = d.pop("restart_policy", UNSET)
+        restart_policy: Union[Unset, None, ContainerConfigRestartPolicy]
+        if _restart_policy is None:
+            restart_policy = None
+        elif isinstance(_restart_policy, Unset):
+            restart_policy = UNSET
+        else:
+            restart_policy = ContainerConfigRestartPolicy(_restart_policy)
 
         user = d.pop("user", UNSET)
 
@@ -193,7 +224,9 @@ class ContainerConfig:
             mounts=mounts,
             name=name,
             network_driver=network_driver,
+            persist=persist,
             public_ports=public_ports,
+            restart_policy=restart_policy,
             user=user,
         )
 

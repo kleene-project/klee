@@ -3,8 +3,10 @@
 from .container import Container
 from .container_config import ContainerConfig
 from .container_config_network_driver import ContainerConfigNetworkDriver
+from .container_config_restart_policy import ContainerConfigRestartPolicy
 from .container_inspect import ContainerInspect
 from .container_network_driver import ContainerNetworkDriver
+from .container_restart_policy import ContainerRestartPolicy
 from .container_summary import ContainerSummary
 from .end_point import EndPoint
 from .end_point_config import EndPointConfig
@@ -40,8 +42,10 @@ __all__ = (
     "Container",
     "ContainerConfig",
     "ContainerConfigNetworkDriver",
+    "ContainerConfigRestartPolicy",
     "ContainerInspect",
     "ContainerNetworkDriver",
+    "ContainerRestartPolicy",
     "ContainerSummary",
     "EndPoint",
     "EndPointConfig",

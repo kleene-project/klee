@@ -488,11 +488,11 @@ def _create_container_and_connect_to_network(**kwargs):
 def _print_container(response):
     containers = response.parsed
 
-    def command_json2command_human(command_str):
-        if command_str is None:
+    def command_json2command_human(command):
+        if command is None:
             return "Dockerfile"
 
-        return " ".join(json.loads(command_str))
+        return " ".join(command)
 
     containers = [
         [
