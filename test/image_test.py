@@ -82,6 +82,43 @@ class TestImageSubcommand:
         run(f"rmi {image_id}")
         assert_only_test_image()
 
+    def test_try_to_remove_image_with_image_child(self, testimage):
+        create_dockerfile(instructions)
+        run(f"build -t Parent {cwd}")
+        create_dockerfile(["FROM Parent", 'RUN echo "hello" > /world.txt'])
+        run(f"build -t Child {cwd}")
+
+        parent_id = inspect("image", "Parent")["id"]
+        child_id = inspect("image", "Child")["id"]
+
+        error = [
+            f"could not remove image {parent_id} since it is used for images:",
+            f"{child_id}",
+            "",
+        ]
+        output = run("rmi Parent", exit_code=1)
+        assert error == output
+        output = run("rmi Child")
+        output = run("rmi Parent")
+
+    def test_try_to_remove_image_with_container_child(self, testimage):
+        create_dockerfile(instructions)
+        run(f"build -t Parent {cwd}")
+        run("run --name Child Parent")
+
+        parent_id = inspect("image", "Parent")["id"]
+        child_id = inspect("container", "Child")["container"]["id"]
+
+        error = [
+            f"could not remove image {parent_id} since it is used for containers:",
+            f"{child_id}",
+            "",
+        ]
+        output = run("rmi Parent", exit_code=1)
+        assert error == output
+        output = run("rmc Child")
+        output = run("rmi Parent")
+
     def test_build_image_with_buildarg(self, testimage):
         instructions = ["FROM FreeBSD", "ARG TEST=notthis", 'RUN echo "$TEST"']
         create_dockerfile(instructions)
