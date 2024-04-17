@@ -87,6 +87,7 @@ CONTAINER_LIST_COLUMNS = [
     ("IMAGE", {"style": "blue"}),
     ("COMMAND", {"style": "bright_white", "max_width": 40, "no_wrap": True}),
     ("CREATED", {"style": "bright_white"}),
+    ("AUTORUN", {"style": "bright_white", "justify": "center"}),
     ("STATUS", {}),
     ("JID", {"style": "white"}),
 ]
@@ -284,7 +285,7 @@ def container_update(name, hidden=False):
         "-u",
         metavar="text",
         default=None,
-        help="Default user used when running commands in the container.",
+        help="Default user used when running commands in the container",
     )
     @click.option(
         "--env",
@@ -298,26 +299,45 @@ def container_update(name, hidden=False):
         "-J",
         multiple=True,
         default=None,
-        help="Specify one or more jail parameters, see jail(8) for details",
+        help="""
+            Specify one or more jail parameters to use.
+            If you do not want `mount.devfs`, `exec.clean`, and `exec.stop="/bin/sh /etc/rc.shutdown"` enabled, you must actively disable them
+            """,
+    )
+    @click.option(
+        "--persist",
+        "-P",
+        is_flag=True,
+        help="Do not remove this container when pruning",
+    )
+    @click.option(
+        "--restart",
+        default="no",
+        show_default=True,
+        help="""
+        Restarting policy of the container. Set to `no` for no automatic restart of the container.
+        Set to `on-startup` to start the container each time Kleened is
+        """,
     )
     @click.argument("container", nargs=1)
     @click.argument("command", nargs=-1)
-    def update(name, user, env, jailparam, container, command):
+    def update(**config):
         """
-        See the documentation for details.
+        Modify container properties.
+        Using `--jailparam` and `--env` removes all values from the existing configration.
         """
-        config = {
-            "name": name,
-            "user": user,
-            "env": env,
-            "jail_param": jailparam,
-            "container": container,
-        }
+        container_id = config["container"]
+
+        config["jail_param"] = config.pop("jailparam")
+        config["restart_policy"] = config.pop("restart")
+        command = config.pop("command")
         config["cmd"] = None if len(command) == 0 else list(command)
+
         config = ContainerConfig.from_dict(config)
+
         request_and_print_response(
             container_update_endpoint,
-            kwargs={"container_id": container, "json_body": config},
+            kwargs={"container_id": container_id, "json_body": config},
             statuscode2printer={
                 201: print_response_id,
                 409: print_response_msg,
@@ -437,6 +457,8 @@ def _create_container_and_connect_to_network(**kwargs):
         "env": list(kwargs["env"]),
         "mounts": [decode_mount(mnt) for mnt in mounts],
         "jail_param": list(kwargs["jailparam"]),
+        "persist": kwargs["persist"],
+        "restart_policy": kwargs["restart"],
         "network_driver": kwargs["driver"],
         "public_ports": list(decode_public_ports(kwargs["publish"])),
     }
@@ -501,6 +523,7 @@ def _print_container(response):
             print_image_column(c.image_name, c.image_tag, c.image_id),
             command_json2command_human(c.cmd),
             human_duration(c.created) + " ago",
+            "[b]yes[/b]" if c.restart_policy == "on-startup" else "no",
             is_running_str(c.running),
             "" if c.jid is None else str(c.jid),
         ]

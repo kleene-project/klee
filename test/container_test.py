@@ -93,7 +93,7 @@ class TestContainerSubcommand:
         container_endpoints = inspect("container", container_id)
         assert container_endpoints["container"]["name"] == "renamed"
 
-    def test_update_container(self, testimage_and_cleanup):
+    def test_update_container_cmd_and_env(self, testimage_and_cleanup):
         name = "test_container_update"
         container_id = create_container(name=name)
         run(f"container update --env TEST=lol {container_id} /bin/sleep 10")
@@ -101,12 +101,27 @@ class TestContainerSubcommand:
         assert container_endpoints["container"]["env"] == ["TEST=lol"]
         assert container_endpoints["container"]["cmd"] == ["/bin/sleep", "10"]
 
+    def test_update_container_restart_policy(self, testimage_and_cleanup):
+        name = "update_restart_policy"
+        container_id = create_container(name=name)
+        run(f"container update --restart on-startup {container_id}")
+        container_endpoints = inspect("container", container_id)
+        assert container_endpoints["container"]["restart_policy"] == "on-startup"
+
     def test_prune_container(self, testimage_and_cleanup):
         name1 = "test_container_prune1"
-        name2 = "test_container_prune1"
+        name2 = "test_container_prune2"
         container_id1 = create_container(name=name1)
         container_id2 = create_container(name=name2)
         assert prune("container") == [container_id1, container_id2]
+
+    def test_cannot_prune_persisted_container(self, testimage_and_cleanup):
+        name1 = "prune_persist1"
+        name2 = "prune_persist2"
+        container_id1, _ = run(f"create --name {name1} FreeBSD")
+        container_id2, _ = run(f"create --persist --name {name2} FreeBSD")
+        assert prune("container") == [container_id1]
+        run(f"rmc {container_id2}")
 
     def test_remove_container_by_id(self, testimage_and_cleanup):
         name = "test_remove"

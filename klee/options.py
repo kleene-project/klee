@@ -69,7 +69,21 @@ def container_create_options(cmd):
             show_default=True,
             help="""
             Specify one or more jail parameters to use.
-            If you do not want `mount.devfs`, `exec.clean`, and `exec.stop="/bin/sh /etc/rc.shutdown"` enabled, you must actively disable them.
+            If you do not want `mount.devfs`, `exec.clean`, and `exec.stop="/bin/sh /etc/rc.shutdown"` enabled, you must actively disable them
+            """,
+        ),
+        click.Option(
+            ["--persist", "-P"],
+            is_flag=True,
+            help="Do not remove this container when pruning",
+        ),
+        click.Option(
+            ["--restart"],
+            default="no",
+            show_default=True,
+            help="""
+            Restarting policy of the container. Set to `no` for no automatic restart of the container.
+            Set to `on-startup` to start the container each time Kleened is
             """,
         ),
         click.Option(
