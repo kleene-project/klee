@@ -79,28 +79,38 @@ def image_create(name, hidden=False):
         is_flag=True,
         default=True,
         show_default=True,
-        metavar="bool",
         help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
+    )
+    @click.option(
+        "--localtime/--no-localtime",
+        default=True,
+        show_default=True,
+        help="Whether or not to copy `/etc/localtime` from the host to the new image, if it exists.",
+    )
+    @click.option(
+        "--update/--no-update",
+        default=False,
+        show_default=True,
+        help="Update the base image using `freebsd-update(8)`. See the man-pages for details about which FreeBSD versions can be updated.",
     )
     @click.option(
         "--force",
         "-f",
         is_flag=True,
         default=False,
-        metavar="bool",
         help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the kleened host. Method **fetch-auto** only.",
     )
     @click.option(
-        "--autotag",
+        "--autotag/--no-autotag",
         "-a",
         is_flag=True,
         default=True,
-        metavar="bool",
-        help="Whether or not to auto-genereate a nametag `FreeBSD-<version>:latest` based on `uname(1)`. If `tag` is set this is ignored. Method **fetch-auto** only.",
+        show_default=True,
+        help="Auto-genereate a nametag `FreeBSD-<version>:latest` based on `uname(1)`. If `tag` is set this is ignored. Method **fetch-auto** only.",
     )
     @click.argument("method", nargs=1)
     @click.argument("source", nargs=-1)
-    def create(tag, dns, force, autotag, method, source):
+    def create(tag, dns, localtime, update, force, autotag, method, source):
         """
         Create a base image from a remote tar-archive or a ZFS dataset.
 
@@ -113,7 +123,7 @@ def image_create(name, hidden=False):
         - **zfs-copy**: Create the base image based on a copy of an existing ZFS dataset. **SOURCE** is the dataset.
         - **zfs-clone**: Create the base image based on a clone of an existing ZFS dataset. **SOURCE** is the dataset.
         """
-        _create(tag, dns, force, autotag, method, source)
+        _create(tag, dns, localtime, update, force, autotag, method, source)
 
     return create
 
@@ -288,7 +298,7 @@ root.add_command(image_prune("prune"), name="prune")
 root.add_command(image_tag("tag"), name="tag")
 
 
-def _create(tag, dns, force, autotag, method, source):
+def _create(tag, dns, localtime, update, force, autotag, method, source):
     dataset = ""
     url = ""
 
@@ -314,6 +324,8 @@ def _create(tag, dns, force, autotag, method, source):
         "zfs_dataset": dataset,
         "tag": tag,
         "dns": dns,
+        "localtime": localtime,
+        "update": update,
         "force": force,
         "autotag": autotag,
     }

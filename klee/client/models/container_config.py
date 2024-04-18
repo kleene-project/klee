@@ -51,7 +51,7 @@ class ContainerConfig:
         public_ports (Union[Unset, None, List['PublishedPortConfig']]): Listening ports on network interfaces that
             redirect incoming traffic to the container. Example: [{'container_port': '8000', 'host_port': '8080',
             'interfaces': ['em0'], 'properties': 'tcp'}].
-        restart_policy (Union[Unset, None, ContainerConfigRestartPolicy]): Restarting behavior of the container:
+        restart_policy (Union[Unset, None, ContainerConfigRestartPolicy]): Restarting policy of the container:
 
             - `"no"`: There is no automatic restart of the container
             - `"on-startup"`: The container is started each time Kleened is.
