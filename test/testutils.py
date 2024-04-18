@@ -7,6 +7,9 @@ from click.testing import CliRunner
 from rich.console import Console
 
 from klee.client.api.default.image_list import sync_detailed as image_list_endpoint
+from klee.client.api.default.container_list import (
+    sync_detailed as container_list_endpoint,
+)
 from klee.client.client import Client
 from klee.root import create_cli
 from klee.image import BUILD_START_MESSAGE
@@ -16,8 +19,8 @@ SELF_SIGNED_ERROR = "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAIL
 CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required (_ssl.c:2638)"
 
 EMPTY_CONTAINER_LIST = [
-    " CONTAINER ID    NAME   IMAGE   COMMAND   CREATED   STATUS   JID ",
-    "─────────────────────────────────────────────────────────────────",
+    " CONTAINER ID    NAME   IMAGE   COMMAND   CREATED   AUTORUN   STATUS   JID ",
+    "───────────────────────────────────────────────────────────────────────────",
     "",
 ]
 
@@ -182,6 +185,16 @@ def inspect(obj_type, identifier):
 def list_images():
     kwargs = {}
     response = image_list_endpoint(
+        httpx.HTTPTransport(uds="/var/run/kleened.sock"),
+        client=Client(base_url="http://localhost"),
+        **kwargs,
+    )
+    return response.parsed
+
+
+def list_containers(all_=True):
+    kwargs = {"all_": all_}
+    response = container_list_endpoint(
         httpx.HTTPTransport(uds="/var/run/kleened.sock"),
         client=Client(base_url="http://localhost"),
         **kwargs,

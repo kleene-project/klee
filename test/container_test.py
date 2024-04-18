@@ -10,6 +10,7 @@ from testutils import (
     shell_raw,
     jail_info,
     create_container,
+    list_containers,
     extract_exec_id,
     container_stopped_msg,
     inspect,
@@ -145,11 +146,12 @@ class TestContainerSubcommand:
         succes_msg, _newline = run(f"container start -d {container_id}")
         assert "created execution instance " == succes_msg[:27]
         assert container_is_running(container_id)
-        assert (container_id,) == container_list(all_=False)
+        container, *_ = list_containers(all_=False)
+        assert container_id == container.id
         container_id_again, _ = run(f"container stop {container_id}")
         assert container_id == container_id_again
         assert not container_is_running(container_id)
-        assert not container_list(all_=False)
+        assert not list_containers(all_=False)
         container_id_again, *_ = run(f"rmc {container_id}")
         assert container_id == container_id_again
 
@@ -190,6 +192,7 @@ class TestContainerSubcommand:
         assert (
             b"Connection to localhost 4000 port [tcp/*] succeeded!\n" == result.stderr
         )
+        run("stop myname")
 
     def test_default_drivers_for_containers(self, testimage_and_cleanup):
         # Creating a container not connected to a network without using the `--driver` option
@@ -296,14 +299,3 @@ def empty_container_list(all_=True):
         output = run("container ls")
 
     assert output == EMPTY_CONTAINER_LIST
-
-
-def container_list(all_=True):
-    """Returns a tuple of container_ids from the 'container ls' command"""
-    if all_:
-        output = run("container ls -a")
-    else:
-        output = run("container ls")
-    output = output[2:-2]  # exclude header + postfixed line-endings
-    container_ids = [row[1:13] for row in output[:-1]]
-    return tuple(container_ids)
