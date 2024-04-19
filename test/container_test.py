@@ -256,6 +256,31 @@ class TestContainerSubcommand:
         run("rmc mtest1 mtest2")
         shell("rm /mnt/testfile.txt")
 
+    def test_mountpoint_metadata_persist_when_container_stops(
+        self, testimage_and_cleanup
+    ):
+        run(f"create --name mountmetadata -m /mnt:/host_mnt {TEST_IMG} ls")
+        container_info = inspect("container", "mountmetadata")
+        container_id = container_info["container"]["id"]
+        expected_endpoint = {
+            "container_id": container_id,
+            "destination": "/host_mnt",
+            "read_only": False,
+            "source": "/mnt",
+            "type": "nullfs",
+        }
+        assert [expected_endpoint] == container_info["container_mountpoints"]
+        container_info = inspect("container", "mountmetadata")
+        assert [expected_endpoint] == container_info["container_mountpoints"]
+        run("rmc mountmetadata")
+
+        run(f"container run --name mountmetadata -m /mnt:/host_mnt {TEST_IMG} sleep 10")
+        run("stop mountmetadata")
+
+        container_info = inspect("container", "mountmetadata")
+        expected_endpoint["container_id"] = container_info["container"]["id"]
+        assert [expected_endpoint] == container_info["container_mountpoints"]
+
     def test_try_running_containers_with_invalid_mounts(self, testimage_and_cleanup):
         output = run(
             f"container create -m too:many:colons:here {TEST_IMG}", exit_code=125
