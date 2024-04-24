@@ -1,6 +1,6 @@
 ## Examples
-You can remove an image using its ID or its nametag.
-If just a name is supplied, Kleened will assume the tag `latest`.
+You can remove an image using its ID, a unique initial segment of the ID, or its nametag.
+If a name without a tag is supplied, Kleened will assume the tag is `latest`.
 
 It is not possible to remove an image if any containers or other images is
 based on it.

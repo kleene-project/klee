@@ -1,5 +1,6 @@
 ## Description
-Stop one or more containers using `jail -r`. See the [`jails(8) manual pages`](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
+Stopping containers using `klee container stop`, which is based on the FreeBSD CLI-tool `jail`
+under the hood. See the [`jails(8)` manual pages](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
 
 ## Examples
 ```console

@@ -1,10 +1,10 @@
 ## Description
-Redefine the nametag of an image.
+Redefine the nametag of an image where `NAMETAG` follows the `name:tag` format.
+If `:tag` is omitted, `:latest` is assumed.
 
-A nametag must be valid ASCII and may contain lowercase and uppercase letters,
-digits, underscores, periods and dashes. A nametag may not start with a
-period or a dash and may contain a maximum of 128 characters. The `name` and
-`tag` components are seperated by `:`.
+A nametag may contain lowercase and uppercase letters, digits, underscores,
+periods and dashes. A nametag may not start with a period or a dash and may
+contain a maximum of 128 characters.
 
 ## Examples
 

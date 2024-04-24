@@ -1,8 +1,9 @@
 ## Description
-The `klee container update` command dynamically updates a container configuration.
-You can use this command to modify jail behaviour by changing jail parameters,
-or changing the container configuration such as default environment variables,
-execution user, command or the name of the container.
+
+The `klee container update` command updates a container's configuration.
+You can use this command to modify container environment behaviour by changing
+jail parameters, or changing the container configuration such as default
+environment variables, user running the process, or the name of the container.
 
 Changing the container configurations, such as the default user, requires a
 restart of the container for changes to take effect. However, many jail parameters
@@ -10,27 +11,14 @@ can be modified on a running container as well. If one or more jail parameters
 cannot be modified and error will occur and a restart is required for the changes
 to take effect.
 
-> **Warning**
+> **Please note**
 >
-> Updating system jail parameters on a running container can cause unpredictable
-> behaviour of the applications running in the container. Use this feature with
-> care.
-{: .warning }
+> Modifying jail parameters on a running container can cause unpredictable
+> behaviour for the applications running in the container. Use with care.
+{: .important }
 
 Connecting/disconnecting a container to networks can be done using the
 [`klee network` subcommands](/reference/klee/network/).
-Mounting/unmount a volume inside a container can be done using the
-[`klee volume` subcommands](/reference/klee/volume/).
-
-
-> **Hint**
-> It is not possible to manage ressource contrains in Kleene atm.
-> However, FreeBSD does support ressource limiting jails/containers
-> using `rctl(8)` which can be done manually until it is integrated
-> into Kleene.
->
-> See the [`rctl(8) manual pages`](https://man.freebsd.org/cgi/man.cgi?query=rctl)
-> for details.
 
 ## Examples
 

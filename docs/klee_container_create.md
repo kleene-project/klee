@@ -1,9 +1,6 @@
 ## Description
-The `klee container create` (or shorthand: `klee create`) command creates a
+`klee container create` (or shorthand: `klee create`) command creates a
 new container from the specified image, without starting it.
-
-This command is useful when you want to set up a container configuration ahead of time
-so that it is ready to start when you need it.
 
 When creating a container, Kleened creates a ZFS dataset based
 on the image and prepares it for running the specified command.
@@ -13,10 +10,10 @@ The container ID is then printed to `STDOUT`.
 ### Specifying IMAGE
 The `IMAGE` argument takes the following two forms:
 
-- `<image_id>[@<snapshot_id>]`
-- `<image_name>[:<tag>][@<snapshot_id>]`
+- `IMAGE_ID[@SNAPSHOT_ID]`
+- `IMAGE_NAME>[:TAG][@<SNAPSHOT_ID>]`
 
-If `<tag>` is omitted `latest` is assumed. For example,
+If `TAG` is omitted `latest` is assumed. For example,
 
 - `FreeBSD` means the image `FreeBSD` with tag `latest`
 - `FreeBSD:13.2-STABLE` means the image `FreeBSD` with tag `13.2-STABLE`
@@ -27,9 +24,9 @@ If `<tag>` is omitted `latest` is assumed. For example,
 For more information about snapshots see the [Build snapshots](/building/snapshots/) section.
 
 ### Specifying mounts
-When creating containers it is also possible to mount volumes/directories/files
-into the container using one or more `--mount/-m  <mount>` flags. `<mount>` must use
-the following syntax:
+When creating containers volumes/directories/files can be mounted
+into the container using one or more `--mount/-m  MOUNT` options.
+`MOUNT` must use the following syntax:
 
 ```console
 SOURCE:DESTINATION[:rw|ro]
@@ -53,15 +50,28 @@ For example:
 - `klee container create -m /home/some_user:/home/some_user ...` mount the host directory `/home/some_user`
   into the same path within the container.
 
+### Specifying jail parameters
+
+See the [jail parameter section](/run/jail-parameters/) in the handbook.
+
 ### Starting the container
-You can then use the `klee container start`
-(or shorthand: `klee start`) command to start the container at any point.
+
+Use `klee container start`
+(or shorthand: `klee start`) command to start the container.
 Combinining `klee container create` and `klee container start` is equivalent to
 `klee container run`.
 
-The `klee create` command shares most of its options with the `klee run`
-command. Refer to the [`klee container run` command](/reference/klee/container_run/) section
+The `klee create` command shares most of its options with `klee run`.
+Refer to the [`klee container run` command](/reference/klee/container_run/) section
 for details on the available flags and options.
+
+### Limiting ressources of containers
+
+It is not possible to handle ressource contraints in Kleene atm.
+However, FreeBSD does support ressource limiting of jails/containers
+using `rctl(8)` which can be done manually until it is integrated
+into Kleene. See the [`rctl(8) manual pages`](https://man.freebsd.org/cgi/man.cgi?query=rctl)
+for details.
 
 ## Examples
 
@@ -97,7 +107,7 @@ executable 4eb13ad4c3a4 and its container exited with exit-code 0
 ### Initialize volumes
 
 Container volumes can be automatically created during the `klee container create`
-phase (and `klee container run` too):
+phase:
 
 ```console
 $ klee container create -v /data --name storage FreeBSD13.2-STABLE

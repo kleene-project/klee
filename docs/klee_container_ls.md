@@ -6,8 +6,8 @@ To see all containers, use the `--all` (or `-a`) flag:
 
 ```console
 $ klee container ls -a
- CONTAINER ID    NAME          IMAGE          TAG      COMMAND                         CREATED          STATUS
+ CONTAINER ID    NAME              IMAGE             COMMAND            CREATED         AUTORUN   STATUS    JID
 ────────────────────────────────────────────────────────────────────────────────────────────────────────────────
- 5f8e437e5c95    storage       cecc28cf8ad4   latest   /bin/sh /etc/rc                 10 minutes ago   stopped
- 6e33dbacde70    mycontainer   707f754571dd   latest   /bin/sh -c echo "Hello World"   14 minutes ago   stopped
+ e56a04bc2ecc    trusting_darwin   FreeBSD:testing   echo hello world   6 seconds ago     no      stopped
+ 2ec4bd8ad705    funny_bhaskara    FreeBSD:testing   /bin/sh /etc/rc    27 hours ago      no      running   1
 ```

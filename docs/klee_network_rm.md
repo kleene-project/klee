@@ -11,7 +11,7 @@ $ klee network rm my-net
 ### Remove multiple networks
 
 To delete multiple networks in a single `klee network rm` command, provide
-multiple network names, IDs, or initial segments of IDs:
+multiple network identifiers, i.e., names, IDs, or initial segments of IDs:
 
 ```console
 $ klee network rm my-net2 f4c88f269007 ec03

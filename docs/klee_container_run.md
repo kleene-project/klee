@@ -1,10 +1,7 @@
 ## Description
-The `klee container run` command first creates a container based on the
-specified image, and then `starts` it using the specified command. That is,
-`klee container run` is equivalent to `klee container create` followed by
-`klee container start`. A stopped container can be restarted with all its
-previous changes intact using `klee container start`.
-Use `klee container ls -a` to view a list of all containers.
+Create a container based on the specified image, and then start it using
+the specified command. `klee container run` is equivalent to `klee container create`
+followed by `klee container start`.
 
 For information on connecting a container to a network, see the
 ["*Kleene network overview*"](/run/network/).
@@ -28,7 +25,7 @@ $
 This example runs a container named `test` using the `FreeBSD-13.2-STABLE:latest`
 image. The `-it` options instructs Kleene to allocate a pseudo-TTY connected to
 the container's stdin; creating an interactive Bourne shell in the container.
-In the example, the Bourne shell is quit by entering `exit`.
+In this example, the user quits the shell by typing `exit`.
 
 ### <a name="mount"></a> Mounting filesystems into containers (-m, --mount)
 
@@ -45,7 +42,7 @@ $ klee volume ls
 ```
 
 When the target directory of a mount doesn't exist, Kleened
-will automatically create this directory in the container. This example
+will automatically creates it in the container. This example
 caused Kleened to create `/foo/bar` folder before starting the container.
 Similarily, if the specified volume does not exist, Kleened will create
 it for you. In this example the volume `some_storage` was just created.
@@ -103,46 +100,42 @@ VAR2=value2
 
 When you start a container use the `--network` flag to connect it to a network.
 
-The following commands create a network named `my-net`, and adds a container
-to the `my-net` network.
+The following commands create a network named `testnet`, and adds a container
+to it.
 
 ```console
-$ klee network create --subnet 10.20.30.0/24 --driver vnet my-net
-0974802b8ba1
-$ klee container run --network=my-net FreeBSD-13.2-STABLE
-f25a12f7c2e0
-created execution instance a6172d3be00f
+$ klee network create --subnet 10.20.30.0/24 --type loopback testnet
+dcd762b8f34c
+$ klee container run --network testnet FreeBSD
+59e291c07673
+created execution instance 4b4998af008a
+... container initialization output ...
+4b4998af008a has exited with exit-code 0
 ```
 
 You can also choose the IP addresses for the container with the `--ip`
-flag when you start the container on a user-defined network.
+options, when you start the container on a user-defined network.
 
 ```console
-$ klee run --network=my-net --ip=10.20.30.75 FreeBSD-13.2-STABLE
+$ klee run --network=testnet --ip=10.20.30.75 FreeBSD:testing
 ```
 
-You can also start a container using the `host` network, meaning the container
-will have full access to the networks of the host system.
+You can also create a container with full access to the host networking using the `host` network-driver.
 
 ```console
-$ klee run --network=host FreeBSD-13.2-STABLE
+$ klee run --driver=host FreeBSD:latest
 ```
 
-When you run a command using, e.g., `klee run` you can only connect the container
-to a single network. However, you can add a (possibly) running container to another
-network using the `klee network connect` subcommand.
+When you create a container using, e.g., `klee run` you can only connect the container
+to a single network. However, you can add containers to additional
+networks using `klee network connect`.
 
-You can connect multiple containers to the same network. Once connected, the
-containers can communicate easily using only another container's IP address.
-
-You can disconnect a container from a network using the `docker network
-disconnect` command.
+Containers can be disconnected from networks using `klee network disconnect`.
 
 ### <a name="detach"></a> Start a container detached from process IO (-d, --detach)
 
-The `--detach` (or `-d`) flag tells `docker run` ignore the container's
-`STDIN`, `STDOUT` and `STDERR`. This makes it possible to avoid output making the
-container run in the background.
+The `--detach` (or `-d`) flag tells `klee run` to ignore output from the container's
+`STDIN`, `STDOUT` and `STDERR`.
 
 ```console
 $ klee run -d FreeBSD-13.2-STABLE echo test
@@ -150,18 +143,22 @@ $ klee run -d FreeBSD-13.2-STABLE echo test
 created execution instance 3891db558a90
 ```
 
+Once the container has started, Klee exists and the container runs in the background.
+
 ### <a name="jailparam"></a> Specifying Jail parameters (-J, --jailparam)
 
-It is also possible to set jail-parameters when creating a container.
-Using jail-parameters it is possible to imposing or remove restrictions on the container/jail
-and generally modify the runtime environment in various ways.
-See the [`jails(8) manual pages`](https://man.freebsd.org/cgi/man.cgi?query=jail) for details.
+It is possible to set jail-parameters when creating a container.
+Using jail-parameters it is possible to configure the container/jail environment
+in various ways. See the [`jails(8)` manual pages](https://man.freebsd.org/cgi/man.cgi?query=jail)
+for details on the available jail-parameters and the Kleene handbook section on
+[jail parameters](/run/jail-parameters/) for a discussion on how jail parameters
+is used by Kleene.
 
-For instance, opening raw sockets is not permitted by default in jails, which is required
-by, e.g., `ping(8)`:
+For example, opening raw sockets is not permitted in containers by default,
+which is required by, e.g., `ping(8)`:
 
 ```console
-klee run FreeBSD-13.2-STABLE --network host /sbin/ping 1.1.1.1
+$ klee run FreeBSD /sbin/ping 1.1.1.1
 56dd7945704e
 created execution instance a7e01343d836
 ping: ssend socket: Operation not permitted
@@ -173,7 +170,7 @@ executable a7e01343d836 and its container exited with exit-code 1
 This can be allowed using jail-parameters:
 
 ```console
-klee run FreeBSD-13.2-STABLE -J mount.devfs -J allow.raw_sockets --network host /sbin/ping 1.1.1.1
+klee run -J allow.raw_sockets FreeBSD /sbin/ping 1.1.1.1
 0efca150e755
 created execution instance 1c0b446fac16
 PING 1.1.1.1 (1.1.1.1): 56 data bytes
@@ -184,6 +181,6 @@ PING 1.1.1.1 (1.1.1.1): 56 data bytes
 
 > **Note**
 >
-> Manually setting jail parameters overrides the default configuration, which is to
-> enable `devfs(5)` (kernel's device namespace) mounts. Thus, it was explicitly enabled in the
-> previous example using `-J mount.devfs`.
+> Manually setting jail parameters can potentially overwrite Kleene's own configurations
+> which, for instance, is used to configure container networking. Tailoring container
+> environments with jail parameters is a powerful feature of Kleene, but use it with caution.

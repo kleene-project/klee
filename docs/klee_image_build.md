@@ -1,38 +1,40 @@
 ## Description
-The `klee image build` command builds images from a Dockerfile and a
-"context". A build's context is the set of files and directories located in
-the specified `PATH`. The build process can refer to any of the files in the
-context. For example, your build can use a [*COPY*](/reference/dockerfile/#copy)
-instruction to copy a file from the context path into the build container.
+Build images from a Dockerfile and a context.
+A build's context is the set of files and directories located in `PATH`.
+The build process can refer to any of the files in the
+context. For example, a build can use the [*COPY*](/reference/dockerfile/#copy)
+instruction to copy files and directories from the build context to the build container.
 
-Note that `PATH` refers to a location in the filesystem on the host where Kleened
-is running. If you do not run `klee` on the host, it might be desirable to access
-the context `PATH` using NFS, SSHFS or something similar.
+Note that `PATH` refers to a location in the filesystem on the host where the Kleened
+backend is running. If you do not run `klee` on the host, remember to use host paths
+for `PATH`. It might be desirable to access the context from the client machine running
+Klee using NFS, SSHFS or something similar.
 
-By default the `klee image build` command will look for a `Dockerfile` at the root
-of the build context (i.e., at `PATH`). The `-f`, `--file`, option lets you
-specify the path to an alternative file to use instead.
+By default the `klee image build` command will look for a `Dockerfile` in the root
+of the build context (i.e., at `PATH/Dockerfile`).
+The `-f`, `--file`, option lets you specify the path to an alternative file to use
+instead.
 This is useful in cases where the same set of files are used for multiple builds.
-the context. The path is interpreted relative to the context `PATH`.
+The path specified with `--file` should be relative to the context `PATH`.
 
 In most cases, it's best to put each Dockerfile in an empty directory. Then,
 add to that directory only the files needed for building the Dockerfile.
 
 ### Build container configuration
 
-Just like you can configure the container environment with networking,
-jail-parameters and mounts you can configure the build container used when
+Just like you can configure a normal container environment with networking,
+jail-parameters and mounts you can configure the build container used for
 creating images. The parameters used to configure the build container is
 mostly identical to parameters used for `klee run`. A few differences to keep in
 mind, however:
 
-- `--from`: Override the image in the `FROM`-instruction.
+- `--from`: Overwrite the image in the `FROM`-instruction.
 - `--user`: If it is not set, the user of the build container will be inherited
-  from the parent image. `USER`-instructions overrides this parameter.
-- `--env`: `ENV`-instructions override the values of this parameter.
+  from the parent image. `USER`-instructions overwrites this parameter.
+- `--env`: `ENV`-instructions overwrite the values of this parameter.
 - `--jailparam`: `USER`-instructions can be affected if the
   `exec.system_user`/`exec.jail_user`/`exec.system_jail_user` jail parameters
-  are manually set.
+  have been set manually.
 
 ## Examples
 ### Build with PATH
@@ -83,8 +85,8 @@ on the remote machine where Kleened is running.
 $ klee image build -t nginx:1.24.0_13 .
 ```
 
-This will build like the previous example, but it will then tag the resulting
-image `nginx:1.24.0_13`.
+This will build like the previous example and then tag the resulting
+image with `nginx:1.24.0_13`.
 
 ### Specify a Dockerfile (-f, --file)
 
@@ -100,9 +102,10 @@ $ klee image build -f dockerfiles/Dockerfile.debug -t myapp_debug .
 $ klee image build -f dockerfiles/Dockerfile.prod  -t myapp_prod .
 ```
 
-The previous commands will build the current build context (as specified by the
-`.`) twice, once using a debug version of a `Dockerfile` and once using a
-production version.
+The previous commands will build the current build two images:
+One using a debug-friendly version of the Dockerfile (called `Dockerfile.debug`)
+and one using a production version (called `Dockerile.prod`). Both Dockerfiles
+are located in the `dockerfiles` directory in the context root.
 
 ### Set build-time variables (--build-arg)
 
@@ -120,12 +123,9 @@ $ klee image build --build-arg HTTP_PROXY=http://10.20.30.2:1234 .
 ```
 
 This flag allows you to pass the build-time variables that are
-accessed like regular environment variables in the `RUN` instruction of the
-Dockerfile. Also, these values don't persist in the intermediate or final images
+accessed like regular environment variables in the `RUN` instructions of the
+Dockerfile. Also, these values don't persist in the final image
 like `ENV` values do. You must add `--build-arg` for each build argument.
-
-Using this flag will not alter the output you see when the `ARG` lines from the
-Dockerfile are echoed during the build process.
 
 For detailed information on using `ARG` and `ENV` instructions, see the
 [Dockerfile reference](/reference/dockerfile).
