@@ -4,11 +4,9 @@ import sys
 import functools
 import tty
 import termios
-
 import json
 
 import websockets
-
 import click
 
 from .client.api.default.container_create import (
@@ -62,9 +60,9 @@ from .inspect import inspect_command
 from .options import container_create_options, exec_options
 
 HELP_PUBLISH_FLAG = """
-Publish one or more ports using the syntax `<HOST-PORT>[:CONTAINER-PORT][/<PROTOCOL>]` or
-`<INTERFACE>:<HOST-PORT>:<CONTAINER-PORT>[/<PROTOCOL>]`.
-`CONTAINER-PORT` defaults to `HOST-PORT` and `PROTOCOL` defaults to 'tcp'.
+Publish ports using the syntax **HOST_PORT[:CONTAINER_PORT][/PROTOCOL]** or
+**INTERFACE:HOST_PORT:CONTAINER_PORT[/PROTOCOL]**.
+**CONTAINER_PORT** defaults to **HOST_PORT** and **PROTOCOL** defaults to 'tcp'.
 """
 
 
@@ -109,16 +107,16 @@ def container_create(name, hidden=False):
     def create(**kwargs):
         """
         Create a new container. The **IMAGE** parameter syntax is:
-        `<image_id>|[<image_name>[:<tag>]][@<snapshot_id>]`
+        **IMAGE_ID|[IMAGE_NAME[:TAG]][@SNAPSHOT_ID]**
 
         See the documentation for details.
         """
         _create_container_and_connect_to_network(**kwargs)
 
-    create = container_create_options(create)
+    create.params.extend(container_create_options())
     opts_args = [
-        click.Option(["--name"], default=None, help="Assign a name to the container"),
         click.Option(["--publish", "-p"], multiple=True, help=HELP_PUBLISH_FLAG),
+        click.Option(["--name"], default=None, help="Assign a name to the container"),
         click.Argument(["image"], nargs=1),
         click.Argument(["command"], nargs=-1),
     ]
@@ -133,7 +131,7 @@ def container_list(name, hidden=False):
         "-a",
         default=False,
         is_flag=True,
-        help="Show all containers (default shows only running containers)",
+        help="Show all containers (default only shows running containers)",
     )
     def listing(**kwargs):
         """List containers"""
@@ -256,12 +254,13 @@ def container_exec(name, hidden=False):
                 ["--env", "-e"],
                 multiple=True,
                 default=None,
-                help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
+                metavar="list",
+                help="Set environment variables (e.g. `--env FIRST=value1 --env SECOND=value2`)",
             ),
             click.Option(
                 ["--user", "-u"],
                 default="",
-                help="Username or UID of the executing user",
+                help="Username or UID of the user running the process",
             ),
             click.Argument(["container"], nargs=1),
             click.Argument(["command"], nargs=-1),
@@ -283,7 +282,6 @@ def container_update(name, hidden=False):
     @click.option(
         "--user",
         "-u",
-        metavar="text",
         default=None,
         help="Default user used when running commands in the container",
     )
@@ -292,22 +290,24 @@ def container_update(name, hidden=False):
         "-e",
         multiple=True,
         default=None,
-        help="Set environment variables (e.g. --env FIRST=env --env SECOND=env)",
+        metavar="list",
+        help="Set environment variables (e.g. `--env FIRST=env --env SECOND=env`)",
     )
     @click.option(
         "--jailparam",
         "-J",
         multiple=True,
         default=None,
+        metavar="list",
         help="""
-            Specify one or more jail parameters to use.
-            If you do not want `mount.devfs`, `exec.clean`, and `exec.stop="/bin/sh /etc/rc.shutdown"` enabled, you must actively disable them
-            """,
+        Set jail parameters. Replace defaults (such as 'mount.devfs', 'exec.clean', etc.) by specifying alternative values. See docs for details.
+        """,
     )
     @click.option(
         "--persist",
         "-P",
         is_flag=True,
+        metavar="flag",
         help="Do not remove this container when pruning",
     )
     @click.option(
@@ -315,8 +315,8 @@ def container_update(name, hidden=False):
         default="no",
         show_default=True,
         help="""
-        Restarting policy of the container. Set to `no` for no automatic restart of the container.
-        Set to `on-startup` to start the container each time Kleened is
+        Restarting policy of the container. Set to 'no' for no automatic restart of the container.
+        Set to 'on-startup' to start the container each time Kleened is.
         """,
     )
     @click.argument("container", nargs=1)
@@ -324,7 +324,7 @@ def container_update(name, hidden=False):
     def update(**config):
         """
         Modify container properties.
-        Using `--jailparam` and `--env` removes all values from the existing configration.
+        Using `jailparam` and `env` removes all values from the existing configration.
         """
         container_id = config["container"]
 
@@ -351,12 +351,12 @@ def container_update(name, hidden=False):
 def container_rename(name, hidden=False):
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("container", nargs=1)
-    @click.argument("name", nargs=1)
-    def rename(container, name):
+    @click.argument("new_name", nargs=1)
+    def rename(container, new_name):
         """
         Rename a container.
         """
-        config = ContainerConfig.from_dict({"name": name})
+        config = ContainerConfig.from_dict({"name": new_name})
         request_and_print_response(
             container_update_endpoint,
             kwargs={"container_id": container, "json_body": config},
@@ -398,7 +398,7 @@ def container_run(name, hidden=False):
         kwargs_start["containers"] = [container_id]
         _start(**kwargs_start)
 
-    run = container_create_options(run)
+    run.params.extend(container_create_options())
     run = exec_options(run)
     opts_args = [
         click.Option(["--name"], default=None, help="Assign a name to the container"),

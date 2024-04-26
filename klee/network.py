@@ -36,7 +36,7 @@ NETWORK_LIST_COLUMNS = [
 # pylint: disable=unused-argument
 @click.group(cls=group_cls(), add_help_option=True, short_help="Manage networks")
 def root(name="network"):
-    """Manage networks using the following `subcommands`."""
+    """Manage networks"""
 
 
 @root.command(cls=command_cls(), name="create", no_args_is_help=True)
@@ -52,9 +52,9 @@ def root(name="network"):
     "-i",
     default="",
     help="""
-    Name of the interface used for the host interface of the network.
-    If not set the interface name is set to `kleened` postfixed with an integer.
-    If the `type` is set to `custom` the value of `interface` must be the name of an existing interface.
+    Name of the interface used on the host for the network.
+    If not set the interface name is set to 'kleened' postfixed with an integer.
+    If `type` is set to 'custom' the value of `interface` must be the name of an existing interface.
   """,
 )
 @click.option("--subnet", default="", help="Subnet in CIDR format for the network")
@@ -64,47 +64,50 @@ def root(name="network"):
 @click.option(
     "--gw",
     default="auto",
-    help="""The default IPv4 router that is added to 'vnet' containers, if `--subnet` is set.
-    Only affects bridge networks. Set `--gw=auto` to use the same gateway as the host (default).
-    Setting `--gw=\"\"` implies that no gateway is used.
+    help="""VNET+bridge only. The default IPv4 router that is added to 'vnet' containers on startup, if `subnet` is set.
+    If set to 'auto' the first IP of `subnet` is added to the bridge and used as a gateway (default).
+    Setting `--gw=\"\"` disables adding a gateway.
     """,
 )
 @click.option(
     "--gw6",
     default="auto",
-    help="""The default IPv6 router that is added to 'vnet' containers, if `--subnet6` is set.
-    See `--gw` for details.
+    help="""VNET+bridge only. The default IPv6 router that is added to 'vnet' containers, if `subnet6` is set.
+    See `gw` for details.
     """,
 )
 @click.option(
     "--nat",
     default=True,
-    is_flag=True,
-    help="Whether or not to use NAT for networks outgoing traffic. Default is to use NAT, use `--no-nat` to disable it.",
+    metavar="bool",
+    help="Whether or not to use NAT for the network's outgoing traffic. Default is to use NAT, use `--no-nat` to disable it.",
 )
 @click.option(
     "--nat-if",
     default=None,
+    metavar="string",
     help="""
     Specify which interface to NAT the IPv4 network traffic to.
-    Defaults to the host's gateway interface. Ignored if `--no-nat` is set.
+    Defaults to the host's gateway interface. Ignored if `no-nat` is set.
     """,
 )
 @click.option(
     "--icc",
     default=True,
-    is_flag=True,
+    metavar="bool",
+    show_default=True,
     help="Whether or not to enable connectivity between containers within the same network.",
 )
 @click.option(
     "--internal",
     default=False,
     is_flag=True,
+    metavar="flag",
     help="Whether or not the network is internal, i.e., not allowing outgoing upstream traffic",
 )
 @click.argument("name", nargs=1)
 def create(**config):
-    """Create a new network named **NAME**."""
+    """Create a new network."""
     config["gateway"] = config.pop("gw")
     config["gateway6"] = config.pop("gw6")
     for gw in ["gateway", "gateway6"]:
@@ -196,12 +199,12 @@ root.add_command(
 @click.option(
     "--ip",
     default=None,
-    help="Specify an IPv4 address used for the container. If `--ip` is omitted and a (ipv4) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",
+    help="IPv4 address used for the container. If omitted and a ipv4 subnet exists for **NETWORK**, an unused ip is allocated. Otherwise it is ignored.",
 )
 @click.option(
     "--ip6",
     default=None,
-    help="Specify an IPv6 address used for the container. If `--ip6` is omitted and a (ipv6) subnet exists for **NETWORK**, an unused ip is allocated from it. Otherwise it is ignored.",
+    help="IPv6 address used for the container. If omitted and a ipv6 subnet exists for **NETWORK**, an unused ip is allocated. Otherwise it is ignored.",
 )
 @click.argument("network", required=True, nargs=1)
 @click.argument("container", required=True, nargs=1)
@@ -209,9 +212,8 @@ def connect(ip, ip6, network, container):
     """
     Connect a container to a network.
 
-    You can connect a container by name or by ID.
-    Once connected, the container can communicate with other containers in
-    the same network.
+    **NETWORK** and **CONTAINER** are network and container identifiers, respectively.
+    Once connected, the container can communicate with other containers in the same network.
     """
     _connect(ip, ip6, network, container)
 
@@ -253,7 +255,7 @@ def disconnect(network, container):
     """
     Disconnect a container from a network.
 
-    The container must be stopped before it can be disconnected.
+    Running containers can also be disconnected from a network.
     """
     request_and_print_response(
         network_disconnect,

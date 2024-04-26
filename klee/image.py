@@ -79,26 +79,30 @@ def image_create(name, hidden=False):
         is_flag=True,
         default=True,
         show_default=True,
-        help="Whether or not to copy `/etc/resolv.conf` from the host to the new image.",
+        metavar="bool",
+        help="Whether or not to copy /etc/resolv.conf from the host to the new image.",
     )
     @click.option(
         "--localtime/--no-localtime",
         default=True,
         show_default=True,
-        help="Whether or not to copy `/etc/localtime` from the host to the new image, if it exists.",
+        metavar="bool",
+        help="Whether or not to copy /etc/localtime from the host to the new image, if it exists.",
     )
     @click.option(
         "--update/--no-update",
         default=False,
         show_default=True,
-        help="Update the base image using `freebsd-update(8)`. See the man-pages for details about which FreeBSD versions can be updated.",
+        metavar="bool",
+        help="Update the userland using freebsd-update(8). See the freebsd-update man-page for details on which FreeBSD versions can be updated.",
     )
     @click.option(
         "--force",
         "-f",
         is_flag=True,
         default=False,
-        help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the kleened host. Method **fetch-auto** only.",
+        metavar="flag",
+        help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the host. Method **fetch-auto** only.",
     )
     @click.option(
         "--autotag/--no-autotag",
@@ -106,22 +110,23 @@ def image_create(name, hidden=False):
         is_flag=True,
         default=True,
         show_default=True,
-        help="Auto-genereate a nametag `FreeBSD-<version>:latest` based on `uname(1)`. If `tag` is set this is ignored. Method **fetch-auto** only.",
+        metavar="bool",
+        help="Autogenerate a nametag 'FreeBSD-\<version\>:latest'. If `tag` is set this is ignored. Method **fetch-auto** only.",
     )
     @click.argument("method", nargs=1)
     @click.argument("source", nargs=-1)
     def create(tag, dns, localtime, update, force, autotag, method, source):
         """
-        Create a base image from a remote tar-archive or a ZFS dataset.
+        Create a base image from a tar-archive or a ZFS dataset.
 
         **METHOD** can be one of the following:
 
-        - **fetch**: Fetch a custom version of the base system and use it for image creation.
-          **SOURCE** is a valid url for `fetch(1)` pointing to a `base.txz` file.
         - **fetch-auto**: Automatically fetch a release/snapshot from the offical FreeBSD
-          mirrors, based on information from `uname(1)`. **SOURCE** is not used.
-        - **zfs-copy**: Create the base image based on a copy of an existing ZFS dataset. **SOURCE** is the dataset.
-        - **zfs-clone**: Create the base image based on a clone of an existing ZFS dataset. **SOURCE** is the dataset.
+          mirrors, based on host information from uname(1). **SOURCE** is not used.
+        - **fetch**: Fetch a custom version of the base system and use it for image creation.
+          **SOURCE** is a valid url for fetch(1), pointing to a base.txz file locally or remote.
+        - **zfs-copy**: Create a base image from a copy of an existing ZFS dataset. **SOURCE** is the dataset.
+        - **zfs-clone**: Create a base image from a clone of an existing ZFS dataset. **SOURCE** is the dataset.
         """
         _create(tag, dns, localtime, update, force, autotag, method, source)
 
@@ -138,47 +143,58 @@ def image_build(name, hidden=False):
     )
     def build(**kwargs):
         """
-        Build an image from a context and Dockerfile located in **PATH**.
+        Build a new image from a context and Dockerfile located in **PATH**.
 
         The container-related options configures the build-container.
+        Note that `user` and `env` options will be overwritten by the 'USER' and 'ENV'
+        Dockerfile instructions, respectively.
         """
         asyncio.run(_build_image_and_listen_for_messages(**kwargs))
 
-    build = container_create_options(build)
+    def remove_irrelevant_options(option):
+        return option.name not in ("persist", "restart")
+
+    container_options = list(
+        filter(remove_irrelevant_options, container_create_options())
+    )
+    build.params.extend(container_options)
     build_options = [
         click.Option(
             ["--from"],
             default=None,
-            help="Specify an image that will override the image in the Dockerfile's `FROM` instruction.",
+            help="Specify an image that will overwrite the image in the Dockerfile's 'FROM' instruction.",
         ),
         click.Option(
             ["--file", "-f"],
             default="Dockerfile",
             show_default=True,
-            help="Location of the `Dockerfile` relative to **PATH**.",
+            help="Location of the Dockerfile relative to **PATH**.",
         ),
         click.Option(
             ["--tag", "-t"],
             default="",
-            help="Name and optionally a tag in the `name:tag` format",
+            help="Name and optionally a tag in the 'name:tag' format",
         ),
         click.Option(
             ["--quiet", "-q"],
             is_flag=True,
             default=False,
+            metavar="flag",
             help="Suppress the build output and print image ID on success",
         ),
         click.Option(
             ["--rm"],
             is_flag=True,
             default=False,
+            metavar="flag",
             help="Whether or not to remove the image if the build fails",
         ),
         click.Option(
             ["--build-arg"],
             multiple=True,
             default=None,
-            help="Set build-time variables (e.g. --build-arg FIRST=hello --build-arg SECOND=world)",
+            metavar="list",
+            help="Set build-time variables (e.g. `--build-arg FIRST=hello --build-arg SECOND=world`)",
         ),
         click.Argument(["path"], nargs=1),
     ]

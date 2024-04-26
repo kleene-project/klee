@@ -75,13 +75,13 @@ def create_cli():
     @click.option(
         "--host",
         default=None,
-        help=f"Host address and protocol to use. See the docs for details. If no host is defined anywhere, Klee uses `{DEFAULT_HOST}`.",
+        help=f"Host address and protocol to use. See the docs for details. Default is `{DEFAULT_HOST}`.",
     )
     @click.option(
         "--tlsverify/--no-tlsverify",
         default=None,
         metavar="bool",
-        help="Verify the server cert. Uses the CA bundle provided by Certifi unless the '--cacert' is set.",
+        help="Verify the server cert. Uses the CA bundle provided by Certifi, unless `tlscacert` is set.",
     )
     @click.option(
         "--tlscert",
@@ -91,12 +91,12 @@ def create_cli():
     @click.option(
         "--tlskey",
         default=None,
-        help="Path to TLS key file used for the '--tlscert' certificate (PEM encoded)",
+        help="Path to TLS key file used for the `tlscert` certificate (PEM encoded)",
     )
     @click.option(
         "--tlscacert",
         default=None,
-        help="Trust certs signed only by this CA (PEM encoded). Implies '--tlsverify'.",
+        help="Trust certs signed only by this CA (PEM encoded). Implies `tlsverify`.",
     )
     @click.pass_context
     def cli(ctx, **kwargs):
