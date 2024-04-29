@@ -35,8 +35,10 @@ def save_file(yaml_data, filename):
 
 def create_yaml_data(cmd, obj):
     config.host = DEFAULT_HOST
+    cmd_str = " ".join(cmd)
+    print(f"Running 'klee {cmd_str}'...  ", end="")
     result = runner.invoke(cli, cmd + ["--help"], catch_exceptions=False)
-    print(f"Running: {cmd}: {result}")
+    print(f"Done: {result}")
     return yaml.dump(obj.docs)
 
 

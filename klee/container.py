@@ -410,18 +410,20 @@ def container_run(name, hidden=False):
     return run
 
 
-root.add_command(container_create("create"), name="create")
-root.add_command(container_list("ls"), name="ls")
-root.add_command(
-    inspect_command(
-        name="inspect",
+def container_inspect(name, hidden=False):
+    return inspect_command(
+        name=name,
+        hidden=hidden,
         argument="container",
         id_var="container_id",
         docs="Display detailed information on a container.",
         endpoint=container_inspect_endpoint,
-    ),
-    name="inspect",
-)
+    )
+
+
+root.add_command(container_create("create"), name="create")
+root.add_command(container_list("ls"), name="ls")
+root.add_command(container_inspect("inspect"), name="inspect")
 root.add_command(container_remove("rm"), name="rm")
 root.add_command(
     prune_command(

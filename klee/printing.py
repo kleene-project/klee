@@ -149,8 +149,8 @@ def print_table(items, columns):
 class RootGroup(click.Group):
     def format_options(self, ctx: Context, formatter: HelpFormatter) -> None:
         click.Command.format_options(self, ctx, formatter)
-        self.format_shortcuts(ctx, formatter)
         self.format_commands(ctx, formatter)
+        self.format_shortcuts(ctx, formatter)
 
     def format_shortcuts(self, ctx: Context, formatter: HelpFormatter) -> None:
         """Extra format methods for multi methods that adds all the commands
@@ -238,16 +238,27 @@ def root_cls():
     raise Exception(f"cli theme '{config.theme}' not known")
 
 
+SINGLE_SHORTCUTS = {"build", "create", "exec", "restart", "start", "stop", "run"}
+
+
 def print_shortcuts_section(self):
     commands_table = Table(highlight=True, box=None, show_header=False)
 
     # commands = []
     for name, command in self.commands.items():
         # Hidden commands are the shortcuts
-        if command.hidden:
+        if command.hidden and command.name in SINGLE_SHORTCUTS:
             cmd_help = command.get_short_help_str(limit=200)
             commands_table.add_row(Text(name, style="bold yellow"), Markdown(cmd_help))
 
+    is_help = (
+        "Inspect an object, where X is [c]ontainer, [i]mage, [n]etwork, or [v]olume."
+    )
+    rm_help = "Remove one or more objects, where X is [c]ontainer, [i]mage, [n]etwork, or [v]olume."
+    ls_help = "List objects, where X is [c]ontainer, [i]mage, [n]etwork, or [v]olume."
+    commands_table.add_row(Text("isX", style="bold yellow"), Markdown(is_help))
+    commands_table.add_row(Text("rmX", style="bold yellow"), Markdown(rm_help))
+    commands_table.add_row(Text("lsX", style="bold yellow"), Markdown(ls_help))
     console.print(
         Panel(commands_table, border_style="dim", title="Shortcuts", title_align="left")
     )
@@ -262,6 +273,7 @@ def print_commands_section(self, ctx):
         # What is this, the tool lied about a command.  Ignore it
         if cmd is None:
             continue
+
         if cmd.hidden:
             continue
 

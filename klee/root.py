@@ -33,6 +33,7 @@ def create_cli():
         root as container_root,
         container_create,
         container_remove,
+        container_inspect,
         container_exec,
         container_list,
         container_start,
@@ -42,26 +43,45 @@ def create_cli():
     )
 
     from .printing import root_cls
-    from .image import root as image_root, image_list, image_build, image_remove
-    from .network import root as network_root, network_list
-    from .volume import root as volume_root, volume_list
+    from .image import (
+        root as image_root,
+        image_list,
+        image_build,
+        image_remove,
+        image_inspect,
+    )
+    from .network import (
+        root as network_root,
+        network_list,
+        network_remove,
+        network_inspect,
+    )
+    from .volume import root as volume_root, volume_list, volume_remove, volume_inspect
     from .shortcuts import SHORTCUTS
 
     shortcuts2command_obj = {
+        # This is all the actual shortcuts.
+        # The 'Shortcuts' help section prints a compacted list. See 'printing.py' for details.
         # Format: <shortcut name>: <actual click command object>
         "build": image_build("build", hidden=True),
         "create": container_create("create", hidden=True),
         "exec": container_exec("exec", hidden=True),
+        "restart": container_restart("restart", hidden=True),
+        "start": container_start("start", hidden=True),
+        "stop": container_stop("stop", hidden=True),
+        "run": container_run("run", hidden=True),
+        "isc": container_inspect("isc", hidden=True),
+        "isi": image_inspect("isi", hidden=True),
+        "isn": network_inspect("isn", hidden=True),
+        "isv": volume_inspect("isv", hidden=True),
         "lsc": container_list("lsc", hidden=True),
         "lsi": image_list(name="lsi", hidden=True),
         "lsn": network_list(name="lsn", hidden=True),
         "lsv": volume_list(name="lsv", hidden=True),
-        "restart": container_restart("restart", hidden=True),
         "rmc": container_remove("rmc", hidden=True),
         "rmi": image_remove("rmi", hidden=True),
-        "run": container_run("run", hidden=True),
-        "start": container_start("start", hidden=True),
-        "stop": container_stop("stop", hidden=True),
+        "rmn": network_remove("rmn", hidden=True),
+        "rmv": volume_remove("rmv", hidden=True),
     }
 
     @click.group(cls=root_cls(), name="klee")

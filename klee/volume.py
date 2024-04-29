@@ -1,9 +1,9 @@
 import click
 
-from .client.api.default.volume_create import sync_detailed as volume_create
+from .client.api.default.volume_create import sync_detailed as volume_create_endpoint
 from .client.api.default.volume_list import sync_detailed as volume_list_endpoint
 from .client.api.default.volume_inspect import sync_detailed as volume_inspect_endpoint
-from .client.api.default.volume_remove import sync_detailed as volume_remove
+from .client.api.default.volume_remove import sync_detailed as volume_remove_endpoint
 from .client.api.default.volume_prune import sync_detailed as volume_prune_endpoint
 
 from .client.models.volume_config import VolumeConfig
@@ -25,22 +25,25 @@ def root(name="volume"):
     """Manage volumes"""
 
 
-@root.command(cls=command_cls(), no_args_is_help=True)
-@click.argument("volume_name", nargs=1)
-def create(volume_name):
-    """
-    Create a new volume. If the volume name already exists nothing happens.
-    """
-    config = VolumeConfig.from_dict({"name": volume_name})
-    request_and_print_response(
-        volume_create,
-        kwargs={"json_body": config},
-        statuscode2printer={201: print_response_id, 500: print_backend_error},
-    )
+def volume_create(name, hidden=False):
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
+    @click.argument("volume_name", nargs=1)
+    def create(volume_name):
+        """
+        Create a new volume. If the volume name already exists nothing happens.
+        """
+        config = VolumeConfig.from_dict({"name": volume_name})
+        request_and_print_response(
+            volume_create_endpoint,
+            kwargs={"json_body": config},
+            statuscode2printer={201: print_response_id, 500: print_backend_error},
+        )
+
+    return create
 
 
 def volume_list(name, hidden=False):
-    @root.command(cls=command_cls(), name=name, hidden=hidden)
+    @click.command(cls=command_cls(), name=name, hidden=hidden)
     def listing():
         """List volumes"""
         request_and_print_response(
@@ -63,38 +66,42 @@ def _print_volumes(response):
     print_table(volumes, VOLUME_LIST_COLUMNS)
 
 
-root.add_command(volume_list("ls"), name="ls")
-
-root.add_command(
-    inspect_command(
-        name="inspect",
+def volume_inspect(name, hidden=False):
+    return inspect_command(
+        name=name,
+        hidden=hidden,
         argument="volume",
         id_var="volume_name",
         docs="Display detailed information on an volume.",
         endpoint=volume_inspect_endpoint,
-    ),
-    name="inspect",
-)
+    )
 
 
-@root.command(cls=command_cls(), name="rm", no_args_is_help=True)
-@click.argument("volumes", required=True, nargs=-1)
-def remove(volumes):
-    """Remove one or more volumes. You cannot remove a volume that is in use by a container."""
-    for volume_name in volumes:
-        response = request_and_print_response(
-            volume_remove,
-            kwargs={"volume_name": volume_name},
-            statuscode2printer={
-                200: print_response_id,
-                404: print_response_msg,
-                500: print_backend_error,
-            },
-        )
-        if response is None or response.status_code != 200:
-            break
+def volume_remove(name, hidden=False):
+    @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
+    @click.argument("volumes", required=True, nargs=-1)
+    def remove(volumes):
+        """Remove one or more volumes. You cannot remove a volume that is in use by a container."""
+        for volume_name in volumes:
+            response = request_and_print_response(
+                volume_remove_endpoint,
+                kwargs={"volume_name": volume_name},
+                statuscode2printer={
+                    200: print_response_id,
+                    404: print_response_msg,
+                    500: print_backend_error,
+                },
+            )
+            if response is None or response.status_code != 200:
+                break
+
+    return remove
 
 
+root.add_command(volume_create("create"), name="create")
+root.add_command(volume_list("ls"), name="ls")
+root.add_command(volume_inspect("inspect"), name="inspect")
+root.add_command(volume_remove("rm"), name="rm")
 root.add_command(
     prune_command(
         name="prune",

@@ -296,19 +296,21 @@ def image_tag(name, hidden=False):
     return tag
 
 
-root.add_command(image_create("create"), name="create")
-root.add_command(image_build("build"), name="build")
-root.add_command(image_list("ls"), name="ls")
-root.add_command(
-    inspect_command(
-        name="inspect",
+def image_inspect(name, hidden=False):
+    return inspect_command(
+        name=name,
+        hidden=hidden,
         argument="image",
         id_var="image_id",
         docs="Display detailed information on an image",
         endpoint=image_inspect_endpoint,
-    ),
-    name="inspect",
-)
+    )
+
+
+root.add_command(image_create("create"), name="create")
+root.add_command(image_build("build"), name="build")
+root.add_command(image_list("ls"), name="ls")
+root.add_command(image_inspect("inspect"), name="inspect")
 root.add_command(image_remove("rm"), name="rm")
 root.add_command(image_prune("prune"), name="prune")
 root.add_command(image_tag("tag"), name="tag")
