@@ -97,14 +97,6 @@ def image_create(name, hidden=False):
         help="Update the userland using freebsd-update(8). See the freebsd-update man-page for details on which FreeBSD versions can be updated.",
     )
     @click.option(
-        "--force",
-        "-f",
-        is_flag=True,
-        default=False,
-        metavar="flag",
-        help="Proceed using a userland from a FreeBSD mirror even if a customized build is detected on the host. Method **fetch-auto** only.",
-    )
-    @click.option(
         "--autotag/--no-autotag",
         "-a",
         is_flag=True,
@@ -115,7 +107,7 @@ def image_create(name, hidden=False):
     )
     @click.argument("method", nargs=1)
     @click.argument("source", nargs=-1)
-    def create(tag, dns, localtime, update, force, autotag, method, source):
+    def create(tag, dns, localtime, update, autotag, method, source):
         """
         Create a base image from a tar-archive or a ZFS dataset.
 
@@ -128,7 +120,7 @@ def image_create(name, hidden=False):
         - **zfs-copy**: Create a base image from a copy of an existing ZFS dataset. **SOURCE** is the dataset.
         - **zfs-clone**: Create a base image from a clone of an existing ZFS dataset. **SOURCE** is the dataset.
         """
-        _create(tag, dns, localtime, update, force, autotag, method, source)
+        _create(tag, dns, localtime, update, autotag, method, source)
 
     return create
 
@@ -316,7 +308,7 @@ root.add_command(image_prune("prune"), name="prune")
 root.add_command(image_tag("tag"), name="tag")
 
 
-def _create(tag, dns, localtime, update, force, autotag, method, source):
+def _create(tag, dns, localtime, update, autotag, method, source):
     dataset = ""
     url = ""
 
@@ -344,7 +336,6 @@ def _create(tag, dns, localtime, update, force, autotag, method, source):
         "dns": dns,
         "localtime": localtime,
         "update": update,
-        "force": force,
         "autotag": autotag,
     }
     config_json = json.dumps(config)

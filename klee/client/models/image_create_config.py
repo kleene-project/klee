@@ -27,18 +27,14 @@ class ImageCreateConfig:
             Overrides `tag` if set to `true`.
         dns (Union[Unset, bool]): Whether or not to copy `/etc/resolv.conf` from the host to the new image. Default:
             True.
-        force (Union[Unset, bool]): **`fetch-auto` method only**
-
-            Ignore any discrepancies in the output of `uname(1)` when determining the FreeBSD version.
-        localtime (Union[Unset, bool]): Whether or not to copy `/etc/localtime` from the host to the new image. Default:
-            True.
+        localtime (Union[Unset, bool]): Whether or not to copy `/etc/localtime` from the host to the new image, if it
+            exists. Default: True.
         tag (Union[Unset, str]): Name and optionally a tag in the `name:tag` format. If `tag` is omitted, the default
             value `latest` is used.
              Default: ''.
-        update (Union[Unset, bool]): Update the base image using `freebsd-update(8)`.
+        update (Union[Unset, bool]): Update the base image to the lastest patch-level using `freebsd-update(8)`.
             See the [man-pages](https://man.freebsd.org/cgi/man.cgi?query=freebsd-update) for details about which FreeBSD
             versions can be updated.",
-             Default: True.
         url (Union[Unset, str]): **`fetch` method only**
 
             URL to the base system (a `base.txz` file) that Kleened should use to create the base image.
@@ -52,10 +48,9 @@ class ImageCreateConfig:
     method: ImageCreateConfigMethod
     autotag: Union[Unset, bool] = False
     dns: Union[Unset, bool] = True
-    force: Union[Unset, bool] = False
     localtime: Union[Unset, bool] = True
     tag: Union[Unset, str] = ""
-    update: Union[Unset, bool] = True
+    update: Union[Unset, bool] = False
     url: Union[Unset, str] = ""
     zfs_dataset: Union[Unset, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
@@ -65,7 +60,6 @@ class ImageCreateConfig:
 
         autotag = self.autotag
         dns = self.dns
-        force = self.force
         localtime = self.localtime
         tag = self.tag
         update = self.update
@@ -83,8 +77,6 @@ class ImageCreateConfig:
             field_dict["autotag"] = autotag
         if dns is not UNSET:
             field_dict["dns"] = dns
-        if force is not UNSET:
-            field_dict["force"] = force
         if localtime is not UNSET:
             field_dict["localtime"] = localtime
         if tag is not UNSET:
@@ -107,8 +99,6 @@ class ImageCreateConfig:
 
         dns = d.pop("dns", UNSET)
 
-        force = d.pop("force", UNSET)
-
         localtime = d.pop("localtime", UNSET)
 
         tag = d.pop("tag", UNSET)
@@ -123,7 +113,6 @@ class ImageCreateConfig:
             method=method,
             autotag=autotag,
             dns=dns,
-            force=force,
             localtime=localtime,
             tag=tag,
             update=update,
