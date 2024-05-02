@@ -2,9 +2,9 @@ test:
 	poetry run sudo pytest -x -vv
 
 docs:
-	poetry run python scripts/generate_yaml_docs.py /host/kleene-docs/_data/engine-cli
+	poetry run python scripts/generate_yaml_docs.py /vagrant/kleene-docs/_data/klee-reference
 
 generate-spec:
-	cd /host/kleened && sudo mix openapi.spec.json --spec Kleened.API.Spec
+	cd /vagrant/kleened && sudo mix openapi.spec.json --spec Kleened.API.Spec
 
-.PHONY: test
+.PHONY: test docs generate-spec
