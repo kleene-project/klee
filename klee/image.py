@@ -36,9 +36,7 @@ from .utils import (
     request_and_print_response,
     decode_mount,
 )
-from .name_generator import random_name
 from .options import container_create_options
-
 
 WS_IMAGE_BUILD_ENDPOINT = "/images/build"
 WS_IMAGE_CREATE_ENDPOINT = "/images/create"
@@ -61,6 +59,7 @@ def root(name="image"):
 
 
 def image_create(name, hidden=False):
+
     @click.command(
         cls=command_cls(),
         name=name,
@@ -126,6 +125,7 @@ def image_create(name, hidden=False):
 
 
 def image_build(name, hidden=False):
+
     @click.command(
         cls=command_cls(),
         name=name,
@@ -196,6 +196,7 @@ def image_build(name, hidden=False):
 
 
 def image_list(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden)
     def _image_list():
         """List images"""
@@ -209,6 +210,7 @@ def image_list(name, hidden=False):
 
 
 def image_remove(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("images", required=True, nargs=-1)
     def remove(images):
@@ -230,6 +232,7 @@ def image_remove(name, hidden=False):
 
 
 def image_prune(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden)
     @click.option(
         "--all",
@@ -260,6 +263,7 @@ def image_prune(name, hidden=False):
 
 
 def image_tag(name, hidden=False):
+
     @click.command(
         cls=command_cls(),
         name=name,

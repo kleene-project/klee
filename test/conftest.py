@@ -3,6 +3,8 @@ import pytest
 from testutils import run, shell
 
 # pylint: disable=unused-argument
+
+
 @pytest.fixture(scope="class")
 def create_testimage():
     run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")

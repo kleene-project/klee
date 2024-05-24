@@ -13,7 +13,6 @@ from rich.markdown import Markdown
 from rich.markup import escape
 from rich import box
 
-
 from .config import config
 
 from .docs_generator import DocsGroup, DocsCommand
@@ -147,6 +146,7 @@ def print_table(items, columns):
 
 
 class RootGroup(click.Group):
+
     def format_options(self, ctx: Context, formatter: HelpFormatter) -> None:
         click.Command.format_options(self, ctx, formatter)
         self.format_commands(ctx, formatter)
@@ -181,6 +181,7 @@ class RootGroup(click.Group):
 
 
 class RichGroup(click.Group):
+
     def format_help(self, ctx, _formatter):
         print_usage_line(self, ctx)
         print_help_section(self)

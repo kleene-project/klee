@@ -20,12 +20,15 @@ from .inspect import inspect_command
 from .utils import human_duration, request_and_print_response
 
 # pylint: disable=unused-argument
+
+
 @click.group(cls=group_cls())
 def root(name="volume"):
     """Manage volumes"""
 
 
 def volume_create(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("volume_name", nargs=1)
     def create(volume_name):
@@ -43,6 +46,7 @@ def volume_create(name, hidden=False):
 
 
 def volume_list(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden)
     def listing():
         """List volumes"""
@@ -78,6 +82,7 @@ def volume_inspect(name, hidden=False):
 
 
 def volume_remove(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("volumes", required=True, nargs=-1)
     def remove(volumes):

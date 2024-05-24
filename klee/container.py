@@ -65,7 +65,6 @@ Publish ports using the syntax **HOST_PORT[:CONTAINER_PORT][/PROTOCOL]** or
 **CONTAINER_PORT** defaults to **HOST_PORT** and **PROTOCOL** defaults to 'tcp'.
 """
 
-
 WS_EXEC_START_ENDPOINT = "/exec/start"
 
 EXEC_INSTANCE_CREATED = "created execution instance {exec_id}"
@@ -73,7 +72,6 @@ EXEC_INSTANCE_CREATE_ERROR = (
     "{container_id}: error creating execution instance: {exec_id}"
 )
 EXEC_START_ERROR = "error starting container"
-
 
 START_ONLY_ONE_CONTAINER_WHEN_ATTACHED = (
     "only one container can be started when attaching to container I/O."
@@ -91,12 +89,15 @@ CONTAINER_LIST_COLUMNS = [
 ]
 
 # pylint: disable=unused-argument
+
+
 @click.group(cls=group_cls())
 def root(name="container"):
     """Manage containers"""
 
 
 def container_create(name, hidden=False):
+
     @click.command(
         cls=command_cls(),
         name=name,
@@ -125,6 +126,7 @@ def container_create(name, hidden=False):
 
 
 def container_list(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden)
     @click.option(
         "--all",
@@ -145,6 +147,7 @@ def container_list(name, hidden=False):
 
 
 def container_remove(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.option(
         "--force",
@@ -177,6 +180,7 @@ def container_remove(name, hidden=False):
 
 
 def container_start(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     def start(detach, interactive, tty, containers):
         """Start one or more stopped containers.
@@ -190,6 +194,7 @@ def container_start(name, hidden=False):
 
 
 def container_stop(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("containers", nargs=-1)
     def stop(containers):
@@ -200,6 +205,7 @@ def container_stop(name, hidden=False):
 
 
 def container_restart(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("containers", nargs=-1)
     def restart(containers):
@@ -230,6 +236,7 @@ def container_restart(name, hidden=False):
 
 
 def container_exec(name, hidden=False):
+
     @click.command(
         cls=command_cls(),
         name="exec",
@@ -271,6 +278,7 @@ def container_exec(name, hidden=False):
 
 
 def container_update(name, hidden=False):
+
     @click.command(
         cls=command_cls(),
         name=name,
@@ -349,6 +357,7 @@ def container_update(name, hidden=False):
 
 
 def container_rename(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("container", nargs=1)
     @click.argument("new_name", nargs=1)
@@ -371,6 +380,7 @@ def container_rename(name, hidden=False):
 
 
 def container_run(name, hidden=False):
+
     @click.command(
         cls=command_cls(),
         name=name,
@@ -550,6 +560,7 @@ def _start(detach, interactive, tty, containers):
 
 
 def _stop(containers, silent=False):
+
     def silent_(_):
         return ""
 
@@ -672,6 +683,7 @@ def _send_user_input(websocket):
 
 
 def _close_websocket(websocket):
+
     async def _close_ws(websocket):
         await websocket.close(code=1000, reason="interrupted by user")
 

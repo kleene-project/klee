@@ -38,12 +38,15 @@ NETWORK_LIST_COLUMNS = [
 ]
 
 # pylint: disable=unused-argument
+
+
 @click.group(cls=group_cls(), add_help_option=True, short_help="Manage networks")
 def root(name="network"):
     """Manage networks"""
 
 
 def network_create(name, hidden=False):
+
     @root.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.option(
         "--type",
@@ -141,6 +144,7 @@ def network_create(name, hidden=False):
 
 
 def network_remove(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("networks", required=True, nargs=-1)
     def remove(networks):
@@ -164,6 +168,7 @@ def network_remove(name, hidden=False):
 
 
 def network_list(name, hidden=False):
+
     def _print_networks(response):
         networks = [[nw.id, nw.name, nw.type, nw.subnet] for nw in response.parsed]
         print_table(networks, NETWORK_LIST_COLUMNS)
@@ -192,6 +197,7 @@ def network_inspect(name, hidden=False):
 
 
 def network_connect(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.option(
         "--ip",
@@ -218,6 +224,7 @@ def network_connect(name, hidden=False):
 
 
 def network_disconnect(name, hidden=False):
+
     @click.command(cls=command_cls(), name=name, hidden=hidden, no_args_is_help=True)
     @click.argument("network", required=True, nargs=1)
     @click.argument("container", required=True, nargs=1)

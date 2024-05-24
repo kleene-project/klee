@@ -4,7 +4,6 @@ from urllib.parse import urlparse
 
 import click
 
-
 DEFAULT_HOST = "http:///var/run/kleened.sock"
 
 ERROR_INVALID_CONFIG = (

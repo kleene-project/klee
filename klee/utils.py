@@ -9,11 +9,9 @@ import httpx
 from .connection import request
 from .printing import (
     echo,
-    echo_bold,
     echo_error,
     print_unable_to_connect,  # Message
     print_timeout,
-    unexpected_error,  # Message
     unrecognized_status_code,  # Message
     print_unexpected_response,
 )
