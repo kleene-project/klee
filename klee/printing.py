@@ -108,6 +108,14 @@ def print_json(response):
     # pprint(response.parsed)
 
 
+def print_json_raw(json_obj):
+    if config.theme == THEME_FANCY:
+        console.print_json(json_obj)
+
+    elif config.theme == THEME_SIMPLE:
+        click.echo(json.dumps(json_obj, indent=2))
+
+
 def print_image_column(name, tag, id_):
     if name == "":
         return f"[b bright_magenta]{id_}[/b bright_magenta]"
