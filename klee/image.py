@@ -321,11 +321,17 @@ def _create(tag, dns, localtime, update, autotag, method, source):
         echo_error(f"too many arguments: {additional_arguments}")
         return
 
-    if method in {"zfs-clone", "zfs-copy"}:
-        dataset = source[0]
+    try:
+        if method in {"zfs-clone", "zfs-copy"}:
+            dataset = source[0]
 
-    if method == "fetch":
-        url = source[0]
+        if method == "fetch":
+            url = source[0]
+    except IndexError:
+        echo_error(
+            f"The SOURCE argument is needed when creating images using the '{method}' method."
+        )
+        return
 
     if method == "fetch-auto":
         url = ""
