@@ -20,6 +20,7 @@ cwd = os.getcwd()
 
 
 class TestImageSubcommand:
+
     def test_empty_listing_of_images(self, testimage):
         assert_only_test_image()
 
@@ -258,6 +259,7 @@ class TestImageSubcommand:
 
 
 class TestImageCreateSubcommand:
+
     def test_create_image_with_fetch_method(self, testimage):
         url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
         result = run(f"image create -t Create:Fetch fetch {url}")
@@ -331,6 +333,13 @@ class TestImageCreateSubcommand:
         assert not resolv_conf_exist(image_id)
         run(f"rmi {image_id}")
 
+    def test_create_image_without_mandatory_source_argument(self):
+        result = run("image create -t FreeBSD:NoSourceArgument zfs-clone")
+        assert result == [
+            "The SOURCE argument is needed when creating images using the 'zfs-clone' method.",
+            "",
+        ]
+
     def test_create_image_with_zfs_invalid_image(self, testimage):
         result = run(
             "image create -t Create:ZFSClone-invalid zfs-clone /zroot/kleene_basejail/"
@@ -343,6 +352,7 @@ class TestImageCreateSubcommand:
 
 
 class TestImagePruning:
+
     def test_pruning_snapshot_image(self, host_state):
         run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
         self.image("FreeBSD", "Parent")
