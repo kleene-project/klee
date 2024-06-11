@@ -119,7 +119,10 @@ def network_create(name, hidden=False):
         config["gateway"] = config.pop("gw")
         config["gateway6"] = config.pop("gw6")
         for gw in ["gateway", "gateway6"]:
-            config[gw] = "<auto>" if config[gw] == "auto" else config[gw]
+            if config["type"] == "bridge":
+                config[gw] = "<auto>" if config[gw] == "auto" else config[gw]
+            else:
+                config[gw] = ""
 
         nat = config.pop("nat")
         nat_interface = config.pop("nat_if")
