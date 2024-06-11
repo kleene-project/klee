@@ -23,7 +23,7 @@ def host_state():
 
 
 @pytest.fixture()
-def cleanup(create_testimage, host_state):
+def cleanup(host_state):
     yield host_state
     run("container prune -f")
     run("network prune -f")
