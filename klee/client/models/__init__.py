@@ -8,6 +8,8 @@ from .container_inspect import ContainerInspect
 from .container_network_driver import ContainerNetworkDriver
 from .container_restart_policy import ContainerRestartPolicy
 from .container_summary import ContainerSummary
+from .deployment_config import DeploymentConfig
+from .deployment_config_containers_item import DeploymentConfigContainersItem
 from .end_point import EndPoint
 from .end_point_config import EndPointConfig
 from .error_response import ErrorResponse
@@ -47,6 +49,8 @@ __all__ = (
     "ContainerNetworkDriver",
     "ContainerRestartPolicy",
     "ContainerSummary",
+    "DeploymentConfig",
+    "DeploymentConfigContainersItem",
     "EndPoint",
     "EndPointConfig",
     "ErrorResponse",
