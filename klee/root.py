@@ -28,6 +28,7 @@ def create_cli():
     config.update_bootstrap_options(config_file, theme)
     config.load_config_file()
 
+    from .deploy import root as deploy_root
     from .container import (
         root as container_root,
         container_create,
@@ -139,6 +140,7 @@ def create_cli():
 
         config.host = urlparse(config.host)
 
+    cli.add_command(deploy_root, name="deploy")
     cli.add_command(container_root, name="container")
     cli.add_command(image_root, name="image")
     cli.add_command(network_root, name="network")
