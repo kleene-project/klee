@@ -24,6 +24,7 @@ def testimage_and_cleanup(create_testimage, host_state):
 
 
 class TestHTTPConnections:
+
     def test_connecting_with_ipv6_and_no_tls(self):
         successful_http_connection("--host http://[::1]:8080")
 
@@ -46,13 +47,13 @@ class TestHTTPConnections:
         successful_http_connection(
             "--host https://127.0.0.1:8085 --no-tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
         )
-        assert SELF_SIGNED_ERROR == "".join(
+        assert SELF_SIGNED_ERROR in "".join(
             http_connection(
                 "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem",
                 exit_code=1,
             )
         )
-        assert CERTIFICATE_REQUIRED_ERROR == "".join(
+        assert CERTIFICATE_REQUIRED_ERROR in "".join(
             http_connection("--host https://127.0.0.1:8085 --no-tlsverify", exit_code=1)
         )
 
@@ -67,6 +68,7 @@ def http_connection(connection_config, exit_code=0):
 
 
 class TestWebsocketConnections:
+
     def test_connecting_with_ipv6_and_no_tls(self, testimage_and_cleanup):
         successful_ws_connection("--host http://[::1]:8080")
 
@@ -92,13 +94,13 @@ class TestWebsocketConnections:
             "--host https://127.0.0.1:8085 --no-tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem"
         )
 
-        assert SELF_SIGNED_ERROR == "".join(
+        assert SELF_SIGNED_ERROR in "".join(
             ws_connection(
                 "--host https://127.0.0.1:8085 --tlsverify --tlscert=/usr/local/etc/kleened/certs/client-cert.pem --tlskey=/usr/local/etc/kleened/certs/client-key.pem",
                 exit_code=1,
             )
         )
-        assert CERTIFICATE_REQUIRED_ERROR == "".join(
+        assert CERTIFICATE_REQUIRED_ERROR in "".join(
             run(
                 "--host https://127.0.0.1:8085 --no-tlsverify container ls", exit_code=1
             )

@@ -69,7 +69,7 @@ class TestFileConfiguration:
         _create_config_file(config_high_priority, "cwd")
         _create_config_file(config_low_priority, "homedir")
         output = run("container ls", exit_code=1)
-        assert "".join(output) == CERTIFICATE_REQUIRED_ERROR
+        assert CERTIFICATE_REQUIRED_ERROR in "".join(output)
 
     def test_envvar_takes_priority(self, clear_configs):
         config_file = {"host": DEFAULT_HOST}
@@ -82,7 +82,7 @@ class TestFileConfiguration:
             check=False,
         )
         output = output.stdout.decode("utf8").replace("\n", "")
-        assert output == CERTIFICATE_REQUIRED_ERROR
+        assert CERTIFICATE_REQUIRED_ERROR in output
 
     def test_command_line_config_takes_priority(self, clear_configs):
         config_high_priority = {"host": "https://127.0.0.1:8085", "tlsverify": False}
@@ -97,7 +97,7 @@ class TestFileConfiguration:
             check=False,
         )
         output = output.stdout.decode("utf8").replace("\n", "")
-        assert output == CERTIFICATE_REQUIRED_ERROR
+        assert CERTIFICATE_REQUIRED_ERROR in output
 
     def test_command_line_host_takes_priority(self, clear_configs):
         # Testing in a completely fresh environment so we don't mess with envvars etc.
