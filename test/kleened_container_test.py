@@ -1,55 +1,41 @@
 import pytest
 import TestHelper
-from unittest.mock import MagicMock
-
-
-@pytest.fixture(scope="module")
-def api_spec():
-    return MagicMock()  # Replace with actual API spec initialization if available
-
-
-@pytest.fixture(scope="function", autouse=True)
-def setup_teardown():
-    # Setup logic
-    TestHelper.cleanup()
-    yield
-    # Teardown logic
-    print("Cleaning up after test...")
-    TestHelper.cleanup()
 
 
 class TestContainer:
 
-    def test_create_remove_and_list_containers(self, api_spec):
-        assert TestHelper.container_list(api_spec) == []
+    def test_create_remove_and_list_containers(self):
+        assert TestHelper.container_list() == []
 
-        container1 = TestHelper.container_successfully_create({"name": "testcont"})
+        container1 = TestHelper.container_successfully_create(
+            {"name": "testcont"})
         img_id = TestHelper.get_image_id("FreeBSD:testing")
         assert container1.image_id == img_id
 
-        container_list = TestHelper.container_list(api_spec)
+        container_list = TestHelper.container_list()
         assert any(
             c.id == container1.id and c.name == container1.name for c in container_list
         )
 
-        container2 = TestHelper.container_successfully_create({"name": "testcont2"})
-        container_list = TestHelper.container_list(api_spec)
+        container2 = TestHelper.container_successfully_create(
+            {"name": "testcont2"})
+        container_list = TestHelper.container_list()
         assert any(
             c.id == container2.id and c.name == container2.name for c in container_list
         )
 
-        TestHelper.container_remove(api_spec, container1.id)
+        TestHelper.container_remove(container1.id)
         assert not any(
-            c.id == container1.id for c in TestHelper.container_list(api_spec)
+            c.id == container1.id for c in TestHelper.container_list()
         )
 
-        TestHelper.container_remove(api_spec, container2.id)
-        assert TestHelper.container_list(api_spec) == []
+        TestHelper.container_remove(container2.id)
+        assert TestHelper.container_list() == []
 
         with pytest.raises(Exception):
-            TestHelper.container_remove(api_spec, container2.id)
+            TestHelper.container_remove(container2.id)
 
-    def test_prune_containers(self, api_spec):
+    def test_prune_containers(self):
         container1 = TestHelper.container_successfully_create(
             {"name": "testprune1", "cmd": ["/bin/sleep", "10"]}
         )
@@ -67,15 +53,16 @@ class TestContainer:
 
         TestHelper.sleep(1)
 
-        pruned_ids = TestHelper.container_prune(api_spec)
+        pruned_ids = TestHelper.container_prune()
         assert container1.id in pruned_ids
         assert container3.id in pruned_ids
         assert container2.id not in pruned_ids
 
         TestHelper.container_stop(container2.id)
 
-    def test_inspect_a_container(self, api_spec):
-        container = TestHelper.container_successfully_create({"name": "testcontainer"})
+    def test_inspect_a_container(self):
+        container = TestHelper.container_successfully_create(
+            {"name": "testcontainer"})
 
         response = TestHelper.container_inspect_raw("notexist")
         assert response.status == 404
@@ -85,19 +72,19 @@ class TestContainer:
 
         result = TestHelper.decode_response_body(response.resp_body)
         assert result["container"]["name"] == container.name
-        TestHelper.assert_schema(result, "ContainerInspect", api_spec)
+        TestHelper.assert_schema(result, "ContainerInspect", )
 
-    def test_start_and_stop_container_with_devfs(self, api_spec):
+    def test_start_and_stop_container_with_devfs(self):
         config = {"name": "testcont", "cmd": ["/bin/sleep", "10"]}
-        container, exec_id = TestHelper.container_start_attached(api_spec, config)
+        container, exec_id = TestHelper.container_start_attached(config)
 
         assert TestHelper.devfs_mounted(container)
-        TestHelper.container_stop(api_spec, container.id)
+        TestHelper.container_stop(container.id)
         TestHelper.assert_container_shutdown(exec_id)
 
         assert not TestHelper.devfs_mounted(container)
 
-    def test_start_container_without_attaching(self, api_spec):
+    def test_start_container_without_attaching(self):
         container = TestHelper.container_successfully_create(
             {
                 "name": "ws_test_container",
@@ -111,7 +98,7 @@ class TestContainer:
         TestHelper.exec_valid_start(config)
         TestHelper.sleep(0.1)
 
-        TestHelper.container_remove(api_spec, container.id)
+        TestHelper.container_remove(container.id)
 
     def test_start_container_with_attach_and_receive_output(self):
         cmd_expected = ["/bin/echo", "test test"]
@@ -121,35 +108,37 @@ class TestContainer:
         assert container.cmd == cmd_expected
 
         exec_id = TestHelper.exec_create(container.id)
-        TestHelper.exec_start(exec_id, {"attach": True, "start_container": True})
+        TestHelper.exec_start(
+            exec_id, {"attach": True, "start_container": True})
 
         TestHelper.assert_received_output(exec_id, "test test\n")
         TestHelper.assert_container_shutdown(exec_id)
         assert not TestHelper.devfs_mounted(container)
 
-    def test_start_and_force_stop_container(self, api_spec):
+    def test_start_and_force_stop_container(self):
         container = TestHelper.container_successfully_create(
             {"name": "testcont", "cmd": ["/bin/sleep", "10"]}
         )
 
         exec_id = TestHelper.exec_create(container.id)
-        TestHelper.exec_start(exec_id, {"attach": False, "start_container": True})
+        TestHelper.exec_start(
+            exec_id, {"attach": False, "start_container": True})
 
         TestHelper.sleep(0.5)
-        TestHelper.container_stop(api_spec, container.id)
+        TestHelper.container_stop(container.id)
         assert not Utils.is_container_running(container.id)
 
-    def test_start_and_stop_with_devfs_and_rc(self, api_spec):
+    def test_start_and_stop_with_devfs_and_rc(self):
         config = {
             "name": "testcont",
             "cmd": ["/bin/sleep", "10"],
             "jail_param": ["mount.devfs", 'exec.stop="/bin/sh /etc/rc.shutdown"'],
             "user": "root",
         }
-        container, exec_id = TestHelper.container_start_attached(api_spec, config)
+        container, exec_id = TestHelper.container_start_attached(config)
 
         assert TestHelper.devfs_mounted(container)
-        TestHelper.container_stop(api_spec, container.id)
+        TestHelper.container_stop(container.id)
         TestHelper.assert_container_shutdown(exec_id)
         assert not TestHelper.devfs_mounted(container)
 
@@ -161,7 +150,8 @@ class TestContainer:
             "mounts": [{"type": "nullfs", "source": "/mnt", "destination": mount_path}],
             "user": "root",
         }
-        container_id, _, process_output = TestHelper.container_valid_run(config_rw)
+        container_id, _, process_output = TestHelper.container_valid_run(
+            config_rw)
         assert process_output == []
         file_path = (
             f"/zroot/kleene/container/{container_id}/{mount_path}/testing_mounts.txt"
@@ -190,8 +180,8 @@ class TestContainer:
         )
         assert "".join(output) == expected_output
 
-    def test_volume_mount_rw_permissions(self, api_spec):
-        volume = TestHelper.volume_create(api_spec, "volume-mounting-test")
+    def test_volume_mount_rw_permissions(self):
+        volume = TestHelper.volume_create("volume-mounting-test")
         mount_path = "/kleene_volume_testing"
 
         config = {
@@ -203,7 +193,8 @@ class TestContainer:
             "user": "root",
         }
 
-        container_id, _, process_output = TestHelper.container_valid_run(config)
+        container_id, _, process_output = TestHelper.container_valid_run(
+            config)
         assert process_output == []
         file_path = (
             f"/zroot/kleene/container/{container_id}/{mount_path}/testing_mounts.txt"
@@ -211,10 +202,10 @@ class TestContainer:
         assert File.read(file_path) == {"error": "enoent"}
         file_path = f"/zroot/kleene/volumes/{volume.name}/testing_mounts.txt"
         assert File.read(file_path) == {"ok": ""}
-        TestHelper.volume_remove(api_spec, volume.name)
+        TestHelper.volume_remove(volume.name)
 
-    def test_volume_mount_read_only_permissions(self, api_spec):
-        volume = TestHelper.volume_create(api_spec, "volume-mounting-test")
+    def test_volume_mount_read_only_permissions(self):
+        volume = TestHelper.volume_create("volume-mounting-test")
         mount_path = "/kleene_volume_testing"
 
         config = {
@@ -239,13 +230,13 @@ class TestContainer:
         )
         assert "".join(output) == expected_output
 
-        TestHelper.volume_remove(api_spec, volume.name)
+        TestHelper.volume_remove(volume.name)
 
 
 class TestContainerVolumeManagement:
 
-    def test_mount_empty_volume_into_non_empty_directory(self, api_spec):
-        volume = TestHelper.volume_create(api_spec, "volume-populate-test")
+    def test_mount_empty_volume_into_non_empty_directory(self):
+        volume = TestHelper.volume_create("volume-populate-test")
         mount_path = "/etc/defaults"
 
         config = {
@@ -257,7 +248,8 @@ class TestContainerVolumeManagement:
             "user": "root",
         }
 
-        container_id, _, process_output = TestHelper.container_valid_run(config)
+        container_id, _, process_output = TestHelper.container_valid_run(
+            config)
         assert process_output == []
 
         output, exit_code = OS.cmd(["/bin/ls", volume.mountpoint])
@@ -267,7 +259,7 @@ class TestContainerVolumeManagement:
             == "bluetooth.device.conf\ndevfs.rules\nperiodic.conf\nrc.conf\ntest_volume_mount\n"
         )
 
-        TestHelper.volume_remove(api_spec, volume.name)
+        TestHelper.volume_remove(volume.name)
 
     def test_mount_non_existing_volume_into_container(self):
         mount_path = "/kleene_volume_testing"
@@ -282,7 +274,8 @@ class TestContainerVolumeManagement:
             "user": "root",
         }
 
-        container_id, _, process_output = TestHelper.container_valid_run(config)
+        container_id, _, process_output = TestHelper.container_valid_run(
+            config)
         assert process_output == []
 
         file_path = (
@@ -296,7 +289,7 @@ class TestContainerVolumeManagement:
 
 class TestContainerUpdate:
 
-    def test_updating_a_container(self, api_spec):
+    def test_updating_a_container(self):
         container = TestHelper.container_successfully_create(
             {
                 "name": "testcontainer",
@@ -317,22 +310,23 @@ class TestContainerUpdate:
         }
 
         # Test a "nil-update"
-        TestHelper.container_update(api_spec, container_id, config_nil)
+        TestHelper.container_update(container_id, config_nil)
         container_upd = TestHelper.container_inspect(container_id)["container"]
         assert container_upd == container
 
         # Test changing name
         TestHelper.container_update(
-            api_spec, container_id, {**config_nil, "name": "testcontupd"}
+            , container_id, {**config_nil, "name": "testcontupd"}
         )
         container_upd = TestHelper.container_inspect(container_id)["container"]
         assert container_upd["name"] == "testcontupd"
 
         # Test changing env and cmd
         TestHelper.container_update(
-            api_spec,
+            ,
             container_id,
-            {**config_nil, "env": ["TESTVAR=testval2"], "cmd": ["/bin/sleep", "20"]},
+            {**config_nil, "env": ["TESTVAR=testval2"],
+                "cmd": ["/bin/sleep", "20"]},
         )
         container_upd = TestHelper.container_inspect(container_id)["container"]
         assert container_upd["env"] == ["TESTVAR=testval2"]
@@ -340,9 +334,10 @@ class TestContainerUpdate:
 
         # Test changing jail-param
         TestHelper.container_update(
-            api_spec,
+            ,
             container_id,
-            {**config_nil, "user": "root", "jail_param": ["allow.raw_sockets=false"]},
+            {**config_nil, "user": "root",
+                "jail_param": ["allow.raw_sockets=false"]},
         )
         container_upd = TestHelper.container_inspect(container_id)["container"]
         assert container_upd["jail_param"] == ["allow.raw_sockets=false"]
@@ -351,7 +346,7 @@ class TestContainerUpdate:
 
 class TestContainerAdvanced:
 
-    def test_updating_on_a_running_container(self, api_spec):
+    def test_updating_on_a_running_container(self):
         container = TestHelper.container_successfully_create(
             {
                 "name": "testcontainer",
@@ -378,7 +373,7 @@ class TestContainerAdvanced:
 
         # Update jail-param
         TestHelper.container_update(
-            api_spec,
+            ,
             container_id,
             {
                 **config_nil,
@@ -403,18 +398,19 @@ class TestContainerAdvanced:
         # Test unsupported jail-param update
         with pytest.raises(Exception, match=r"vnet cannot be changed after creation"):
             TestHelper.container_update(
-                api_spec, container_id, {**config_nil, "jail_param": ["vnet"]}
+                , container_id, {**config_nil, "jail_param": ["vnet"]}
             )
 
         TestHelper.container_stop(container_id)
 
     def test_create_container_from_non_existing_image(self):
         with pytest.raises(Exception, match="no such image 'nonexisting'"):
-            TestHelper.container_create({"name": "testcont", "image": "nonexisting"})
+            TestHelper.container_create(
+                {"name": "testcont", "image": "nonexisting"})
 
-    def test_start_a_container_as_non_root(self, api_spec):
+    def test_start_a_container_as_non_root(self):
         container, exec_id = TestHelper.container_start_attached(
-            api_spec, {"name": "testcont", "cmd": ["/usr/bin/id"], "user": "ntpd"}
+            , {"name": "testcont", "cmd": ["/usr/bin/id"], "user": "ntpd"}
         )
 
         assert TestHelper.assert_receive(
@@ -432,7 +428,8 @@ class TestContainerAdvanced:
 
     def test_jail_parameters_replacement(self):
         # Override mount.devfs=true with mount.nodevfs
-        config = {"jail_param": ["mount.nodevfs"], "cmd": ["/bin/sh", "-c", "ls /dev"]}
+        config = {"jail_param": ["mount.nodevfs"],
+                  "cmd": ["/bin/sh", "-c", "ls /dev"]}
         _, _, process_output = TestHelper.container_valid_run(config)
         assert process_output == []
 
@@ -446,7 +443,8 @@ class TestContainerAdvanced:
         assert "EMU=beam" in environment
 
         # Override mount.devfs=true with itself
-        config = {"jail_param": ["mount.devfs"], "cmd": ["/bin/sh", "-c", "ls /dev"]}
+        config = {"jail_param": ["mount.devfs"],
+                  "cmd": ["/bin/sh", "-c", "ls /dev"]}
         _, _, output = TestHelper.container_valid_run(config)
         assert output == [
             "fd\nnull\npts\nrandom\nstderr\nstdin\nstdout\nurandom\nzero\nzfs\n"
@@ -484,7 +482,8 @@ class TestContainerAdvanced:
         }
 
         _, _, output = TestHelper.container_valid_run(config)
-        TestHelper.compare_environment_output(output, ["LOOL=test2", "LOL=test"])
+        TestHelper.compare_environment_output(
+            output, ["LOOL=test2", "LOL=test"])
 
     def test_start_container_with_environment_variables(self):
         dockerfile = """
@@ -530,7 +529,7 @@ class TestContainerAdvanced:
             output, ["TEST=new_value", "TEST2=lool test"]
         )
 
-    def test_try_to_remove_a_running_container(self, api_spec):
+    def test_try_to_remove_a_running_container(self):
         config = {
             "name": "remove_while_running",
             "image": "FreeBSD:testing",
@@ -542,11 +541,11 @@ class TestContainerAdvanced:
         container_id, _, _ = TestHelper.container_valid_run(config)
 
         with pytest.raises(Exception, match="you cannot remove a running container"):
-            TestHelper.container_remove(api_spec, container_id)
+            TestHelper.container_remove(container_id)
 
         TestHelper.container_stop(container_id)
 
-    def test_try_to_remove_a_container_twice(self, api_spec):
+    def test_try_to_remove_a_container_twice(self):
         config = {
             "name": "remove_while_running",
             "image": "FreeBSD:testing",
@@ -556,11 +555,11 @@ class TestContainerAdvanced:
         }
 
         container_id, _, _ = TestHelper.container_valid_run(config)
-        removed_container = TestHelper.container_remove(api_spec, container_id)
+        removed_container = TestHelper.container_remove(container_id)
         assert removed_container["id"] == container_id
 
         with pytest.raises(Exception, match="no such container"):
-            TestHelper.container_remove(api_spec, container_id)
+            TestHelper.container_remove(container_id)
 
     def test_restart_on_startup_containers(self):
         TestHelper.network_create(
@@ -596,28 +595,31 @@ class TestContainerAdvanced:
         Application.start("kleened")
         TestHelper.sleep(0.2)
 
-        assert TestHelper.container_inspect(container1.id)["container"]["running"]
-        assert TestHelper.container_inspect(container2.id)["container"]["running"]
+        assert TestHelper.container_inspect(
+            container1.id)["container"]["running"]
+        assert TestHelper.container_inspect(
+            container2.id)["container"]["running"]
 
         assert OS.shell("ifconfig kleene0")[1] == 0
 
-    def test_containers_with_persist_flag_not_pruned(self, api_spec):
+    def test_containers_with_persist_flag_not_pruned(self):
         container1 = TestHelper.container_successfully_create(
             {"name": "testprune1", "cmd": ["/bin/sleep", "10"]}
         )
         container2 = TestHelper.container_successfully_create(
-            {"name": "testprune2", "cmd": ["/bin/sleep", "10"], "persist": True}
+            {"name": "testprune2", "cmd": [
+                "/bin/sleep", "10"], "persist": True}
         )
         container3 = TestHelper.container_successfully_create(
             {"name": "testprune3", "cmd": ["/bin/sleep", "10"]}
         )
 
-        pruned_containers = TestHelper.container_prune(api_spec)
+        pruned_containers = TestHelper.container_prune()
         assert container1.id in pruned_containers
         assert container3.id in pruned_containers
         assert container2.id not in pruned_containers
 
-        remaining_containers = TestHelper.container_list(api_spec)
+        remaining_containers = TestHelper.container_list()
         assert any(
             container["id"] == container2.id for container in remaining_containers
         )
@@ -635,7 +637,8 @@ class TestContainerAdvanced:
 
         container_id = container.id
         assert (
-            TestHelper.start_n_attached_containers_and_receive_output(container_id, 20)
+            TestHelper.start_n_attached_containers_and_receive_output(
+                container_id, 20)
             == "ok"
         )
         assert TestHelper.container_remove(container_id)["id"] == container_id
