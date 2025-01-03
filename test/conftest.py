@@ -27,6 +27,7 @@ def cleanup(host_state):
     yield host_state
     run("container prune -f")
     run("network prune -f")
+    run("volume prune -f")
 
 
 @pytest.fixture()

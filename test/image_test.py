@@ -140,8 +140,8 @@ class TestImageSubcommand:
     ):
         create_dockerfile(["FROM FreeBSD", " ", "RUN touch /passed"])
         run(f"build -t StrangeDockerfile {os.getcwd()}")
-        output = run(f"run --name testing1 StrangeDockerfile {stat('/passed')}")
-        stat_output = output[2].split(",")
+        _, _, output = run(f"run --name testing1 StrangeDockerfile {stat('/passed')}")
+        stat_output = output[0].split(",")
         file_permissions = stat_output[-1]
         assert "-rw-r--r--" == file_permissions
         run("rmc testing1")
@@ -179,7 +179,8 @@ class TestImageSubcommand:
             )
             create_dockerfile(dockerfile)
             run(f"build -t FromSnapshot{n} {os.getcwd()}")
-            output = set(run(f"run FromSnapshot{n} ls /media"))
+            _, _, output = run(f"run FromSnapshot{n} ls /media")
+            output = set(output)
             assert "step1" in output
             assert "step2" not in output
         run("container prune -f")
@@ -205,11 +206,9 @@ class TestImageSubcommand:
         ]
 
         verify_build_output(expected_build_log, build_log)
-        output = run(f"run {image_id} /bin/cat /root/test.txt")
+        _, _, output = run(f"run {image_id} /bin/cat /root/test.txt")
 
-        prefix = "created execution instance "
-        assert output[1][: len(prefix)] == prefix
-        assert output[2] == "lol"
+        assert output[0] == "lol"
         run("container prune -f")
         run(f"rmi {image_id}")
 
@@ -236,11 +235,8 @@ class TestImageSubcommand:
         snapshot_line = build_log[2]
         snapshot = snapshot_line.split("--> Snapshot created: @")[1]
         verify_build_output(expected_build_log, build_log)
-        output = run(f"run {image_id}@{snapshot} /bin/cat /root/test.txt", exit_code=0)
-
-        prefix = "created execution instance "
-        assert output[1][: len(prefix)] == prefix
-        assert output[2] == "first"
+        _, _, output = run(f"run {image_id}@{snapshot} /bin/cat /root/test.txt")
+        assert output[0] == "first"
         run("container prune -f")
         run("rmi FailedBuild:failed")
 
