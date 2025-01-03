@@ -32,12 +32,15 @@ def jail_info():
     return json.loads(result.stdout)
 
 
-def shell(cmd):
-    return shell_raw(cmd).stdout.decode("utf8")
+def shell(command):
+    return shell_raw(command).stdout.decode("utf8")
 
 
 def shell_raw(cmd):
-    return subprocess.run(args=cmd, shell=True, check=False, capture_output=True)
+    print_running_command(cmd, "shell")
+    result = subprocess.run(cmd, shell=True, check=False, capture_output=True)
+    print_command_exit(result.returncode, result.stdout, "shell")
+    return result
 
 
 def container_stopped_msg(exec_id, exit_code=0):
@@ -226,11 +229,35 @@ def run(command, exit_code=0):
     _clear_config()
     runner = CliRunner()
     cli = create_cli()
-    print(f'running command: "{command}"')
+    print_running_command(" ".join(command), "klee")
     result = runner.invoke(cli, command, catch_exceptions=False)
-    print(f"exited with code {result.exit_code}:\n{result.output}")
+    print_command_exit(result.exit_code, result.output, "klee")
+
     assert result.exit_code == exit_code
+    if command[0] == "rmc" or command[:2] == ["container", "rm"]:
+        container_id = result.output[:-1]
+        return container_id
+
+    if command[0] == "run" or command[:2] == ["container", "run"]:
+        if result.exit_code == 0:
+            if "-d" in command or "--detach" in command:
+                container_id, exec_msg, _nl = result.output.split("\n")
+                exec_id = exec_msg.split(" ")[-1]
+                return container_id, exec_id, []
+
+            container_id, exec_msg, *output, _endmsg, _nl = result.output.split("\n")
+            exec_id = exec_msg.split(" ")[-1]
+            return container_id, exec_id, output
+
     return result.output.split("\n")
+
+
+def print_running_command(command, type_):
+    print(f">>>running {type_} command: {command}")
+
+
+def print_command_exit(exit_code, output, type_):
+    print(f">>>{type_} command exited with code {exit_code}:\n{output}")
 
 
 def _clear_config():
