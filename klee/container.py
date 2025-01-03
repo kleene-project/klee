@@ -174,6 +174,7 @@ def container_remove(name, hidden=False):
                 },
             )
             if response is None or response.status_code != 200:
+                sys.exit(1)
                 break
 
     return remove
