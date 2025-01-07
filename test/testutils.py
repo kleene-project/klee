@@ -14,7 +14,7 @@ from klee.client.client import Client
 from klee.root import create_cli
 from klee.image import BUILD_START_MESSAGE
 
-SELF_SIGNED_ERROR = "unable to connect to kleened: [SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self signed certificate in certificate chain"
+SELF_SIGNED_ERROR = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain"
 
 CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required"
 
