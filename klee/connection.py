@@ -82,10 +82,11 @@ async def create_websocket(endpoint):
             cafile = config.tlscacert
 
         tls_ctx = ssl.create_default_context(
-            purpose=ssl.Purpose.CLIENT_AUTH, cafile=cafile
+            purpose=ssl.Purpose.SERVER_AUTH, cafile=cafile
         )
 
         if not config.tlsverify:
+            tls_ctx.check_hostname = False
             tls_ctx.verify_mode = ssl.CERT_NONE
 
         if config.tlscert is not None:
