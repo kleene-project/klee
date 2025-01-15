@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "kleene-cli"
 version = "0.1.0rc3"
-description = "Klee - Kleene's CLI tool."
+description = "CLI for Kleene - container management tooling for FreeBSD."
 authors = ["Lasse Grinderslev Andersen <lasse@philomath.dk>"]
 maintainers = [
     "Lasse Grinderslev Andersen <lasse@philomath.dk>",
