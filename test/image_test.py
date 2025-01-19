@@ -17,6 +17,7 @@ from testutils import (
 instructions = ["FROM FreeBSD", 'RUN echo "lol" > /root/test.txt', "CMD /usr/bin/uname"]
 
 cwd = os.getcwd()
+KLEENED_MINIMAL_TESTJAIL = os.getenv("KLEENED_MINIMAL_TESTJAIL", default=None)
 
 
 class TestImageSubcommand:
@@ -257,7 +258,7 @@ class TestImageSubcommand:
 class TestImageCreateSubcommand:
 
     def test_create_image_with_fetch_method(self, testimage):
-        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+        url = f"file://{KLEENED_MINIMAL_TESTJAIL}"
         result = run(f"image create -t Create:Fetch fetch {url}")
         assert result[-3] == "image created"
         image_id = result[-2]
@@ -267,7 +268,7 @@ class TestImageCreateSubcommand:
         run(f"rmi {image_id}")
 
     def test_create_image_with_fetch_method_and_nodns(self, testimage):
-        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+        url = f"file://{KLEENED_MINIMAL_TESTJAIL}"
         result = run(f"image create --no-dns -t Create:Fetch-nodns fetch {url}")
         assert result[-3] == "image created"
         image_id = result[-2]
@@ -286,7 +287,7 @@ class TestImageCreateSubcommand:
             [
                 "/usr/bin/tar",
                 "-xf",
-                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
+                KLEENED_MINIMAL_TESTJAIL,
                 "-C",
                 f"/{dataset}",
             ],
@@ -312,7 +313,7 @@ class TestImageCreateSubcommand:
             [
                 "/usr/bin/tar",
                 "-xf",
-                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
+                KLEENED_MINIMAL_TESTJAIL,
                 "-C",
                 f"/{dataset}",
             ],

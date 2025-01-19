@@ -1,5 +1,5 @@
 test:
-	poetry run sudo pytest -x -vv
+	poetry run sudo -E pytest -x -vv
 
 docs:
 	poetry run python scripts/generate_yaml_docs.py /vagrant/kleene-docs/_data/klee-reference
