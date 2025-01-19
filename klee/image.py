@@ -102,7 +102,7 @@ def image_create(name, hidden=False):
         default=True,
         show_default=True,
         metavar="bool",
-        help="Autogenerate a nametag 'FreeBSD-\<version\>:latest'. If `tag` is set this is ignored. Method **fetch-auto** only.",
+        help="Autogenerate a nametag 'FreeBSD-<version>:latest'. If `tag` is set this is ignored. Method **fetch-auto** only.",
     )
     @click.argument("method", nargs=1)
     @click.argument("source", nargs=-1)
