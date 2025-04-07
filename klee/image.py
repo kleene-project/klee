@@ -422,16 +422,13 @@ async def _build_image_and_listen_for_messages(**kwargs):
 
     if kwargs["network"] is not None:
         container_config["network_driver"] = _default_if_none(kwargs, "driver", "ipnet")
-        networks = [
-            EndPointConfig.from_dict(
-                {
-                    "container": "",
-                    "network": kwargs["network"],
-                    "ip_address": ip,
-                    "ip_address6": ip6,
-                }
-            )
-        ]
+        network = {
+            "container": "",
+            "network": kwargs["network"],
+            "ip_address": ip,
+            "ip_address6": ip6,
+        }
+        networks = [network]
     else:
         container_config["network_driver"] = _default_if_none(kwargs, "driver", "host")
         networks = []

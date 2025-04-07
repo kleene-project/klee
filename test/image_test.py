@@ -11,6 +11,7 @@ from testutils import (
     inspect,
     prune,
     run,
+    shell,
 )
 
 # pylint: disable=no-self-use, unused-argument
@@ -20,7 +21,7 @@ cwd = os.getcwd()
 KLEENED_MINIMAL_TESTJAIL = os.getenv("KLEENED_MINIMAL_TESTJAIL", default=None)
 
 
-class TestImageSubcommand:
+class TestImageCommand:
 
     def test_empty_listing_of_images(self, testimage):
         assert_only_test_image()
@@ -140,7 +141,7 @@ class TestImageSubcommand:
         self, testimage
     ):
         create_dockerfile(["FROM FreeBSD", " ", "RUN touch /passed"])
-        run(f"build -t StrangeDockerfile {os.getcwd()}")
+        run(f"build -t StrangeDockerfile {cwd}")
         _, _, output = run(f"run --name testing1 StrangeDockerfile {stat('/passed')}")
         stat_output = output[0].split(",")
         file_permissions = stat_output[-1]
@@ -150,7 +151,7 @@ class TestImageSubcommand:
 
     def test_build_invalid_instruction(self, testimage):
         create_dockerfile(["FRO FreeBSD", "RUN echo 'doest not run'"])
-        output = run(f"build -t InvalidDockerfile {os.getcwd()}", exit_code=1)
+        output = run(f"build -t InvalidDockerfile {cwd}", exit_code=1)
         assert ["error in 'FRO FreeBSD': invalid instruction", ""] == output
 
     def test_build_image_from_snapshot(self, testimage):
@@ -255,7 +256,41 @@ class TestImageSubcommand:
         ]
 
 
-class TestImageCreateSubcommand:
+class TestImageBuildContainerConfig:
+
+    def test_build_image_with_nullfs_mount(self, testimage_and_cleanup):
+        instructions = ["FROM FreeBSD"]
+        instructions.append('RUN echo "first" > /restore/test.txt')
+        create_dockerfile(instructions)
+
+        shell("mkdir testdir && touch testdir/test.txt")
+        shell(f"klee build -t testmount --mount {cwd}/testdir:/restore .")
+        assert "first\n" == shell("cat testdir/test.txt")
+        shell("rm -r testdir")
+        run("rmi testmount")
+
+    def test_build_image_with_volume_mount(self, testimage_and_cleanup):
+        instructions = ["FROM FreeBSD"]
+        instructions.append('RUN echo "first" > /restore/test.txt')
+        create_dockerfile(instructions)
+
+        run("volume create testvol")
+        shell("touch /zroot/kleene/volumes/testvol/test.txt")
+        run("build -t testmount --mount testvol:/restore .")
+        assert "first\n" == shell("cat /zroot/kleene/volumes/testvol/test.txt")
+        run("rmi testmount")
+        run("rmv testvol")
+
+    def test_build_image_with_ipnet_network(self, testimage_and_cleanup):
+        create_dockerfile(["FROM FreeBSD", "RUN ifconfig kleene0"])
+        run("network create --subnet 10.13.37.0/24 -t loopback jailnet")
+        output = "\n".join(run("build -t testmount -n jailnet ."))
+        run("rmi testmount")
+        assert "kleene0: " in output
+        assert "inet 10.13.37.1 netmask 0xffffffff" in output
+
+
+class TestImageCreate:
 
     def test_create_image_with_fetch_method(self, testimage):
         url = f"file://{KLEENED_MINIMAL_TESTJAIL}"
