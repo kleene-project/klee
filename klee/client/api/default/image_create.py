@@ -72,9 +72,9 @@ def sync_detailed(
     The specifics of the particular endpoint is described below the generic description of the
     protocol.
 
-    Once the websocket is established, Kleened expects a configuration-frame, which is given by
-    the specified request body schema. Thus, the contents of request body should be sent as the
-    initial websocket frame instead of being contained in initiating request.
+    Once the websocket is established Kleened expects a configuration-frame which is given by
+    the specified request body schema. The contents of the request body should be sent as an
+    initial websocket frame instead of being contained in the initiating request.
 
     When the config is received, Kleened sends a 'starting-message' back to the client, indicating
     that Kleened has begun processing the request.
@@ -147,9 +147,9 @@ def sync(
     The specifics of the particular endpoint is described below the generic description of the
     protocol.
 
-    Once the websocket is established, Kleened expects a configuration-frame, which is given by
-    the specified request body schema. Thus, the contents of request body should be sent as the
-    initial websocket frame instead of being contained in initiating request.
+    Once the websocket is established Kleened expects a configuration-frame which is given by
+    the specified request body schema. The contents of the request body should be sent as an
+    initial websocket frame instead of being contained in the initiating request.
 
     When the config is received, Kleened sends a 'starting-message' back to the client, indicating
     that Kleened has begun processing the request.
@@ -216,9 +216,9 @@ async def asyncio_detailed(
     The specifics of the particular endpoint is described below the generic description of the
     protocol.
 
-    Once the websocket is established, Kleened expects a configuration-frame, which is given by
-    the specified request body schema. Thus, the contents of request body should be sent as the
-    initial websocket frame instead of being contained in initiating request.
+    Once the websocket is established Kleened expects a configuration-frame which is given by
+    the specified request body schema. The contents of the request body should be sent as an
+    initial websocket frame instead of being contained in the initiating request.
 
     When the config is received, Kleened sends a 'starting-message' back to the client, indicating
     that Kleened has begun processing the request.
@@ -288,9 +288,9 @@ async def asyncio(
     The specifics of the particular endpoint is described below the generic description of the
     protocol.
 
-    Once the websocket is established, Kleened expects a configuration-frame, which is given by
-    the specified request body schema. Thus, the contents of request body should be sent as the
-    initial websocket frame instead of being contained in initiating request.
+    Once the websocket is established Kleened expects a configuration-frame which is given by
+    the specified request body schema. The contents of the request body should be sent as an
+    initial websocket frame instead of being contained in the initiating request.
 
     When the config is received, Kleened sends a 'starting-message' back to the client, indicating
     that Kleened has begun processing the request.

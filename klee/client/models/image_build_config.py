@@ -19,13 +19,13 @@ class ImageBuildConfig:
     """Configuration for an image build, including container configuration for the build container.
 
     Attributes:
-        container_config (ContainerConfig):
         context (str): Location path on the Kleened host of the context used for the image build.
         buildargs (Union[Unset, ImageBuildConfigBuildargs]): Additional `ARG`-variables given as an object of string
             pairs.
             See the [`ARG` instruction documentation](/reference/dockerfile/#arg) for details.
              Example: {'JAIL_MGMT_ENGINE': 'kleene', 'USERNAME': 'Stephen'}.
         cleanup (Union[Unset, bool]): Whether or not to remove the image in case of a build failure. Default: True.
+        container_config (Union[Unset, ContainerConfig]):
         dockerfile (Union[Unset, str]): Path of the Dockerfile used for the build. The path is relative to the context
             path. Default: 'Dockerfile'.
         networks (Union[Unset, List['EndPointConfig']]): List of endpoint-configs for the networks that the build
@@ -35,10 +35,10 @@ class ImageBuildConfig:
             omitted, the default value `latest` is used. Default: ''.
     """
 
-    container_config: "ContainerConfig"
     context: str
     buildargs: Union[Unset, "ImageBuildConfigBuildargs"] = UNSET
     cleanup: Union[Unset, bool] = True
+    container_config: Union[Unset, "ContainerConfig"] = UNSET
     dockerfile: Union[Unset, str] = "Dockerfile"
     networks: Union[Unset, List["EndPointConfig"]] = UNSET
     quiet: Union[Unset, bool] = False
@@ -46,14 +46,16 @@ class ImageBuildConfig:
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        container_config = self.container_config.to_dict()
-
         context = self.context
         buildargs: Union[Unset, Dict[str, Any]] = UNSET
         if not isinstance(self.buildargs, Unset):
             buildargs = self.buildargs.to_dict()
 
         cleanup = self.cleanup
+        container_config: Union[Unset, Dict[str, Any]] = UNSET
+        if not isinstance(self.container_config, Unset):
+            container_config = self.container_config.to_dict()
+
         dockerfile = self.dockerfile
         networks: Union[Unset, List[Dict[str, Any]]] = UNSET
         if not isinstance(self.networks, Unset):
@@ -70,7 +72,6 @@ class ImageBuildConfig:
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
-                "container_config": container_config,
                 "context": context,
             }
         )
@@ -78,6 +79,8 @@ class ImageBuildConfig:
             field_dict["buildargs"] = buildargs
         if cleanup is not UNSET:
             field_dict["cleanup"] = cleanup
+        if container_config is not UNSET:
+            field_dict["container_config"] = container_config
         if dockerfile is not UNSET:
             field_dict["dockerfile"] = dockerfile
         if networks is not UNSET:
@@ -96,8 +99,6 @@ class ImageBuildConfig:
         from ..models.image_build_config_buildargs import ImageBuildConfigBuildargs
 
         d = src_dict.copy()
-        container_config = ContainerConfig.from_dict(d.pop("container_config"))
-
         context = d.pop("context")
 
         _buildargs = d.pop("buildargs", UNSET)
@@ -108,6 +109,13 @@ class ImageBuildConfig:
             buildargs = ImageBuildConfigBuildargs.from_dict(_buildargs)
 
         cleanup = d.pop("cleanup", UNSET)
+
+        _container_config = d.pop("container_config", UNSET)
+        container_config: Union[Unset, ContainerConfig]
+        if isinstance(_container_config, Unset):
+            container_config = UNSET
+        else:
+            container_config = ContainerConfig.from_dict(_container_config)
 
         dockerfile = d.pop("dockerfile", UNSET)
 
@@ -123,10 +131,10 @@ class ImageBuildConfig:
         tag = d.pop("tag", UNSET)
 
         image_build_config = cls(
-            container_config=container_config,
             context=context,
             buildargs=buildargs,
             cleanup=cleanup,
+            container_config=container_config,
             dockerfile=dockerfile,
             networks=networks,
             quiet=quiet,

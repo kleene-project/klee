@@ -22,12 +22,14 @@ T = TypeVar("T", bound="DeploymentConfig")
 class DeploymentConfig:
     """
     Attributes:
+        build_workers (Union[Unset, int]): Number of concurrent build-workers used when building images. Default: 1.
         containers (Union[Unset, List['DeploymentConfigContainersItem']]): Deployment containers
         images (Union[Unset, List[Union['ImageBuildConfig', 'ImageCreateConfig']]]): Deployment images.
         networks (Union[Unset, List['NetworkConfig']]): Deployment networks
         volumes (Union[Unset, List['VolumeConfig']]): Deployment volumes
     """
 
+    build_workers: Union[Unset, int] = 1
     containers: Union[Unset, List["DeploymentConfigContainersItem"]] = UNSET
     images: Union[Unset, List[Union["ImageBuildConfig", "ImageCreateConfig"]]] = UNSET
     networks: Union[Unset, List["NetworkConfig"]] = UNSET
@@ -37,6 +39,7 @@ class DeploymentConfig:
     def to_dict(self) -> Dict[str, Any]:
         from ..models.image_build_config import ImageBuildConfig
 
+        build_workers = self.build_workers
         containers: Union[Unset, List[Dict[str, Any]]] = UNSET
         if not isinstance(self.containers, Unset):
             containers = []
@@ -78,6 +81,8 @@ class DeploymentConfig:
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
+        if build_workers is not UNSET:
+            field_dict["build_workers"] = build_workers
         if containers is not UNSET:
             field_dict["containers"] = containers
         if images is not UNSET:
@@ -100,6 +105,8 @@ class DeploymentConfig:
         from ..models.volume_config import VolumeConfig
 
         d = src_dict.copy()
+        build_workers = d.pop("build_workers", UNSET)
+
         containers = []
         _containers = d.pop("containers", UNSET)
         for containers_item_data in _containers or []:
@@ -149,6 +156,7 @@ class DeploymentConfig:
             volumes.append(volumes_item)
 
         deployment_config = cls(
+            build_workers=build_workers,
             containers=containers,
             images=images,
             networks=networks,

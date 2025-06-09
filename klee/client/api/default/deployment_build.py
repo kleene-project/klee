@@ -5,14 +5,14 @@ import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
-from ...models.exec_start_config import ExecStartConfig
+from ...models.deployment_config import DeploymentConfig
 from ...models.web_socket_message import WebSocketMessage
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    json_body: ExecStartConfig,
+    json_body: DeploymentConfig,
 ) -> Dict[str, Any]:
 
     pass
@@ -21,7 +21,7 @@ def _get_kwargs(
 
     return {
         "method": "get",
-        "url": "/exec/start",
+        "url": "/deployment/build",
         "json": json_json_body,
     }
 
@@ -54,10 +54,10 @@ def sync_detailed(
     transport,
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ExecStartConfig,
+    json_body: DeploymentConfig,
     **kwargs,
 ) -> Response[WebSocketMessage]:
-    """exec start
+    """image build
 
      > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
     > Below is a description of the websocket protocol and how it relates to the dummy spec.
@@ -99,14 +99,10 @@ def sync_detailed(
     The following specifics pertain to this endpoint:
 
 
-    * The starting-message does not have any content.
-    * If the exec-instance is started with `attach: false` the starting-message is followed by a
-      Close frame with Close Code 1001.
-    * When the executed process exits the closing-message in the Close frame tells wether the
-      entire container has been stopped or just the exec-instance.
+    * The `data` field in the starting and closing messages is empty in all cases.
 
     Args:
-        json_body (ExecStartConfig): Options for starting an execution instance.
+        json_body (DeploymentConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -131,9 +127,9 @@ def sync_detailed(
 def sync(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ExecStartConfig,
+    json_body: DeploymentConfig,
 ) -> Optional[WebSocketMessage]:
-    """exec start
+    """image build
 
      > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
     > Below is a description of the websocket protocol and how it relates to the dummy spec.
@@ -175,14 +171,10 @@ def sync(
     The following specifics pertain to this endpoint:
 
 
-    * The starting-message does not have any content.
-    * If the exec-instance is started with `attach: false` the starting-message is followed by a
-      Close frame with Close Code 1001.
-    * When the executed process exits the closing-message in the Close frame tells wether the
-      entire container has been stopped or just the exec-instance.
+    * The `data` field in the starting and closing messages is empty in all cases.
 
     Args:
-        json_body (ExecStartConfig): Options for starting an execution instance.
+        json_body (DeploymentConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -201,9 +193,9 @@ def sync(
 async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ExecStartConfig,
+    json_body: DeploymentConfig,
 ) -> Response[WebSocketMessage]:
-    """exec start
+    """image build
 
      > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
     > Below is a description of the websocket protocol and how it relates to the dummy spec.
@@ -245,14 +237,10 @@ async def asyncio_detailed(
     The following specifics pertain to this endpoint:
 
 
-    * The starting-message does not have any content.
-    * If the exec-instance is started with `attach: false` the starting-message is followed by a
-      Close frame with Close Code 1001.
-    * When the executed process exits the closing-message in the Close frame tells wether the
-      entire container has been stopped or just the exec-instance.
+    * The `data` field in the starting and closing messages is empty in all cases.
 
     Args:
-        json_body (ExecStartConfig): Options for starting an execution instance.
+        json_body (DeploymentConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -274,9 +262,9 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ExecStartConfig,
+    json_body: DeploymentConfig,
 ) -> Optional[WebSocketMessage]:
-    """exec start
+    """image build
 
      > **Important**: This is a 'dummy' specification since the actual endpoint is websocket-based.
     > Below is a description of the websocket protocol and how it relates to the dummy spec.
@@ -318,14 +306,10 @@ async def asyncio(
     The following specifics pertain to this endpoint:
 
 
-    * The starting-message does not have any content.
-    * If the exec-instance is started with `attach: false` the starting-message is followed by a
-      Close frame with Close Code 1001.
-    * When the executed process exits the closing-message in the Close frame tells wether the
-      entire container has been stopped or just the exec-instance.
+    * The `data` field in the starting and closing messages is empty in all cases.
 
     Args:
-        json_body (ExecStartConfig): Options for starting an execution instance.
+        json_body (DeploymentConfig):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

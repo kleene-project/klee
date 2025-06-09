@@ -1,5 +1,5 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
@@ -7,6 +7,7 @@ from ... import errors
 from ...client import AuthenticatedClient, Client
 from ...models.deployment_config import DeploymentConfig
 from ...models.error_response import ErrorResponse
+from ...models.volume import Volume
 from ...types import Response
 
 
@@ -21,16 +22,24 @@ def _get_kwargs(
 
     return {
         "method": "post",
-        "url": "/deployment/diff",
+        "url": "/deployment/create/volumes",
         "json": json_json_body,
     }
 
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[Any, ErrorResponse]]:
+) -> Optional[Union[ErrorResponse, List["Volume"]]]:
     if response.status_code == HTTPStatus.CREATED:
-        response_201 = cast(Any, None)
+        response_201 = []
+        _response_201 = response.json()
+        for componentsschemas_volume_list_item_data in _response_201:
+            componentsschemas_volume_list_item = Volume.from_dict(
+                componentsschemas_volume_list_item_data
+            )
+
+            response_201.append(componentsschemas_volume_list_item)
+
         return response_201
     if response.status_code == HTTPStatus.NOT_FOUND:
         response_404 = ErrorResponse.from_dict(response.json())
@@ -48,7 +57,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[Any, ErrorResponse]]:
+) -> Response[Union[ErrorResponse, List["Volume"]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -63,10 +72,10 @@ def sync_detailed(
     client: Union[AuthenticatedClient, Client],
     json_body: DeploymentConfig,
     **kwargs,
-) -> Response[Union[Any, ErrorResponse]]:
-    """deployment diff
+) -> Response[Union[ErrorResponse, List["Volume"]]]:
+    """create deployment volumes
 
-     Create deployment.
+     Create deployment volumes.
 
     Args:
         json_body (DeploymentConfig):
@@ -76,7 +85,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Response[Union[ErrorResponse, List['Volume']]]
     """
 
     kwargs.update(
@@ -95,10 +104,10 @@ def sync(
     *,
     client: Union[AuthenticatedClient, Client],
     json_body: DeploymentConfig,
-) -> Optional[Union[Any, ErrorResponse]]:
-    """deployment diff
+) -> Optional[Union[ErrorResponse, List["Volume"]]]:
+    """create deployment volumes
 
-     Create deployment.
+     Create deployment volumes.
 
     Args:
         json_body (DeploymentConfig):
@@ -108,7 +117,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Any, ErrorResponse]
+        Union[ErrorResponse, List['Volume']]
     """
 
     return sync_detailed(
@@ -121,10 +130,10 @@ async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
     json_body: DeploymentConfig,
-) -> Response[Union[Any, ErrorResponse]]:
-    """deployment diff
+) -> Response[Union[ErrorResponse, List["Volume"]]]:
+    """create deployment volumes
 
-     Create deployment.
+     Create deployment volumes.
 
     Args:
         json_body (DeploymentConfig):
@@ -134,7 +143,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Response[Union[ErrorResponse, List['Volume']]]
     """
 
     kwargs = _get_kwargs(
@@ -150,10 +159,10 @@ async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
     json_body: DeploymentConfig,
-) -> Optional[Union[Any, ErrorResponse]]:
-    """deployment diff
+) -> Optional[Union[ErrorResponse, List["Volume"]]]:
+    """create deployment volumes
 
-     Create deployment.
+     Create deployment volumes.
 
     Args:
         json_body (DeploymentConfig):
@@ -163,7 +172,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Any, ErrorResponse]
+        Union[ErrorResponse, List['Volume']]
     """
 
     return (

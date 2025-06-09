@@ -1,4 +1,4 @@
-""" A client library for accessing Kleened API """
+"""A client library for accessing Kleened API"""
 
 from .client import AuthenticatedClient, Client
 
