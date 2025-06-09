@@ -24,6 +24,48 @@ THEME_SIMPLE = "simple"
 THEME_DOCSGENERATOR = "docs-generator"
 
 
+def print_bulkbuild_messages(message):
+    if ":" not in message:
+        echo_bold(message)
+        return
+
+    image_id, message = message.split(":", maxsplit=1)
+    snapshot_message = "--> Snapshot created: @"
+    print_message = format_bulkbuild_message(image_id, message)
+    if snapshot_message in message:
+        echo_bold(print_message)
+
+    elif "Step " in message and " : " in message:
+        echo_bold(print_message)
+
+    elif "Using user-supplied parent image:" in message:
+        echo_bold(print_message)
+
+    else:
+        echo(print_message, newline=False)
+
+
+def format_bulkbuild_message(image_id, message):
+    if config.theme == THEME_FANCY:
+        return f"[b bright_magenta]{image_id}|[/b bright_magenta] {message}"
+    return f"{image_id}| {message}"
+
+
+def print_build_messages(message):
+    snapshot_message = "--> Snapshot created: @"
+    if snapshot_message in message:
+        echo_bold(message)
+
+    elif "Step " in message and " : " in message:
+        echo_bold(message)
+
+    elif "Using user-supplied parent image:" in message:
+        echo_bold(message)
+
+    else:
+        echo(message, newline=False)
+
+
 def echo_bold(msg):
     style = None
 
@@ -34,7 +76,14 @@ def echo_bold(msg):
 
 
 def echo(msg, newline=True):
-    click.echo(msg, nl=newline)
+    if config.theme == THEME_FANCY:
+        if newline:
+            end = "\n"
+        else:
+            end = ""
+        console.print(msg, end=end)
+    else:
+        click.echo(msg, nl=newline)
 
 
 def echo_error(msg):

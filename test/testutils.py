@@ -13,6 +13,7 @@ from klee.client.api.default.container_list import (
 from klee.client.client import Client
 from klee.root import create_cli
 from klee.image import BUILD_START_MESSAGE
+from klee.deploy import DEFAULT_DEPLOYMENT_FILE
 
 SELF_SIGNED_ERROR = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain"
 
@@ -23,6 +24,11 @@ EMPTY_CONTAINER_LIST = [
     "───────────────────────────────────────────────────────────────────────────",
     "",
 ]
+
+
+def create_deployment_file(content, path=DEFAULT_DEPLOYMENT_FILE):
+    with open(path, "w", encoding="utf8") as deploy_file:
+        deploy_file.write(content)
 
 
 def jail_info():
@@ -51,8 +57,16 @@ def extract_exec_id(container_output):
     return container_output[0].split(" ")[-1]
 
 
-def create_dockerfile(instructions, name="Dockerfile"):
-    dockerfile = os.path.join(os.getcwd(), name)
+def create_dockerfile(instructions, path=None, parent=None, name="Dockerfile"):
+    if parent is not None:
+        instructions.insert(0, f"FROM {parent}")
+
+    if path is None:
+        path = os.getcwd()
+    else:
+        os.makedirs(path, exist_ok=True)
+
+    dockerfile = os.path.join(path, name)
     with open(dockerfile, "w", encoding="utf8") as f:
         f.write("\n".join(instructions) + "\n")
 

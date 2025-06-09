@@ -177,6 +177,14 @@ class TestContainerCore:
         run(f"container stop {id2}")
         run(f"container rm {id2}")
 
+    def test_invalid_source_for_nullfs_mount(self, testimage_and_cleanup):
+        output = run(
+            "container create -m /usr/local/man:/mnt/test_man FreeBSD:latest",
+            exit_code=1,
+        )
+        error = "could not create container: error ocurred while determining source type: :enoent"
+        assert error == "".join(output)
+
     def test_invalid_container_name(self, testimage_and_cleanup):
 
         def error(name):

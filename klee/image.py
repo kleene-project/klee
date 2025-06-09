@@ -15,7 +15,6 @@ from .client.models.end_point_config import EndPointConfig
 
 from .connection import create_websocket
 from .printing import (
-    echo,
     echo_bold,
     echo_error,
     group_cls,
@@ -26,6 +25,7 @@ from .printing import (
     print_response_id,
     print_backend_error,
     print_id_list,
+    print_build_messages,
     connection_closed_unexpectedly,
     unexpected_error,
 )
@@ -381,21 +381,6 @@ async def _create_image_and_listen_for_messages(config_json):
         connection_closed_unexpectedly()
 
 
-def process_build_messages(message):
-    snapshot_message = "--> Snapshot created: @"
-    if snapshot_message in message:
-        echo_bold(message)
-
-    elif "Step " in message and " : " in message:
-        echo_bold(message)
-
-    elif "Using user-supplied parent image:" in message:
-        echo_bold(message)
-
-    else:
-        echo(message, newline=False)
-
-
 async def _build_image_and_listen_for_messages(**kwargs):
     quiet = "true" if kwargs["quiet"] else "false"
     network_driver = kwargs["driver"] if kwargs["driver"] is not None else "host"
@@ -430,7 +415,7 @@ async def _build_image_and_listen_for_messages(**kwargs):
                     "ip_address": ip,
                     "ip_address6": ip6,
                 }
-            )
+            ).to_dict()
         ]
     else:
         container_config["network_driver"] = _default_if_none(kwargs, "driver", "host")
@@ -459,7 +444,7 @@ async def _build_image_and_listen_for_messages(**kwargs):
                     echo_bold(BUILD_START_MESSAGE.format(image_id=image_id))
                 try:
                     closing_message = await listen_for_messages(
-                        websocket, message_processor=process_build_messages
+                        websocket, message_processor=print_build_messages
                     )
                 except json.JSONDecodeError:
                     unexpected_error()
