@@ -341,3 +341,27 @@ volumes:
         run("deploy create")
         output = run("deploy create")
         assert output[0] == ""
+
+
+class TestDeployRemove:
+
+    def test_remove_a_single_container(self, cleanup_all):
+        create_deployment_file(
+            """
+---
+images:
+  - tag: "FreeBSD:latest"
+    method: "zfs-clone"
+    zfs_dataset: "zroot/kleene_basejail"
+
+containers:
+ - name: "test1"
+   image: "FreeBSD:latest"
+"""
+        )
+        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
+        output = run("deploy create")
+        assert output[0][:25] == "created container 'test1'"
+        container_id = output[0].split(": ")[1]
+        output = run("deploy remove -f")
+        assert output[1] == container_id

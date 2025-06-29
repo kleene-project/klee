@@ -154,20 +154,25 @@ def network_remove(name, hidden=False):
         """
         Remove one or more networks. Any connected containers will be disconnected.
         """
-        for network_id in networks:
-            response = request_and_print_response(
-                network_remove_endpoint,
-                kwargs={"network_id": network_id},
-                statuscode2printer={
-                    200: print_response_id,
-                    404: print_response_msg,
-                    500: print_backend_error,
-                },
-            )
-            if response is None or response.status_code != 200:
-                break
+        remove_network_list(networks, stop_on_failure=True)
 
     return remove
+
+
+def remove_network_list(networks, stop_on_failure):
+    for network in networks:
+        response = request_and_print_response(
+            network_remove_endpoint,
+            kwargs={"network_id": network},
+            statuscode2printer={
+                200: print_response_id,
+                404: print_response_msg,
+                500: print_backend_error,
+            },
+        )
+        if response is None or response.status_code != 200:
+            if stop_on_failure:
+                break
 
 
 def network_list(name, hidden=False):

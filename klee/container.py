@@ -159,25 +159,29 @@ def container_remove(name, hidden=False):
     @click.argument("containers", required=True, nargs=-1)
     def remove(force, containers):
         """Remove one or more containers"""
-        for container_id in containers:
-            if force:
-                _stop([container_id], silent=True)
-
-            response = request_and_print_response(
-                container_remove_endpoint,
-                kwargs={"container_id": container_id},
-                statuscode2printer={
-                    200: print_response_id,
-                    404: print_response_msg,
-                    409: print_response_msg,
-                    500: print_backend_error,
-                },
-            )
-            if response is None or response.status_code != 200:
-                sys.exit(1)
-                break
+        remove_container_list(containers, force, exit_on_failure=True)
 
     return remove
+
+
+def remove_container_list(containers, force, exit_on_failure):
+    for container_id in containers:
+        if force:
+            stop_containers([container_id], silent=True)
+
+        response = request_and_print_response(
+            container_remove_endpoint,
+            kwargs={"container_id": container_id},
+            statuscode2printer={
+                200: print_response_id,
+                404: print_response_msg,
+                409: print_response_msg,
+                500: print_backend_error,
+            },
+        )
+        if response is None or response.status_code != 200:
+            if exit_on_failure:
+                sys.exit(1)
 
 
 def container_start(name, hidden=False):
@@ -200,7 +204,7 @@ def container_stop(name, hidden=False):
     @click.argument("containers", nargs=-1)
     def stop(containers):
         """Stop one or more running containers"""
-        _stop(containers)
+        stop_containers(containers)
 
     return stop
 
@@ -407,7 +411,7 @@ def container_run(name, hidden=False):
             return
 
         kwargs_start["containers"] = [container_id]
-        _start(**kwargs_start)
+        start_containers(**kwargs_start)
 
     run.params.extend(container_create_options())
     run = exec_options(run)
@@ -546,7 +550,7 @@ def _print_container(response):
     print_table(containers, CONTAINER_LIST_COLUMNS)
 
 
-def _start(detach, interactive, tty, containers):
+def start_containers(detach, interactive, tty, containers):
     if interactive:
         detach = False
 
@@ -560,7 +564,7 @@ def _start(detach, interactive, tty, containers):
             )
 
 
-def _stop(containers, silent=False):
+def stop_containers(containers, silent=False):
 
     def silent_(_):
         return ""

@@ -87,20 +87,25 @@ def volume_remove(name, hidden=False):
     @click.argument("volumes", required=True, nargs=-1)
     def remove(volumes):
         """Remove one or more volumes. You cannot remove a volume that is in use by a container."""
-        for volume_name in volumes:
-            response = request_and_print_response(
-                volume_remove_endpoint,
-                kwargs={"volume_name": volume_name},
-                statuscode2printer={
-                    200: print_response_id,
-                    404: print_response_msg,
-                    500: print_backend_error,
-                },
-            )
-            if response is None or response.status_code != 200:
-                break
+        remove_volume_list(volumes, stop_on_failure=True)
 
     return remove
+
+
+def remove_volume_list(volumes, stop_on_failure):
+    for volume_name in volumes:
+        response = request_and_print_response(
+            volume_remove_endpoint,
+            kwargs={"volume_name": volume_name},
+            statuscode2printer={
+                200: print_response_id,
+                404: print_response_msg,
+                500: print_backend_error,
+            },
+        )
+        if response is None or response.status_code != 200:
+            if stop_on_failure:
+                break
 
 
 root.add_command(volume_create("create"), name="create")

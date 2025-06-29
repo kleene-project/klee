@@ -35,6 +35,9 @@ from .printing import (
     connection_closed_unexpectedly,
 )
 from .utils import request_and_print_response, listen_for_messages
+from .container import stop_containers, start_containers, remove_container_list
+from .network import remove_network_list
+from .volume import remove_volume_list
 
 # pylint: disable=unused-argument
 
@@ -58,6 +61,13 @@ def deploy_build(name, hidden=False):
         hidden=hidden,
         # no_args_is_help=True,
         short_help="Build images specified in a deployment file",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
     )
     def build(**kwargs):
         """
@@ -164,6 +174,130 @@ def deploy_create(name, hidden=False):
         )
 
     return create
+
+
+def deploy_remove(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        short_help="Remove containers related objects specified in a deployment file",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
+    )
+    @click.option(
+        "--volume",
+        "-v",
+        default=False,
+        is_flag=True,
+        show_default=True,
+        help="Remove any volumes attached to containers",
+    )
+    @click.option(
+        "--force",
+        "-f",
+        default=False,
+        is_flag=True,
+        show_default=True,
+        help="Do not ask before removing deployment",
+    )
+    @click.option(
+        "--stop",
+        "-s",
+        default=False,
+        is_flag=True,
+        show_default=True,
+        help="Stop running containers before removing",
+    )
+    def remove(**kwargs):
+        """
+        FIXME: Some useful help-description here.
+        """
+        deployment_config = _create_deployment(kwargs["file"])
+        stop = kwargs["stop"]
+        force = kwargs["force"]
+        remove_volumes = kwargs["volume"]
+
+        if not force:
+            click.echo("WARNING! This will remove the specified deployment.")
+            click.confirm("Are you sure you want to continue?", abort=True)
+
+        # Remove containers
+        echo("Removing containers...")
+        container_names = [c.name for c in deployment_config.containers]
+        remove_container_list(container_names, stop, exit_on_failure=False)
+
+        # Remove network
+        echo("Removing networks...")
+        network_names = [n.name for n in deployment_config.networks]
+        remove_network_list(network_names, stop_on_failure=False)
+
+        if remove_volumes:
+            echo("Removing volumes...")
+            volume_names = [v.name for v in deployment_config.volumes]
+            remove_volume_list(volume_names, stop_on_failure=False)
+
+    return remove
+
+
+def deploy_stop(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        short_help="Stop all containers specified in a deployment file",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
+    )
+    def stop(**kwargs):
+        """
+        FIXME: Some useful help-description here.
+        """
+        deployment_config = _create_deployment(kwargs["file"])
+        stop_containers(deployment_config["containers"])
+
+    return stop
+
+
+def deploy_start(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        short_help="Start all containers specified in a deployment file",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
+    )
+    def start(**kwargs):
+        """
+        FIXME: Some useful help-description here.
+        """
+        deployment_config = _create_deployment(kwargs["file"])
+        containers = deployment_config["containers"]
+        detach = False
+        interactive = False
+        tty = False
+        start_containers(detach, interactive, tty, containers)
+
+    return start
 
 
 def print_created_containers(response):
@@ -381,4 +515,7 @@ async def _build_images_and_listen_for_messages(deployment_config):
 
 root.add_command(deploy_build("build"), name="build")
 root.add_command(deploy_create("create"), name="create")
+root.add_command(deploy_remove("remove"), name="remove")
+root.add_command(deploy_stop("stop"), name="stop")
+root.add_command(deploy_start("start"), name="start")
 root.add_command(deploy_diff("diff"), name="diff")
