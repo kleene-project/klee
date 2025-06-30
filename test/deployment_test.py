@@ -1,4 +1,4 @@
-from testutils import run, create_dockerfile, create_deployment_file
+from testutils import run, create_dockerfile, create_deployment_file, inspect
 
 # pylint: disable=unused-argument
 
@@ -213,9 +213,9 @@ images:
         assert output[-2] == "Succesfully built images."
 
 
-class TestDeployCreate:
+class TestDeployCreateAndRemove:
 
-    def test_create_a_single_container(self, cleanup_all):
+    def test_create_and_remove_a_single_container(self, cleanup_all):
         create_deployment_file(
             """
 ---
@@ -232,8 +232,11 @@ containers:
         run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
         output = run("deploy create")
         assert output[0][:25] == "created container 'test1'"
+        container_id = output[0].split(": ")[1]
+        output = run("deploy remove -f")
+        assert output[1] == container_id
 
-    def test_create_two_containers(self, cleanup_all):
+    def test_create_and_remove_two_containers(self, cleanup_all):
         create_deployment_file(
             """
 ---
@@ -254,6 +257,11 @@ containers:
         output = run("deploy create")
         assert output[0][:25] == "created container 'test1'"
         assert output[1][:25] == "created container 'test2'"
+        container_id1 = output[0].split(": ")[1]
+        container_id2 = output[1].split(": ")[1]
+        output = run("deploy remove -f")
+        assert output[1] == container_id1
+        assert output[2] == container_id2
 
     def test_creating_containers_is_idempotent(self, cleanup_all):
         create_deployment_file(
@@ -292,7 +300,7 @@ containers:
         output = run("deploy create")
         assert output[0] == "no such image 'FreeBSD:latest'"
 
-    def test_create_a_network(self, cleanup_all):
+    def test_create_and_remove_a_network(self, cleanup_all):
         create_deployment_file(
             """
 ---
@@ -304,6 +312,9 @@ networks:
         )
         output = run("deploy create")
         assert output[0] == "created network 'testnet'"
+        network = inspect("network", "testnet")["network"]["id"]
+        output = run("deploy remove -f")
+        assert output[2] == network
 
     def test_creating_networks_is_idempotent(self, cleanup_all):
         create_deployment_file(
@@ -319,7 +330,7 @@ networks:
         output = run("deploy create")
         assert output == [""]
 
-    def test_create_a_volume(self, cleanup_all):
+    def test_create_and_remove_a_volume(self, cleanup_all):
         create_deployment_file(
             """
 ---
@@ -329,6 +340,15 @@ volumes:
         )
         output = run("deploy create")
         assert output[0] == "created volume 'teststorage'"
+        volume = inspect("volume", "teststorage")["volume"]["name"]
+        # Test that no volumes is removed when '-v' is omitted:
+        assert run("deploy remove -f") == [
+            "Removing containers...",
+            "Removing networks...",
+            "",
+        ]
+        output = run("deploy remove -f -v")
+        assert output[3] == volume
 
     def test_creating_volumes_is_idempotent(self, cleanup_all):
         create_deployment_file(
@@ -342,26 +362,6 @@ volumes:
         output = run("deploy create")
         assert output[0] == ""
 
-
-class TestDeployRemove:
-
-    def test_remove_a_single_container(self, cleanup_all):
-        create_deployment_file(
-            """
----
-images:
-  - tag: "FreeBSD:latest"
-    method: "zfs-clone"
-    zfs_dataset: "zroot/kleene_basejail"
-
-containers:
- - name: "test1"
-   image: "FreeBSD:latest"
-"""
-        )
-        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
-        output = run("deploy create")
-        assert output[0][:25] == "created container 'test1'"
-        container_id = output[0].split(": ")[1]
-        output = run("deploy remove -f")
-        assert output[1] == container_id
+    def test_create_and_remove_a_container_with_volume_and_network(self, cleanup_all):
+        # FIXME
+        assert True
