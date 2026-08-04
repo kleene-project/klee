@@ -18,7 +18,18 @@ from testutils import (
 instructions = ["FROM FreeBSD", 'RUN echo "lol" > /root/test.txt', "CMD /usr/bin/uname"]
 
 cwd = os.getcwd()
-KLEENED_MINIMAL_TESTJAIL = os.getenv("KLEENED_MINIMAL_TESTJAIL", default=None)
+
+# Fail fast and loudly. Previously this defaulted to None, which silently produced
+# a 'file://None' URL and surfaced as 'could not fetch file from url' or a TypeError
+# deep inside a test -- several hours of head-scratching away from the real cause.
+# NB: 'sudo' strips the environment unless it is passed through explicitly; see the
+# 'test' target in the Makefile.
+KLEENED_MINIMAL_TESTJAIL = os.getenv("KLEENED_MINIMAL_TESTJAIL")
+if KLEENED_MINIMAL_TESTJAIL is None:
+    raise RuntimeError(
+        "KLEENED_MINIMAL_TESTJAIL is not set. It must point at the minimal test-jail "
+        "tarball, e.g. /path/to/kleened/test/data/minimal_testjail.txz"
+    )
 
 
 class TestImageCommand:
@@ -172,7 +183,6 @@ class TestImageCommand:
         for n, nametag in enumerate(
             ["WithSnapshots", "WithSnapshots:latest", image["id"]]
         ):
-            print("using namtag: ", nametag)
             dockerfile = dockerfile_from_str(
                 f"""
                FROM {nametag}{snapshot}
