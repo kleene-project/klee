@@ -19,11 +19,9 @@ instructions = ["FROM FreeBSD", 'RUN echo "lol" > /root/test.txt', "CMD /usr/bin
 
 cwd = os.getcwd()
 
-# Fail fast and loudly. Previously this defaulted to None, which silently produced
-# a 'file://None' URL and surfaced as 'could not fetch file from url' or a TypeError
-# deep inside a test -- several hours of head-scratching away from the real cause.
-# NB: 'sudo' strips the environment unless it is passed through explicitly; see the
-# 'test' target in the Makefile.
+# Required, and checked at import time so a missing value fails here rather than
+# as a confusing error deep inside a test. NB: 'sudo' strips the environment unless
+# it is passed through explicitly; see the 'test' target in the Makefile.
 KLEENED_MINIMAL_TESTJAIL = os.getenv("KLEENED_MINIMAL_TESTJAIL")
 if KLEENED_MINIMAL_TESTJAIL is None:
     raise RuntimeError(

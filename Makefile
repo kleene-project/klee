@@ -3,17 +3,15 @@
 #     make test KLEENED_MINIMAL_TESTJAIL=/path/to/minimal_testjail.txz
 KLEENED_MINIMAL_TESTJAIL ?= $(HOME)/kleened/test/data/minimal_testjail.txz
 
-# The tests need root (jails, ZFS, the daemon socket), but 'poetry run sudo pytest'
-# does not do what it looks like: sudo resets PATH via secure_path, so the pytest
-# that actually runs is root's system pytest rather than the locked venv one.
-# Resolve the venv's pytest and hand sudo the absolute path.
+# The tests need root: jails, ZFS and the daemon socket.
 #
-# NB: the substitution happens in the *recipe*, not via GNU make's $(shell ...) --
-# FreeBSD's make is bmake, which has no such function. '$$' survives both.
+# sudo is given the venv's pytest by absolute path, because it resets PATH via
+# secure_path and would otherwise pick up root's system pytest instead of the
+# locked one. The path is resolved in the recipe rather than with GNU make's
+# $(shell ...): FreeBSD's make is bmake, which has no such function.
 #
 # 'sudo env VAR=...' rather than 'sudo -E': -E depends on the sudoers SETENV
-# privilege and still leaves PATH subject to secure_path. Being explicit about the
-# one variable the suite needs is predictable everywhere.
+# privilege and still leaves PATH subject to secure_path.
 test:
 	sudo env KLEENED_MINIMAL_TESTJAIL="$(KLEENED_MINIMAL_TESTJAIL)" \
 	    "$$(poetry env info --path)/bin/pytest" -x -vv
