@@ -114,21 +114,6 @@ def decode_valid_image_build(result):
     return image_id, build_log
 
 
-def remove_all_images():
-    _header, _lines, *images = run("image ls")
-    image_ids = []
-    for line in images[:-1]:
-        image_id, name, tag, *_rest = line.split(" ")
-        if image_id == "":
-            continue
-        if name == "FreeBSD" and tag == "latest":
-            continue
-        image_ids.append(image_id)
-
-    if len(image_ids) != 0:
-        run("image rm " + " ".join(image_ids))
-
-
 def create_container(
     image="FreeBSD:latest",
     name=None,
@@ -207,10 +192,6 @@ def list_containers(all_=True):
         **kwargs,
     )
     return response.parsed
-
-
-def container_netstat(container_id):
-    return run(f"container exec {container_id} /usr/bin/netstat --libxo json -i -4")
 
 
 def container_get_netstat_info(container_id, driver):

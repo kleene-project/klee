@@ -1,5 +1,6 @@
 import time
 import json
+import re
 
 from testutils import (
     container_get_netstat_info,
@@ -228,36 +229,34 @@ def container_is_connected(container_id, driver="loopback"):
     output = run(f"container start {container_id}")
     exec_id = extract_exec_id(output)
     if driver == "loopback":
-        connected_output = [
-            f"created execution instance {exec_id}",
-            "Using domain server:",
-            "Name: 1.1.1.1",
-            "Address: 1.1.1.1#53",
-            "Aliases: ",
-            "",
-            "freebsd.org has address 96.47.72.84",
-            "",
-            container_stopped_msg(exec_id),
-            "",
-        ]
+        expected_prefix = [f"created execution instance {exec_id}"]
     elif driver == "vnet":
-        connected_output = [
+        expected_prefix = [
             f"created execution instance {exec_id}",
             "add net default: gateway 10.13.37.1",
-            "Using domain server:",
-            "Name: 1.1.1.1",
-            "Address: 1.1.1.1#53",
-            "Aliases: ",
-            "",
-            "freebsd.org has address 96.47.72.84",
-            "",
-            container_stopped_msg(exec_id),
-            "",
         ]
     else:
-        connected_output = ["unknown driver used"]
+        raise AssertionError(f"unknown driver used: {driver}")
 
-    assert output == connected_output
+    assert output[: len(expected_prefix)] == expected_prefix
+    assert output[len(expected_prefix) : len(expected_prefix) + 5] == [
+        "Using domain server:",
+        "Name: 1.1.1.1",
+        "Address: 1.1.1.1#53",
+        "Aliases: ",
+        "",
+    ]
+    # Assert the *shape* of the answer rather than freebsd.org's current A record,
+    # which changes independently of Kleene.
+    assert re.fullmatch(
+        r"freebsd\.org has address \d{1,3}(\.\d{1,3}){3}",
+        output[len(expected_prefix) + 5],
+    )
+    assert output[len(expected_prefix) + 6 :] == [
+        "",
+        container_stopped_msg(exec_id),
+        "",
+    ]
 
 
 def container_is_disconnected(container_id):

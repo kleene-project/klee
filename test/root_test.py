@@ -32,7 +32,6 @@ def remove_all_configs():
         try:
             os.remove(os.path.expanduser(filepath))
         except FileNotFoundError:
-            print("Did not exist")
             continue
 
 
