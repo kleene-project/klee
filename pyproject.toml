@@ -31,6 +31,18 @@ PyYAML = "^6.0.1"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.1.1"
+# The suite holds websockets open against a live kleened and shells out to jls
+# and zfs. Without a timeout a hung test blocks the whole run indefinitely.
+pytest-timeout = "^2.3.1"
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
+# Tests are named <thing>_test.py here rather than test_<thing>.py.
+python_files = ["*_test.py"]
+addopts = "--timeout=300 --timeout-method=signal"
+markers = [
+    "unit: pure functions -- no kleened, no root, no jails, no ZFS. The fast tier.",
+]
 
 [tool.poetry.scripts]
 klee = 'klee.main:cli'
