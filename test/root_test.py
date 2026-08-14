@@ -4,7 +4,7 @@ import os
 import yaml
 import pytest
 
-from testutils import run, CERTIFICATE_REQUIRED_ERROR, EMPTY_CONTAINER_LIST
+from testutils import listing_rows, run, CERTIFICATE_REQUIRED_ERROR
 
 from klee.config import create_default_config_locations
 from klee.root import DEFAULT_HOST, ERROR_INVALID_CONFIG
@@ -44,7 +44,7 @@ def clear_configs():
 
 def default_connection_configured():
     output = run("container ls")
-    assert output == EMPTY_CONTAINER_LIST
+    assert listing_rows(output) == []
 
 
 def htyp_configured():

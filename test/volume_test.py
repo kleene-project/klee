@@ -1,4 +1,4 @@
-from testutils import inspect, prune, run
+from testutils import assert_empty_listing, inspect, listing_ids, prune, run
 
 
 class TestVolumeSubcommand:
@@ -10,11 +10,22 @@ class TestVolumeSubcommand:
 
     def test_add_remove_and_listing_volumes(self):
         name = "test_arl_volumes"
-        assert empty_volume_list()
+        assert_empty_listing("volume ls")
         assert name == create_volume(name)
         assert [name] == list_volumes()
         assert name == remove_volume(name)
-        assert empty_volume_list()
+        assert_empty_listing("volume ls")
+
+    def test_listing_several_volumes(self):
+        first = "test_list_volumes1"
+        second = "test_list_volumes2"
+        create_volume(first)
+        create_volume(second)
+        assert sorted(list_volumes()) == [first, second]
+
+        remove_volume(second)
+        assert list_volumes() == [first]
+        remove_volume(first)
 
     def test_inspect_volume(self):
         name = "test_volume_inspect"
@@ -31,33 +42,32 @@ class TestVolumeSubcommand:
         create_volume(name=name2)
         assert prune("volume") == [name1, name2]
 
+    def test_prune_volume_leaves_mounted_volumes_alone(self, testimage_and_cleanup):
+        mounted = "test_volume_prune_mounted"
+        unused = "test_volume_prune_unused"
+        create_volume(name=mounted)
+        create_volume(name=unused)
+        # /mnt is empty in the basejail, so mounting over it hides nothing.
+        run(f"container create --name volume_prune_test -m {mounted}:/mnt FreeBSD")
+
+        assert prune("volume") == [unused]
+        assert list_volumes() == [mounted]
+
+        run("container prune -f")
+        remove_volume(mounted)
+
 
 def create_volume(name):
     output = run(f"volume create {name}")
     return output[0]
 
 
-def empty_volume_list():
-    expected_output = [" VOLUME NAME   CREATED ", "───────────────────────", ""]
-    output = run("volume ls")
-    return expected_output == output
-
-
 def remove_volume(volume_name):
     output = run(f"volume rm {volume_name}")
-    network_id = output[0]
-    return network_id
+    return output[0]
 
 
 def list_volumes():
-    output = run("volume ls")
-    _header, _headerline, *volumes, _ = output
-    volumes = [volume.split(" ")[1] for volume in volumes]
-    return volumes
+    return listing_ids(run("volume ls"))
 
 
-def remove_all_volumes():
-    volumes = list_volumes()
-    if len(volumes) > 0:
-        volumes = " ".join(volumes)
-        run(f"volume rm {volumes}")

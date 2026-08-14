@@ -4,6 +4,8 @@ import subprocess
 from testutils import (
     create_dockerfile,
     build_image,
+    remove_container,
+    run_container,
     decode_valid_image_build,
     decode_invalid_image_build,
     list_images,
@@ -128,7 +130,7 @@ class TestImageCommand:
         ]
         output = run("rmi Parent", exit_code=1)
         assert error == output
-        output = run("rmc Child")
+        output = remove_container("rmc Child")
         output = run("rmi Parent")
 
     def test_build_image_with_buildarg(self, testimage):
@@ -151,11 +153,13 @@ class TestImageCommand:
     ):
         create_dockerfile(["FROM FreeBSD", " ", "RUN touch /passed"])
         run(f"build -t StrangeDockerfile {cwd}")
-        _, _, output = run(f"run --name testing1 StrangeDockerfile {stat('/passed')}")
+        _, _, output = run_container(
+            f"run --name testing1 StrangeDockerfile {stat('/passed')}"
+        )
         stat_output = output[0].split(",")
         file_permissions = stat_output[-1]
         assert "-rw-r--r--" == file_permissions
-        run("rmc testing1")
+        remove_container("rmc testing1")
         run("rmi StrangeDockerfile")
 
     def test_build_invalid_instruction(self, testimage):
@@ -189,7 +193,7 @@ class TestImageCommand:
             )
             create_dockerfile(dockerfile)
             run(f"build -t FromSnapshot{n} {os.getcwd()}")
-            _, _, output = run(f"run FromSnapshot{n} ls /media")
+            _, _, output = run_container(f"run FromSnapshot{n} ls /media")
             output = set(output)
             assert "step1" in output
             assert "step2" not in output
@@ -216,7 +220,7 @@ class TestImageCommand:
         ]
 
         verify_build_output(expected_build_log, build_log)
-        _, _, output = run(f"run {image_id} /bin/cat /root/test.txt")
+        _, _, output = run_container(f"run {image_id} /bin/cat /root/test.txt")
 
         assert output[0] == "lol"
         run("container prune -f")
@@ -245,7 +249,7 @@ class TestImageCommand:
         snapshot_line = build_log[2]
         snapshot = snapshot_line.split("--> Snapshot created: @")[1]
         verify_build_output(expected_build_log, build_log)
-        _, _, output = run(f"run {image_id}@{snapshot} /bin/cat /root/test.txt")
+        _, _, output = run_container(f"run {image_id}@{snapshot} /bin/cat /root/test.txt")
         assert output[0] == "first"
         run("container prune -f")
         run("rmi FailedBuild:failed")

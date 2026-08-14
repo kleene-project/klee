@@ -1,4 +1,5 @@
 from multiprocessing import Process
+import os
 import os.path
 import subprocess
 import json
@@ -7,17 +8,21 @@ import time
 import pytest
 
 from testutils import (
-    EMPTY_CONTAINER_LIST,
+    assert_empty_listing,
+    create_dockerfile,
     shell,
     shell_raw,
     jail_info,
     create_container,
     list_containers,
+    listing_ids,
     extract_exec_id,
     container_stopped_msg,
     inspect,
     prune,
+    remove_container,
     run,
+    run_container,
 )
 
 TEST_IMG = "FreeBSD"
@@ -27,8 +32,8 @@ TEST_IMG = "FreeBSD"
 class TestContainerCore:
 
     def test_empty_listing_of_containers(self, testimage_and_cleanup):
-        empty_container_list(all_=False)
-        empty_container_list(all_=True)
+        assert_empty_listing("container ls")
+        assert_empty_listing("container ls -a")
 
     def test_create_remove_and_list_containers(self, testimage_and_cleanup):
         # Create one container
@@ -37,10 +42,9 @@ class TestContainerCore:
         container = inspect("container", container_id)["container"]
         assert container["id"] == container_id
         assert container["image_id"] == inspect("image", "FreeBSD:latest")["id"]
-        empty_container_list(all_=False)
+        assert_empty_listing("container ls")
 
-        _header, _lines, container, *_ = run("container ls -a")
-        assert container[1:13] == container_id
+        assert listing_ids(run("container ls -a")) == [container_id]
 
         # Create second container
         container_id2 = create_container(name="second_container")
@@ -50,13 +54,13 @@ class TestContainerCore:
         assert container_list == {container_id, container_id2}
 
         # Remove containers
-        assert run(f"container rm {name}") == container_id
-        assert run(f"container rm {container_id2[:6]}") == container_id2
-        empty_container_list()
+        assert remove_container(f"container rm {name}") == container_id
+        assert remove_container(f"container rm {container_id2[:6]}") == container_id2
+        assert_empty_listing("container ls -a")
 
         # Try removing the container a second time
         output = run(f"container rm {container_id}", exit_code=1)
-        assert output == "no such container"
+        assert output == ["no such container", ""]
 
     def test_container_referencing(self, testimage_and_cleanup):
         name = "test_container_referencing"
@@ -66,37 +70,39 @@ class TestContainerCore:
         assert is_running(container_id)
         container_id_again, _ = run(f"container stop {container_id[:8]}")
         assert container_id == container_id_again
-        run(f"rmc {container_id}")
+        remove_container(f"rmc {container_id}")
 
     def test_remove_container_by_id(self, testimage_and_cleanup):
         name = "test_remove"
         container_id1 = create_container()
         container_id2 = create_container(name=name)
-        container_id1_again = run(f"rmc {container_id1}")
-        container_id2_again = run(f"rmc {container_id2}")
+        container_id1_again = remove_container(f"rmc {container_id1}")
+        container_id2_again = remove_container(f"rmc {container_id2}")
         assert container_id1 == container_id1_again
         assert container_id2 == container_id2_again
 
     def test_remove_the_same_container_twice(self, testimage_and_cleanup):
         container_id1 = create_container()
-        container_id1_again = run(f"rmc {container_id1}")
+        container_id1_again = remove_container(f"rmc {container_id1}")
         assert container_id1 == container_id1_again
-        assert "no such container" == run(f"container rm {container_id1}", exit_code=1)
+        assert ["no such container", ""] == run(
+            f"container rm {container_id1}", exit_code=1
+        )
 
     def test_remove_running_container(self, testimage_and_cleanup):
         container_id = create_container(name="running", command="sleep 10")
         run(f"container start --detach {container_id}")
-        assert "you cannot remove a running container" == run(
+        assert ["you cannot remove a running container", ""] == run(
             f"container rm {container_id}", exit_code=1
         )
 
-        run(f"container rm -f {container_id}")
+        remove_container(f"container rm -f {container_id}")
 
     def test_force_remove_running_container(self, testimage_and_cleanup):
         name = "remove_running_container"
         container_id = create_container(name=name, command="sleep 10")
         run(f"container start --detach {container_id}")
-        assert container_id == run(f"container rm --force {container_id}")
+        assert container_id == remove_container(f"container rm --force {container_id}")
 
     def test_inspect_container(self, testimage_and_cleanup):
         name = "test_container_inspect"
@@ -104,7 +110,7 @@ class TestContainerCore:
         assert inspect("container", "notexist") == "container not found"
         container_endpoints = inspect("container", container_id)
         assert container_endpoints["container"]["name"] == name
-        run(f"rmc {container_id}")
+        remove_container(f"rmc {container_id}")
 
     def test_default_drivers_for_containers(self, testimage_and_cleanup):
         # Creating a container not connected to a network without using the `--driver` option
@@ -120,11 +126,13 @@ class TestContainerCore:
 
     def test_create_container_with_custom_jail_params(self, testimage_and_cleanup):
         # Override mount.devfs=true with mount.nodevfs
-        _container_id, _, output = run("run -J mount.nodevfs FreeBSD ls /dev")
+        _container_id, _, output = run_container(
+            "run -J mount.nodevfs FreeBSD ls /dev"
+        )
         assert output == [""]
 
         # Override mount.devfs=true/exec.clean=true with mount.devfs=false/exec.noclean
-        container_id, _, output = run(
+        container_id, _, output = run_container(
             "run -J mount.devfs=false -J exec.noclean FreeBSD printenv"
         )
         container = inspect("container", container_id)["container"]
@@ -137,13 +145,17 @@ class TestContainerCore:
                 "\n"
             )
         )
-        _container_id, _exec_id, output = run("run -J mount.devfs FreeBSD ls /dev")
+        _container_id, _exec_id, output = run_container(
+            "run -J mount.devfs FreeBSD ls /dev"
+        )
         assert output == expected
 
     def test_jail_param_exec_jail_user_overrides_container_config_user(
         self, testimage_and_cleanup
     ):
-        _, _, output = run("run -J exec.jail_user=ntpd --user root FreeBSD /usr/bin/id")
+        _, _, output = run_container(
+            "run -J exec.jail_user=ntpd --user root FreeBSD /usr/bin/id"
+        )
         assert output[0] == "uid=123(ntpd) gid=123(ntpd) groups=123(ntpd)"
 
     def test_prune_container(self, testimage_and_cleanup):
@@ -159,7 +171,7 @@ class TestContainerCore:
         container_id1, _ = run(f"create --name {name1} FreeBSD")
         container_id2, _ = run(f"create --persist --name {name2} FreeBSD")
         assert prune("container") == [container_id1]
-        run(f"rmc {container_id2}")
+        remove_container(f"rmc {container_id2}")
 
     def test_cannot_prune_running_container(self):
         sleep = "/bin/sleep 10"
@@ -175,7 +187,7 @@ class TestContainerCore:
         assert id3 in pruned_ids
         assert id2 not in pruned_ids
         run(f"container stop {id2}")
-        run(f"container rm {id2}")
+        remove_container(f"container rm {id2}")
 
     def test_invalid_container_name(self, testimage_and_cleanup):
 
@@ -217,11 +229,11 @@ class TestContainerRunning:
         assert container_id == container_id_again
         assert not is_running(container_id)
         assert not list_containers(all_=False)
-        container_id_again = run(f"rmc {container_id}")
+        container_id_again = remove_container(f"rmc {container_id}")
         assert container_id == container_id_again
 
     def test_start_a_container_as_non_root_user(self, testimage_and_cleanup):
-        _, _, output = run("run --user ntpd FreeBSD /usr/bin/id")
+        _, _, output = run_container("run --user ntpd FreeBSD /usr/bin/id")
         assert output[0] == "uid=123(ntpd) gid=123(ntpd) groups=123(ntpd)"
 
     def test_restarting_container(self, testimage_and_cleanup):
@@ -250,13 +262,13 @@ class TestContainerRunning:
             "",
         ]
         assert container_output == expected_output
-        run(f"rmc {container_id}")
+        remove_container(f"rmc {container_id}")
 
     def test_start_container_without_attaching(self, testimage_and_cleanup):
         container_id = create_container(name="not_attached", command="uname")
         run(f"container start --detach {container_id}")
         time.sleep(0.1)
-        run(f"rmc {container_id}")
+        remove_container(f"rmc {container_id}")
 
     def test_start_and_stop_container_with_devfs(self, testimage_and_cleanup):
         container_id = create_container(name="testcont", command="sleep 10")
@@ -317,15 +329,41 @@ class TestContainerRunning:
     def test_start_container_with_environment_variables_set(
         self, testimage_and_cleanup
     ):
-        _, _, output = run("run --env LOL=test --env LOOL=test2 FreeBSD printenv")
+        _, _, output = run_container(
+            "run --env LOL=test --env LOOL=test2 FreeBSD printenv"
+        )
         assert "LOOL=test2" in output
         assert "LOL=test" in output
+
+    def test_container_environment_extends_and_overrides_the_image(
+        self, testimage_and_cleanup
+    ):
+        create_dockerfile(
+            ["FROM FreeBSD", "ENV TEST=lol", 'ENV TEST2="lool test"', "CMD printenv"]
+        )
+        run(f"build -t EnvImage {os.getcwd()}")
+
+        # The image's ENV instructions are what the container starts from.
+        _, _, output = run_container("run EnvImage")
+        assert "TEST=lol" in output
+        assert "TEST2=lool test" in output
+
+        # '--env' adds variables, and replaces the ones it names.
+        _, _, output = run_container(
+            "run --env TEST=new_value --env TEST3=loool EnvImage"
+        )
+        assert "TEST=new_value" in output
+        assert "TEST2=lool test" in output
+        assert "TEST3=loool" in output
+
+        run("container prune -f")
+        run("rmi EnvImage")
 
     def test_start_container_repeatedly_for_reproducibility(
         self, testimage_and_cleanup
     ):
         for n in range(20):
-            _, _, output = run(f"run --name c{n} FreeBSD uname")
+            _, _, output = run_container(f"run --name c{n} FreeBSD uname")
             assert output[0] == "FreeBSD"
 
 
@@ -347,7 +385,7 @@ class TestContainerUpdate:
         assert container_endpoints["container"]["cmd"] == ["/bin/sleep", "10"]
 
     def test_update_container_jail_param(self, testimage_and_cleanup):
-        container_id, *_ = run(
+        container_id, *_ = run_container(
             "run -J allow.raw_sockets=true FreeBSD ping -c 1 8.8.8.8"
         )
         container = inspect("container", container_id)["container"]
@@ -426,12 +464,12 @@ class TestContainerMountingManagement:
         ).close()
 
     def test_volume_mount_rw_permissions(self, testimage_and_cleanup):
-        _container_id, _exec_id, output = run(
+        _container_id, _exec_id, output = run_container(
             f"container run --name voltest1 -m new_volume:/kl_mount_test:ro {TEST_IMG} touch /kl_mount_test/test.txt"
         )
 
         assert output[0] == "touch: /kl_mount_test/test.txt: Read-only file system"
-        run("rmc voltest1")
+        remove_container("rmc voltest1")
         run("volume rm new_volume")
 
     def test_run_a_container_with_nullfs_directory_mount(self, testimage_and_cleanup):
@@ -445,17 +483,17 @@ class TestContainerMountingManagement:
     def test_run_a_container_with_nullfs_file_mount(self, testimage_and_cleanup):
         shell("rm /mnt/testfile.txt")
         shell("echo 'hello' > /mnt/testfile.txt")
-        _container_id, _exec_id, output = run(
+        _container_id, _exec_id, output = run_container(
             f"container run --name mtest1 -m /mnt/testfile.txt:/mounted_file_test {TEST_IMG} cat /mounted_file_test"
         )
         assert output[0] == "hello"
 
         # Create directory path of destination
-        _container_id, _exec_id, output = run(
+        _container_id, _exec_id, output = run_container(
             f"container run --name mtest2 -m /mnt/testfile.txt:/create_me/mounted_file_test {TEST_IMG} cat /create_me/mounted_file_test"
         )
         assert output[0] == "hello"
-        run("rmc mtest1 mtest2")
+        remove_container("rmc mtest1 mtest2")
         shell("rm /mnt/testfile.txt")
 
     def test_mountpoint_metadata_persist_when_container_stops(
@@ -474,7 +512,7 @@ class TestContainerMountingManagement:
         assert [expected_endpoint] == container_info["container_mountpoints"]
         container_info = inspect("container", "mountmetadata")
         assert [expected_endpoint] == container_info["container_mountpoints"]
-        run("rmc mountmetadata")
+        remove_container("rmc mountmetadata")
 
         run(f"container run --name mountmetadata -m /mnt:/host_mnt {TEST_IMG} sleep 10")
         run("stop mountmetadata")
@@ -535,9 +573,3 @@ def is_devfs_mounted(dataset):
     return output.returncode == 0
 
 
-def empty_container_list(all_=True):
-    if all_:
-        output = run("container ls -a")
-    else:
-        output = run("container ls")
-    assert output == EMPTY_CONTAINER_LIST
