@@ -105,18 +105,18 @@ class TestNetworkSubcommand:
     ):
         run("network create -t loopback --subnet 10.13.37.0/24 testnet9")
         container_id, _ = run(
-            "container create --ip 10.13.37.13 --network testnet9 -l ipnet FreeBSD /usr/bin/netstat --libxo json -i -4"
+            "container create --ip 10.13.37.13 --network testnet9 -l ipnet FreeBSD /bin/ls"
         )
-        netstat_info = container_interfaces(container_id)
+        netstat_info = container_interfaces(container_id, ipv4_only=True)
         assert netstat_info[0]["address"] == "10.13.37.13"
         assert [""] == run(f"network disconnect testnet9 {container_id}")
 
     def test_create_container_with_user_defined_ip_vnet(self, testimage_and_cleanup):
         run("network create -t bridge --subnet 10.13.38.0/24 testnet9")
         container_id, _ = run(
-            "container create --ip 10.13.38.13 --network testnet9 -l vnet FreeBSD /usr/bin/netstat --libxo json -i -4"
+            "container create --ip 10.13.38.13 --network testnet9 -l vnet FreeBSD /bin/ls"
         )
-        netstat_info = container_interfaces(container_id)
+        netstat_info = container_interfaces(container_id, ipv4_only=True)
         assert netstat_info[0]["address"] == "10.13.38.13"
         assert [""] == run(f"network disconnect testnet9 {container_id}")
 
@@ -126,10 +126,10 @@ class TestNetworkSubcommand:
         container_name = "custom_ip3"
         network_name = "custom_ip3"
         run(f"network create -t loopback --subnet 10.13.37.0/24 {network_name}")
-        cmd = f"container create --driver ipnet --name {container_name} FreeBSD /usr/bin/netstat --libxo json -i -4"
+        cmd = f"container create --driver ipnet --name {container_name} FreeBSD /bin/ls"
         container_id, _ = run(cmd)
         run(f"network connect --ip 10.13.37.13 {network_name} {container_name}")
-        netstat_info = container_interfaces(container_id)
+        netstat_info = container_interfaces(container_id, ipv4_only=True)
         assert netstat_info[0]["address"] == "10.13.37.13"
         assert [""] == run(f"network disconnect {network_name} {container_id}")
 
@@ -138,11 +138,11 @@ class TestNetworkSubcommand:
         network_name = "custom_ip3"
         cmd = f"network create -t loopback --interface testif -t bridge --subnet 10.13.38.0/24 {network_name}"
         network_id, _ = run(cmd)
-        cmd = f"container create --name {container_name} --driver vnet FreeBSD /usr/bin/netstat --libxo json -i -4"
+        cmd = f"container create --name {container_name} --driver vnet FreeBSD /bin/ls"
         container_id, _ = run(cmd)
 
         run(f"network connect --ip 10.13.38.13 {network_name} {container_name}")
-        netstat_info = container_interfaces(container_id)
+        netstat_info = container_interfaces(container_id, ipv4_only=True)
         assert netstat_info[0]["address"] == "10.13.38.13"
         assert [""] == run(f"network disconnect {network_name} {container_id}")
         remove_container(f"rmc {container_id}")
@@ -312,14 +312,10 @@ def list_network_ids():
 
 
 def ip_in_container(container, ip):
-    interfaces = _interfaces_of_running_container(container)
+    interfaces = container_interfaces(container)
     return ip in {interface["address"] for interface in interfaces}
 
 
 def interface_in_container(container, interface_name):
-    interfaces = _interfaces_of_running_container(container)
+    interfaces = container_interfaces(container)
     return interface_name in {interface["name"] for interface in interfaces}
-
-
-def _interfaces_of_running_container(container):
-    return container_interfaces(container, "netstat --libxo json -i")

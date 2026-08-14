@@ -183,37 +183,29 @@ def list_containers(all_=True):
     return response.parsed
 
 
-def container_interfaces(container_id, command=None):
+def container_interfaces(container_id, ipv4_only=False):
     """
     The 'statistics.interface' list that netstat(1) reports inside a container.
 
-    With no command, the container's own command is expected to be netstat and
-    'klee container exec' is used to run it; otherwise the command is run in the
-    (already running) container.
+    The container does not have to be running: the exec'd command replaces the
+    container's own command, and a stopped container is started to run it.
+
+    'ipv4_only' restricts the listing to interfaces with an IPv4 address.
 
     klee interleaves its own status lines with the container's output, so the
-    JSON document is found by skipping the lines klee is known to emit. The
-    previous version sliced at a fixed offset that differed per network driver,
-    and had to be adjusted whenever klee's messages changed.
+    JSON document is found by skipping the lines klee is known to emit.
     """
-    if command is None:
-        output = run(f"container exec {container_id}")
-    else:
-        output = run(["exec", container_id, "/bin/sh", "-c", command])
+    netstat = "netstat --libxo json -i"
+    if ipv4_only:
+        netstat = f"{netstat} -4"
 
-    netstat = json.loads(_first_non_klee_message(output))
-    return netstat["statistics"]["interface"]
+    output = run(["exec", container_id, "/bin/sh", "-c", netstat])
+    interfaces = json.loads(_first_non_klee_message(output))
+    return interfaces["statistics"]["interface"]
 
 
 def listing_rows(output):
-    """
-    One entry per object listed by 'klee <object> ls'.
-
-    rich renders a header, a rule, the rows and a trailing empty line -- and
-    wraps a row over several lines when a column does not fit, which is why the
-    lines cannot simply be counted. A continuation line is blank in the first
-    column, so it is folded back into the row it belongs to.
-    """
+    """One entry per object listed by 'klee <object> ls'."""
     header, _rule, *lines = output
     width = _first_column_width(header)
 
