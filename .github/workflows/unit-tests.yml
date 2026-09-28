@@ -27,6 +27,9 @@ jobs:
           # Matches py312 on the FreeBSD 15.1 dev/CI VMs; pyproject allows ^3.9.
           python-version: '3.12'
 
+      # Poetry is not preinstalled on ubuntu-24.04 runners; pipx is.
+      - run: pipx install poetry
+
       - run: poetry install --with dev
 
       # Scoped to test/unit rather than '-m unit' alone: pytest imports every
