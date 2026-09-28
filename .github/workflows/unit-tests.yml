@@ -1,0 +1,35 @@
+name: Unit tests
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    runs-on: ubuntu-latest
+    name: Run klee's pure-Python unit tier
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          # Matches py312 on the FreeBSD 15.1 dev/CI VMs; pyproject allows ^3.9.
+          python-version: '3.12'
+
+      - run: poetry install --with dev
+
+      # Scoped to test/unit rather than '-m unit' alone: pytest imports every
+      # collected module before applying marker filters, and the system tests
+      # fail at import when KLEENED_MINIMAL_TESTJAIL is unset.
+      - run: poetry run pytest -m unit -vv test/unit
