@@ -26,10 +26,12 @@ test:
 test-unit:
 	poetry run pytest -m unit -vv test/unit
 
+# Output directory for the generated CLI reference pages. Override on the
+# command line if the kleene-docs checkout lives elsewhere:
+#     make docs KLEENE_DOCS=/path/to/kleene-docs
+KLEENE_DOCS ?= $(HOME)/kleene_dev/kleene-docs
+
 docs:
-	poetry run python scripts/generate_yaml_docs.py /vagrant/kleene-docs/_data/klee-reference
+	poetry run python scripts/generate_yaml_docs.py $(KLEENE_DOCS)/data/klee-reference
 
-generate-spec:
-	cd /vagrant/kleened && sudo mix openapi.spec.json --spec Kleened.API.Spec
-
-.PHONY: test test-unit docs generate-spec
+.PHONY: test test-unit docs
