@@ -11,7 +11,7 @@ but `klee container exec my_container "echo a && echo b"` does not.
 
 ## Examples
 
-### Run `docker exec` on a running container
+### Run `klee container exec` on a running container
 
 First, start a container.
 

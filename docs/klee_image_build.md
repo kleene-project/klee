@@ -104,7 +104,7 @@ $ klee image build -f dockerfiles/Dockerfile.prod  -t myapp_prod .
 
 The previous commands will build the current build two images:
 One using a debug-friendly version of the Dockerfile (called `Dockerfile.debug`)
-and one using a production version (called `Dockerile.prod`). Both Dockerfiles
+and one using a production version (called `Dockerfile.prod`). Both Dockerfiles
 are located in the `dockerfiles` directory in the context root.
 
 ### Set build-time variables (--build-arg)

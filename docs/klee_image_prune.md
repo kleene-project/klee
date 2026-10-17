@@ -2,7 +2,7 @@
 Example output:
 
 ```console
-$ docker image prune -a
+$ klee image prune -a
 WARNING! This will remove all unused images.
 Are you sure you want to continue? [y/N]: y
 6e33dbacde70

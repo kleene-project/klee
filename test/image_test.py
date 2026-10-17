@@ -4,6 +4,8 @@ import subprocess
 from testutils import (
     create_dockerfile,
     build_image,
+    remove_container,
+    run_container,
     decode_valid_image_build,
     decode_invalid_image_build,
     list_images,
@@ -11,6 +13,7 @@ from testutils import (
     inspect,
     prune,
     run,
+    shell,
 )
 
 # pylint: disable=no-self-use, unused-argument
@@ -18,8 +21,18 @@ instructions = ["FROM FreeBSD", 'RUN echo "lol" > /root/test.txt', "CMD /usr/bin
 
 cwd = os.getcwd()
 
+# Required, and checked at import time so a missing value fails here rather than
+# as a confusing error deep inside a test. NB: 'sudo' strips the environment unless
+# it is passed through explicitly; see the 'test' target in the Makefile.
+KLEENED_MINIMAL_TESTJAIL = os.getenv("KLEENED_MINIMAL_TESTJAIL")
+if KLEENED_MINIMAL_TESTJAIL is None:
+    raise RuntimeError(
+        "KLEENED_MINIMAL_TESTJAIL is not set. It must point at the minimal test-jail "
+        "tarball, e.g. /path/to/kleened/test/data/minimal_testjail.txz"
+    )
 
-class TestImageSubcommand:
+
+class TestImageCommand:
 
     def test_empty_listing_of_images(self, testimage):
         assert_only_test_image()
@@ -117,7 +130,7 @@ class TestImageSubcommand:
         ]
         output = run("rmi Parent", exit_code=1)
         assert error == output
-        output = run("rmc Child")
+        output = remove_container("rmc Child")
         output = run("rmi Parent")
 
     def test_build_image_with_buildarg(self, testimage):
@@ -139,17 +152,19 @@ class TestImageSubcommand:
         self, testimage
     ):
         create_dockerfile(["FROM FreeBSD", " ", "RUN touch /passed"])
-        run(f"build -t StrangeDockerfile {os.getcwd()}")
-        _, _, output = run(f"run --name testing1 StrangeDockerfile {stat('/passed')}")
+        run(f"build -t StrangeDockerfile {cwd}")
+        _, _, output = run_container(
+            f"run --name testing1 StrangeDockerfile {stat('/passed')}"
+        )
         stat_output = output[0].split(",")
         file_permissions = stat_output[-1]
         assert "-rw-r--r--" == file_permissions
-        run("rmc testing1")
+        remove_container("rmc testing1")
         run("rmi StrangeDockerfile")
 
     def test_build_invalid_instruction(self, testimage):
         create_dockerfile(["FRO FreeBSD", "RUN echo 'doest not run'"])
-        output = run(f"build -t InvalidDockerfile {os.getcwd()}", exit_code=1)
+        output = run(f"build -t InvalidDockerfile {cwd}", exit_code=1)
         assert ["error in 'FRO FreeBSD': invalid instruction", ""] == output
 
     def test_build_image_from_snapshot(self, testimage):
@@ -170,7 +185,6 @@ class TestImageSubcommand:
         for n, nametag in enumerate(
             ["WithSnapshots", "WithSnapshots:latest", image["id"]]
         ):
-            print("using namtag: ", nametag)
             dockerfile = dockerfile_from_str(
                 f"""
                FROM {nametag}{snapshot}
@@ -179,7 +193,7 @@ class TestImageSubcommand:
             )
             create_dockerfile(dockerfile)
             run(f"build -t FromSnapshot{n} {os.getcwd()}")
-            _, _, output = run(f"run FromSnapshot{n} ls /media")
+            _, _, output = run_container(f"run FromSnapshot{n} ls /media")
             output = set(output)
             assert "step1" in output
             assert "step2" not in output
@@ -206,7 +220,7 @@ class TestImageSubcommand:
         ]
 
         verify_build_output(expected_build_log, build_log)
-        _, _, output = run(f"run {image_id} /bin/cat /root/test.txt")
+        _, _, output = run_container(f"run {image_id} /bin/cat /root/test.txt")
 
         assert output[0] == "lol"
         run("container prune -f")
@@ -235,7 +249,7 @@ class TestImageSubcommand:
         snapshot_line = build_log[2]
         snapshot = snapshot_line.split("--> Snapshot created: @")[1]
         verify_build_output(expected_build_log, build_log)
-        _, _, output = run(f"run {image_id}@{snapshot} /bin/cat /root/test.txt")
+        _, _, output = run_container(f"run {image_id}@{snapshot} /bin/cat /root/test.txt")
         assert output[0] == "first"
         run("container prune -f")
         run("rmi FailedBuild:failed")
@@ -254,10 +268,44 @@ class TestImageSubcommand:
         ]
 
 
-class TestImageCreateSubcommand:
+class TestImageBuildContainerConfig:
+
+    def test_build_image_with_nullfs_mount(self, testimage_and_cleanup):
+        instructions = ["FROM FreeBSD"]
+        instructions.append('RUN echo "first" > /restore/test.txt')
+        create_dockerfile(instructions)
+
+        shell("mkdir testdir && touch testdir/test.txt")
+        shell(f"klee build -t testmount --mount {cwd}/testdir:/restore .")
+        assert "first\n" == shell("cat testdir/test.txt")
+        shell("rm -r testdir")
+        run("rmi testmount")
+
+    def test_build_image_with_volume_mount(self, testimage_and_cleanup):
+        instructions = ["FROM FreeBSD"]
+        instructions.append('RUN echo "first" > /restore/test.txt')
+        create_dockerfile(instructions)
+
+        run("volume create testvol")
+        shell("touch /zroot/kleene/volumes/testvol/test.txt")
+        run("build -t testmount --mount testvol:/restore .")
+        assert "first\n" == shell("cat /zroot/kleene/volumes/testvol/test.txt")
+        run("rmi testmount")
+        run("rmv testvol")
+
+    def test_build_image_with_ipnet_network(self, testimage_and_cleanup):
+        create_dockerfile(["FROM FreeBSD", "RUN ifconfig kleene0"])
+        run("network create --subnet 10.13.37.0/24 -t loopback jailnet")
+        output = "\n".join(run("build -t testmount -n jailnet ."))
+        run("rmi testmount")
+        assert "kleene0: " in output
+        assert "inet 10.13.37.1 netmask 0xffffffff" in output
+
+
+class TestImageCreate:
 
     def test_create_image_with_fetch_method(self, testimage):
-        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+        url = f"file://{KLEENED_MINIMAL_TESTJAIL}"
         result = run(f"image create -t Create:Fetch fetch {url}")
         assert result[-3] == "image created"
         image_id = result[-2]
@@ -267,7 +315,7 @@ class TestImageCreateSubcommand:
         run(f"rmi {image_id}")
 
     def test_create_image_with_fetch_method_and_nodns(self, testimage):
-        url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+        url = f"file://{KLEENED_MINIMAL_TESTJAIL}"
         result = run(f"image create --no-dns -t Create:Fetch-nodns fetch {url}")
         assert result[-3] == "image created"
         image_id = result[-2]
@@ -286,7 +334,7 @@ class TestImageCreateSubcommand:
             [
                 "/usr/bin/tar",
                 "-xf",
-                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
+                KLEENED_MINIMAL_TESTJAIL,
                 "-C",
                 f"/{dataset}",
             ],
@@ -312,7 +360,7 @@ class TestImageCreateSubcommand:
             [
                 "/usr/bin/tar",
                 "-xf",
-                "/home/vagrant/kleened/test/data/minimal_testjail.txz",
+                KLEENED_MINIMAL_TESTJAIL,
                 "-C",
                 f"/{dataset}",
             ],

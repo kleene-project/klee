@@ -13,7 +13,7 @@ contain a maximum of 128 characters.
 To tag an image with ID "2e91f95bf959":
 
 ```console
-$ klee tag 0e5574283393 13.2-STABLE/base
+$ klee image tag 0e5574283393 13.2-STABLE/base
 ```
 
 Note that since a `tag` is not specified Kleened sets it to `latest`,
@@ -24,7 +24,7 @@ i.e., `13.2-STABLE/base:latest`.
 To tag a local image with FreeBSD additional releng `REVISION` information:
 
 ```console
-$ klee tag FreeBSD-13.1-RELEASE FreeBSD-13.1-RELEASE:fc952ac2212
+$ klee image tag FreeBSD-13.1-RELEASE FreeBSD-13.1-RELEASE:fc952ac2212
 ```
 
 Note that since a `tag` is not specified Kleened sets it to `latest`.
@@ -34,5 +34,5 @@ Note that since a `tag` is not specified Kleened sets it to `latest`.
 Re-tag an image and replace tag "test" with "version1.0.test":
 
 ```console
-$ docker tag nginx:test nginx:version1.0.test
+$ klee image tag FreeBSD-13.1-RELEASE:test FreeBSD-13.1-RELEASE:version1.0.test
 ```

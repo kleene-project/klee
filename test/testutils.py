@@ -1,6 +1,7 @@
 import subprocess
 import json
 import os
+import re
 
 import httpx
 from click.testing import CliRunner
@@ -18,12 +19,6 @@ from klee.deploy import DEFAULT_DEPLOYMENT_FILE
 SELF_SIGNED_ERROR = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain"
 
 CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required"
-
-EMPTY_CONTAINER_LIST = [
-    " CONTAINER ID    NAME   IMAGE   COMMAND   CREATED   AUTORUN   STATUS   JID ",
-    "───────────────────────────────────────────────────────────────────────────",
-    "",
-]
 
 
 def create_deployment_file(content, path=DEFAULT_DEPLOYMENT_FILE):
@@ -104,13 +99,7 @@ def build_image(
     tag = "" if tag is None else f"--tag {tag} "
     quiet = "--quiet " if quiet else ""
     cleanup = "--rm " if cleanup else ""
-    shell("zfs list")
-    shell("pwd")
-    shell("ls -a")
-    run("lsi")
-    run("lsc -a")
-    result = run(f"image build {buildargs}{tag}{quiet}{cleanup}{dockerfile}{path}")
-    return result
+    return run(f"image build {buildargs}{tag}{quiet}{cleanup}{dockerfile}{path}")
 
 
 def decode_invalid_image_build(result):
@@ -126,21 +115,6 @@ def decode_valid_image_build(result):
     image_id = _extract_id(result)
     build_log = result[1:-3]
     return image_id, build_log
-
-
-def remove_all_images():
-    _header, _lines, *images = run("image ls")
-    image_ids = []
-    for line in images[:-1]:
-        image_id, name, tag, *_rest = line.split(" ")
-        if image_id == "":
-            continue
-        if name == "FreeBSD" and tag == "latest":
-            continue
-        image_ids.append(image_id)
-
-    if len(image_ids) != 0:
-        run("image rm " + " ".join(image_ids))
 
 
 def create_container(
@@ -223,24 +197,105 @@ def list_containers(all_=True):
     return response.parsed
 
 
-def container_netstat(container_id):
-    return run(f"container exec {container_id} /usr/bin/netstat --libxo json -i -4")
+def container_interfaces(container_id, ipv4_only=False):
+    """
+    The 'statistics.interface' list that netstat(1) reports inside a container.
+
+    The container does not have to be running: the exec'd command replaces the
+    container's own command, and a stopped container is started to run it.
+
+    'ipv4_only' restricts the listing to interfaces with an IPv4 address.
+
+    klee interleaves its own status lines with the container's output, so the
+    JSON document is found by skipping the lines klee is known to emit.
+    """
+    netstat = "netstat --libxo json -i"
+    if ipv4_only:
+        netstat = f"{netstat} -4"
+
+    output = run(["exec", container_id, "/bin/sh", "-c", netstat])
+    interfaces = json.loads(_first_non_klee_message(output))
+    return interfaces["statistics"]["interface"]
 
 
-def container_get_netstat_info(container_id, driver):
-    output = run(f"container exec {container_id}")
-    if driver == "vnet":
-        netstat_info = "".join(output[2:-3])
+def listing_rows(output):
+    """One entry per object listed by 'klee <object> ls'."""
+    header, _rule, *lines = output
+    width = _first_column_width(header)
 
-    elif driver == "loopback":
-        netstat_info = "".join(output[1:-3])
+    rows = []
+    for line in lines[:-1]:
+        if line[:width].strip():
+            rows.append(line)
+        elif rows:
+            rows[-1] = f"{rows[-1]} {line.strip()}"
 
-    netstat_info = json.loads(netstat_info)
-    interface_info = netstat_info["statistics"]["interface"]
-    return interface_info
+    return rows
+
+
+def listing_ids(output):
+    """First column of every row of a listing -- the ID, or the name for volumes."""
+    return [row.split()[0] for row in listing_rows(output)]
+
+
+def _first_column_width(header):
+    """
+    Where the first column of a listing ends.
+
+    Column labels may contain single spaces ('CONTAINER ID'), so the boundary is
+    the first run of two or more spaces.
+    """
+    match = re.search(r"\S\s{2,}", header)
+    return match.end() if match is not None else len(header)
+
+
+def assert_empty_listing(command):
+    """Assert that a 'klee <object> ls' command lists nothing."""
+    output = run(command)
+    rows = listing_rows(output)
+    assert rows == [], "expected an empty listing, got:\n" + "\n".join(output)
 
 
 def run(command, exit_code=0):
+    """
+    Invoke klee and return its output, one list element per line.
+
+    'run_container' and 'remove_container' exist for the two commands whose
+    output is worth decoding further -- this returns lines for every command,
+    including those two.
+    """
+    result = _invoke(command, exit_code)
+    return result.output.split("\n")
+
+
+def run_container(command, exit_code=0):
+    """
+    Invoke 'klee run' (or 'klee container run') and decode its output.
+
+    Returns '(container_id, exec_id, output_lines)'. For a detached run there is
+    no container output, so the third element is an empty list.
+    """
+    if isinstance(command, str):
+        command = command.split(" ")
+
+    assert command[0] == "run" or command[:2] == ["container", "run"]
+    result = _invoke(command, exit_code)
+
+    if "-d" in command or "--detach" in command:
+        container_id, exec_msg, _nl = result.output.split("\n")
+        return container_id, exec_msg.split(" ")[-1], []
+
+    container_id, exec_msg, *output, _endmsg, _nl = result.output.split("\n")
+    return container_id, exec_msg.split(" ")[-1], output
+
+
+def remove_container(command, exit_code=0):
+    """Invoke 'klee rmc' (or 'klee container rm') and return the removed container id."""
+    result = _invoke(command, exit_code)
+    return result.output[:-1]
+
+
+def _invoke(command, exit_code):
     if isinstance(command, str):
         command = command.split(" ")
 
@@ -251,23 +306,26 @@ def run(command, exit_code=0):
     result = runner.invoke(cli, command, catch_exceptions=False)
     print_command_exit(result.exit_code, result.output, "klee")
 
-    assert result.exit_code == exit_code
-    if command[0] == "rmc" or command[:2] == ["container", "rm"]:
-        container_id = result.output[:-1]
-        return container_id
+    assert result.exit_code == exit_code, (
+        f"'klee {' '.join(command)}' exited with {result.exit_code}, "
+        f"expected {exit_code}. Output was:\n{result.output}"
+    )
+    return result
 
-    if command[0] == "run" or command[:2] == ["container", "run"]:
-        if result.exit_code == 0:
-            if "-d" in command or "--detach" in command:
-                container_id, exec_msg, _nl = result.output.split("\n")
-                exec_id = exec_msg.split(" ")[-1]
-                return container_id, exec_id, []
 
-            container_id, exec_msg, *output, _endmsg, _nl = result.output.split("\n")
-            exec_id = exec_msg.split(" ")[-1]
-            return container_id, exec_id, output
+def _first_non_klee_message(output):
+    """The first line of output that klee itself did not emit."""
 
-    return result.output.split("\n")
+    def remove_standard_messages(line):
+        if line.startswith("created execution instance"):
+            return False
+
+        if line.startswith("add net default: gateway"):
+            return False
+
+        return True
+
+    return next(filter(remove_standard_messages, output))
 
 
 def print_running_command(command, type_):

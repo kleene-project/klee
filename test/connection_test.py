@@ -1,11 +1,11 @@
 import pytest
 
 from testutils import (
+    listing_rows,
     run,
     shell,
     CERTIFICATE_REQUIRED_ERROR,
     SELF_SIGNED_ERROR,
-    EMPTY_CONTAINER_LIST,
 )
 
 # flake8: noqa: F401
@@ -59,8 +59,8 @@ class TestHTTPConnections:
 
 
 def successful_http_connection(connection_config):
-    result = http_connection(connection_config)
-    assert result == EMPTY_CONTAINER_LIST
+    output = http_connection(connection_config)
+    assert listing_rows(output) == []
 
 
 def http_connection(connection_config, exit_code=0):

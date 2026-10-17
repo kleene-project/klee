@@ -11,11 +11,10 @@ can be modified on a running container as well. If one or more jail parameters
 cannot be modified and error will occur and a restart is required for the changes
 to take effect.
 
-> **Please note**
->
-> Modifying jail parameters on a running container can cause unpredictable
-> behaviour for the applications running in the container. Use with care.
-{: .important }
+!!! important
+
+    Modifying jail parameters on a running container can cause unpredictable
+    behaviour for the applications running in the container. Use with care.
 
 Connecting/disconnecting a container to networks can be done using the
 [`klee network` subcommands](/reference/klee/network/).

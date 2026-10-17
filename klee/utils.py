@@ -134,7 +134,7 @@ def _extract_protocol(pub_port_raw):
     if len(pub_port) == 1:
         return pub_port[0], "tcp"
 
-    echo_error("could not decode port to publish: ", pub_port_raw)
+    echo_error(f"could not decode port to publish: {pub_port_raw}")
     sys.exit(1)
 
 
@@ -149,7 +149,7 @@ def _extract_ports_and_interface(pub_port_raw):
     if len(pub_port) == 1:
         return [], pub_port[0], pub_port[0]
 
-    echo_error("could not decode port to publish: ", pub_port_raw)
+    echo_error(f"could not decode port to publish: {pub_port_raw}")
     sys.exit(1)
 
 
