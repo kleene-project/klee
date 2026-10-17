@@ -163,7 +163,8 @@ class TestNetworkSubcommand:
     def test_disconnect_of_running_vnet_container(self, testimage):
         run("network create -t bridge --subnet 10.13.37.0/24 test-vnet")
         run("run --name disconn_vnet -n test-vnet -d -l vnet FreeBSD sleep 10")
-        time.sleep(1)  # Takes time to add the IP, default gw etc. inside the jail
+        # Takes time to add the IP, default gw etc. inside the jail
+        time.sleep(1)
 
         # 10.13.37.2 since 10.13.37.1 is taken by the default gw
         assert ip_in_container("disconn_vnet", "10.13.37.2")
