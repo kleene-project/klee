@@ -4,6 +4,13 @@ from testutils import run, inspect, create_dockerfile, create_deployment_file
 
 # pylint: disable=unused-argument
 
+KLEENED_MINIMAL_TESTJAIL = os.getenv("KLEENED_MINIMAL_TESTJAIL")
+if KLEENED_MINIMAL_TESTJAIL is None:
+    raise RuntimeError(
+        "KLEENED_MINIMAL_TESTJAIL is not set. It must point at the minimal test-jail "
+        "tarball, e.g. /path/to/kleened/test/data/minimal_testjail.txz"
+    )
+
 
 def test_existing_and_correct_image(cleanup):
     deployment = """
@@ -26,7 +33,7 @@ images:
   method: "zfs-clone"
   zfs_dataset: "zroot/kleene_basejail"
 """
-    url = "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+    url = f"file://{KLEENED_MINIMAL_TESTJAIL}"
     run(f"image create -t FreeBSD:latest fetch {url}")
 
     assert _deploy_diff(deployment) == _diff_result(
@@ -49,7 +56,7 @@ def test_image_created_with_different_method_fetch(cleanup):
 images:
 - tag: "FreeBSD:latest"
   method: "fetch"
-  url: "file:///home/vagrant/kleened/test/data/minimal_testjail.txz"
+  url: "file://" + os.environ["KLEENED_MINIMAL_TESTJAIL"]
 """
     run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
 

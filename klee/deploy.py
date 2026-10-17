@@ -70,9 +70,7 @@ def deploy_build(name, hidden=False):
         help="Specify the deployment file to use.",
     )
     def build(**kwargs):
-        """
-        FIXME: Some useful help-description here.
-        """
+        """Build all images defined in the deployment file."""
 
         deployment_config = _create_deployment(kwargs["file"])
         # Create networks
@@ -132,9 +130,7 @@ def deploy_create(name, hidden=False):
         help="Specify the deployment file to use.",
     )
     def create(**kwargs):
-        """
-        FIXME: Some useful help-description here.
-        """
+        """Create the networks, volumes and containers defined in a deployment file."""
         deployment_config = _create_deployment(kwargs["file"])
         # Create networks
         response = request_and_print_response(
@@ -201,7 +197,7 @@ def deploy_remove(name, hidden=False):
     )
     @click.option(
         "--force",
-        "-f",
+        "-F",
         default=False,
         is_flag=True,
         show_default=True,
@@ -216,9 +212,7 @@ def deploy_remove(name, hidden=False):
         help="Stop running containers before removing",
     )
     def remove(**kwargs):
-        """
-        FIXME: Some useful help-description here.
-        """
+        """Remove the containers, networks and volumes defined in a deployment file."""
         deployment_config = _create_deployment(kwargs["file"])
         stop = kwargs["stop"]
         force = kwargs["force"]
@@ -262,11 +256,10 @@ def deploy_stop(name, hidden=False):
         help="Specify the deployment file to use.",
     )
     def stop(**kwargs):
-        """
-        FIXME: Some useful help-description here.
-        """
+        """Stop all containers defined in the deployment file."""
         deployment_config = _create_deployment(kwargs["file"])
-        stop_containers(deployment_config["containers"])
+        containers = [c.name for c in deployment_config.containers]
+        stop_containers(containers)
 
     return stop
 
@@ -287,12 +280,10 @@ def deploy_start(name, hidden=False):
         help="Specify the deployment file to use.",
     )
     def start(**kwargs):
-        """
-        FIXME: Some useful help-description here.
-        """
+        """Start all containers defined in the deployment file."""
         deployment_config = _create_deployment(kwargs["file"])
-        containers = deployment_config["containers"]
-        detach = False
+        containers = [c.name for c in deployment_config.containers]
+        detach = True
         interactive = False
         tty = False
         start_containers(detach, interactive, tty, containers)
@@ -344,9 +335,7 @@ def deploy_diff(name, hidden=False):
         help="JSON-encode diff result",
     )
     def diff(**kwargs):
-        """
-        FIXME: Some useful help-description here.
-        """
+        """Show the difference between a deployment file and the state on the host."""
         deployment_config = _create_deployment(kwargs["file"])
         response = request_and_print_response(
             deployment_diff_endpoint,
