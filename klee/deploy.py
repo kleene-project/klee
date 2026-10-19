@@ -21,7 +21,16 @@ from .client.api.default.deployment_create_networks import (
 from .client.api.default.deployment_create_volumes import (
     sync_detailed as deployment_create_volumes_endpoint,
 )
-from .connection import create_websocket
+from .client.api.default.container_list import (
+    sync_detailed as container_list_endpoint,
+)
+from .client.api.default.network_list import (
+    sync_detailed as network_list_endpoint,
+)
+from .client.api.default.volume_list import (
+    sync_detailed as volume_list_endpoint,
+)
+from .connection import create_websocket, request
 from .printing import (
     echo,
     echo_bold,
@@ -73,30 +82,7 @@ def deploy_build(name, hidden=False):
         """Build all images defined in the deployment file."""
 
         deployment_config = _load_deployment_spec(kwargs["file"])
-        # Create networks
-        response = request_and_print_response(
-            deployment_create_networks_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_networks,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
-        )
-        if response.status_code != 201:
-            return
-
-        # Create volumes
-        response = request_and_print_response(
-            deployment_create_volumes_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_volumes,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
-        )
-        if response.status_code != 201:
+        if not _create_networks_and_volumes(deployment_config):
             return
 
         asyncio.run(_build_images_and_listen_for_messages(deployment_config))
@@ -132,30 +118,7 @@ def deploy_create(name, hidden=False):
     def create(**kwargs):
         """Create the networks, volumes and containers defined in a deployment file."""
         deployment_config = _load_deployment_spec(kwargs["file"])
-        # Create networks
-        response = request_and_print_response(
-            deployment_create_networks_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_networks,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
-        )
-        if response.status_code != 201:
-            return
-
-        # Create volumes
-        response = request_and_print_response(
-            deployment_create_volumes_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_volumes,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
-        )
-        if response.status_code != 201:
+        if not _create_networks_and_volumes(deployment_config):
             return
 
         # Create containers
@@ -224,17 +187,17 @@ def deploy_remove(name, hidden=False):
 
         # Remove containers
         echo("Removing containers...")
-        container_names = [c.name for c in deployment_config.containers]
+        container_names = [c.name for c in deployment_config.containers or []]
         remove_container_list(container_names, stop, exit_on_failure=False)
 
         # Remove network
         echo("Removing networks...")
-        network_names = [n.name for n in deployment_config.networks]
+        network_names = [n.name for n in deployment_config.networks or []]
         remove_network_list(network_names, stop_on_failure=False)
 
         if remove_volumes:
             echo("Removing volumes...")
-            volume_names = [v.name for v in deployment_config.volumes]
+            volume_names = [v.name for v in deployment_config.volumes or []]
             remove_volume_list(volume_names, stop_on_failure=False)
 
     return remove
@@ -258,7 +221,7 @@ def deploy_stop(name, hidden=False):
     def stop(**kwargs):
         """Stop all containers defined in the deployment file."""
         deployment_config = _load_deployment_spec(kwargs["file"])
-        containers = [c.name for c in deployment_config.containers]
+        containers = [c.name for c in deployment_config.containers or []]
         stop_containers(containers)
 
     return stop
@@ -282,7 +245,7 @@ def deploy_start(name, hidden=False):
     def start(**kwargs):
         """Start all containers defined in the deployment file."""
         deployment_config = _load_deployment_spec(kwargs["file"])
-        containers = [c.name for c in deployment_config.containers]
+        containers = [c.name for c in deployment_config.containers or []]
         detach = True
         interactive = False
         tty = False
@@ -353,9 +316,233 @@ def deploy_diff(name, hidden=False):
         if kwargs["json"]:
             print_json_raw(result_json)
         else:
-            echo_bold("Implement me!")
+            for line in render_diff(json.loads(result_json)):
+                echo(line)
 
     return diff
+
+
+def _create_networks_and_volumes(deployment_config):
+    """Create the deployment's networks and volumes; False on failure."""
+    response = request_and_print_response(
+        deployment_create_networks_endpoint,
+        kwargs={"json_body": deployment_config},
+        statuscode2printer={
+            201: print_created_networks,
+            409: print_response_msg,
+            404: print_response_msg,
+        },
+    )
+    if response is None or response.status_code != 201:
+        return False
+
+    response = request_and_print_response(
+        deployment_create_volumes_endpoint,
+        kwargs={"json_body": deployment_config},
+        statuscode2printer={
+            201: print_created_volumes,
+            409: print_response_msg,
+            404: print_response_msg,
+        },
+    )
+    return response is not None and response.status_code == 201
+
+
+def deploy_up(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        short_help="Create all objects in a deployment file and start its containers",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
+    )
+    @click.option(
+        "--build",
+        default=False,
+        is_flag=True,
+        show_default=True,
+        help="Build images before starting containers",
+    )
+    def up(**kwargs):
+        """Create all objects in the deployment file and start its containers."""
+        deployment_config = _load_deployment_spec(kwargs["file"])
+        if not _create_networks_and_volumes(deployment_config):
+            return
+
+        if kwargs["build"]:
+            asyncio.run(_build_images_and_listen_for_messages(deployment_config))
+
+        response = request_and_print_response(
+            deployment_create_containers_endpoint,
+            kwargs={"json_body": deployment_config},
+            statuscode2printer={
+                201: print_created_containers,
+                409: print_response_msg,
+                404: print_response_msg,
+            },
+        )
+        if response is None or response.status_code != 201:
+            return
+
+        containers = [c.name for c in deployment_config.containers or []]
+        start_containers(detach=True, interactive=False, tty=False, containers=containers)
+
+    return up
+
+
+def deploy_down(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        short_help="Stop and remove all objects in a deployment file",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
+    )
+    @click.option(
+        "--volume",
+        "-v",
+        default=False,
+        is_flag=True,
+        show_default=True,
+        help="Remove volumes as well",
+    )
+    def down(**kwargs):
+        """Stop all containers and remove all objects in the deployment file."""
+        deployment_config = _load_deployment_spec(kwargs["file"])
+        container_names = [c.name for c in deployment_config.containers or []]
+        remove_container_list(container_names, force=True, exit_on_failure=False)
+
+        network_names = [n.name for n in deployment_config.networks or []]
+        remove_network_list(network_names, stop_on_failure=False)
+
+        if kwargs["volume"]:
+            volume_names = [v.name for v in deployment_config.volumes or []]
+            remove_volume_list(volume_names, stop_on_failure=False)
+
+    return down
+
+
+def deploy_restart(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        short_help="Restart all containers specified in a deployment file",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
+    )
+    def restart(**kwargs):
+        """Restart all containers defined in the deployment file."""
+        deployment_config = _load_deployment_spec(kwargs["file"])
+        containers = [c.name for c in deployment_config.containers or []]
+        stop_containers(containers)
+        start_containers(detach=True, interactive=False, tty=False, containers=containers)
+
+    return restart
+
+
+def _list_objects(endpoint, **kwargs):
+    """List all objects of a kind via a generated list-endpoint."""
+    response = request(endpoint, kwargs=kwargs)
+    if response is None:
+        sys.exit(1)
+    return response.parsed or []
+
+
+def list_containers():
+    return _list_objects(container_list_endpoint, all_=True)
+
+
+def list_networks():
+    return _list_objects(network_list_endpoint)
+
+
+def list_volumes():
+    return _list_objects(volume_list_endpoint)
+
+
+def deploy_prune(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        short_help="Remove objects not specified in a deployment file",
+    )
+    @click.option(
+        "--file",
+        "-f",
+        default=DEFAULT_DEPLOYMENT_FILE,
+        show_default=True,
+        help="Specify the deployment file to use.",
+    )
+    def prune(**kwargs):
+        """Remove containers, networks and volumes not defined in the deployment file."""
+        deployment_config = _load_deployment_spec(kwargs["file"])
+        spec_containers = {c.name for c in deployment_config.containers or []}
+        spec_networks = {n.name for n in deployment_config.networks or []}
+        spec_volumes = {v.name for v in deployment_config.volumes or []}
+
+        for container in list_containers():
+            if container.name not in spec_containers:
+                remove_container_list([container.id], force=True, exit_on_failure=False)
+                echo(f"removed container '{container.name}'")
+
+        for network in list_networks():
+            if network.name not in spec_networks:
+                remove_network_list([network.name], stop_on_failure=False)
+                echo(f"removed network '{network.name}'")
+
+        for volume in list_volumes():
+            if volume.name not in spec_volumes:
+                remove_volume_list([volume.name], stop_on_failure=False)
+                echo(f"removed volume '{volume.name}'")
+
+    return prune
+
+
+def render_diff(diff):
+    """Turn a deployment-diff JSON object into human-readable lines."""
+    lines = []
+    for kind in ("container", "image", "network", "volume"):
+        for name, entries in diff.get(f"{kind}s", {}).items():
+            for entry in entries:
+                lines.append(_render_diff_entry(kind, name, entry))
+    return lines
+
+
+def _render_diff_entry(kind, name, entry):
+    if entry["type"] == "missing_on_host":
+        return f"{kind} '{name}' is missing on the host"
+
+    if entry["type"] == "not_equal":
+        return (
+            f"{kind} '{name}': property '{entry['property']}' differs: "
+            f"host={entry['value_host']!r} spec={entry['value_spec']!r}"
+        )
+
+    # mountpoint/endpoint/image-specific findings keep their raw repr for now
+    return f"{kind} '{name}': {entry}"
 
 
 def _load_deployment_spec(deployment_path):
@@ -508,3 +695,7 @@ root.add_command(deploy_remove("remove"), name="remove")
 root.add_command(deploy_stop("stop"), name="stop")
 root.add_command(deploy_start("start"), name="start")
 root.add_command(deploy_diff("diff"), name="diff")
+root.add_command(deploy_up("up"), name="up")
+root.add_command(deploy_down("down"), name="down")
+root.add_command(deploy_restart("restart"), name="restart")
+root.add_command(deploy_prune("prune"), name="prune")

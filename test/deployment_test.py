@@ -1,4 +1,4 @@
-from testutils import run, create_dockerfile, create_deployment_file, inspect
+from testutils import run, create_dockerfile, create_deployment_file, inspect, shell, listing_ids
 
 # pylint: disable=unused-argument
 
@@ -420,3 +420,74 @@ containers:
         assert container_id in output
         # The network was removed along with the deployment:
         assert "testnet" not in run("network ls")
+
+
+def _is_running(container_id):
+    """Whether the container is running, per jls."""
+    output = shell("jls -j " + container_id)
+    return "no such jail" not in output
+
+
+class TestDeployLifecycle:
+    def test_deploy_up_down_and_restart(self, cleanup_all):
+        create_deployment_file(
+            """
+---
+images:
+  - tag: "FreeBSD:latest"
+    method: "zfs-clone"
+    zfs_dataset: "zroot/kleene_basejail"
+
+containers:
+ - name: "updown"
+   image: "FreeBSD:latest"
+   cmd: ["/bin/sleep", "100"]
+"""
+        )
+        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
+        output = run("deploy up")
+        assert output[0] == "created container 'updown': " + output[0].split(": ")[1]
+        container_id = output[0].split(": ")[1]
+
+        # 'up' starts the containers it created:
+        assert _is_running(container_id)
+
+        # 'restart' stops and starts them again:
+        run("deploy restart")
+        assert _is_running(container_id)
+
+        # 'down' stops and removes everything:
+        run("deploy down")
+        assert listing_ids(run("container ls -a")) == []
+
+    def test_deploy_prune_removes_objects_outside_the_deployment(self, cleanup_all):
+        create_deployment_file(
+            """
+---
+images:
+  - tag: "FreeBSD:latest"
+    method: "zfs-clone"
+    zfs_dataset: "zroot/kleene_basejail"
+
+containers:
+ - name: "inspec"
+   image: "FreeBSD:latest"
+"""
+        )
+        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
+        run("deploy create")
+
+        # An orphan exists outside the deployment file:
+        run("network create -t loopback --subnet 10.45.45.0/24 orphannet")
+        run("volume create orphanvol")
+        run("container create --name orphancon FreeBSD:latest")
+
+        output = run("deploy prune")
+        joined = " ".join(output)
+        assert "removed container 'orphancon'" in joined
+        assert "removed network 'orphannet'" in joined
+        assert "removed volume 'orphanvol'" in joined
+
+        # ... while the deployment's own objects are untouched:
+        assert "inspec" in " ".join(run("container ls -a"))
+        assert "testnet" not in " ".join(run("network ls"))
