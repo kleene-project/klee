@@ -8,6 +8,7 @@ from ..models.container_config_restart_policy import ContainerConfigRestartPolic
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
+    from ..models.end_point_config import EndPointConfig
     from ..models.mount_point_config import MountPointConfig
     from ..models.published_port_config import PublishedPortConfig
 
@@ -21,6 +22,10 @@ class ContainerConfig:
     Attributes:
         cmd (Union[Unset, None, List[str]]): Command to execute when the container is started. If `[]` is specified the
             command from the image is used. Example: ['/bin/sh', '-c', 'ls /'].
+        endpoints (Union[Unset, None, List['EndPointConfig']]): Network endpoints for the container. Only used in
+            deployment
+            specifications, where the endpoints refer to networks defined in the
+            deployment's `networks` section.
         env (Union[Unset, None, List[str]]): List of environment variables when using the container. This list will be
             merged with environment variables defined by the image. The values in this list takes precedence if the variable
             is defined in both. Example: ['DEBUG=0', 'LANG=da_DK.UTF-8'].
@@ -65,6 +70,7 @@ class ContainerConfig:
     """
 
     cmd: Union[Unset, None, List[str]] = UNSET
+    endpoints: Union[Unset, None, List["EndPointConfig"]] = UNSET
     env: Union[Unset, None, List[str]] = UNSET
     image: Union[Unset, None, str] = UNSET
     jail_param: Union[Unset, None, List[str]] = UNSET
@@ -88,6 +94,17 @@ class ContainerConfig:
                 cmd = None
             else:
                 cmd = self.cmd
+
+        endpoints: Union[Unset, None, List[Dict[str, Any]]] = UNSET
+        if not isinstance(self.endpoints, Unset):
+            if self.endpoints is None:
+                endpoints = None
+            else:
+                endpoints = []
+                for endpoints_item_data in self.endpoints:
+                    endpoints_item = endpoints_item_data.to_dict()
+
+                    endpoints.append(endpoints_item)
 
         env: Union[Unset, None, List[str]] = UNSET
         if not isinstance(self.env, Unset):
@@ -143,6 +160,8 @@ class ContainerConfig:
         field_dict.update({})
         if cmd is not UNSET:
             field_dict["cmd"] = cmd
+        if endpoints is not UNSET:
+            field_dict["endpoints"] = endpoints
         if env is not UNSET:
             field_dict["env"] = env
         if image is not UNSET:
@@ -168,11 +187,19 @@ class ContainerConfig:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
+        from ..models.end_point_config import EndPointConfig
         from ..models.mount_point_config import MountPointConfig
         from ..models.published_port_config import PublishedPortConfig
 
         d = src_dict.copy()
         cmd = cast(List[str], d.pop("cmd", UNSET))
+
+        endpoints = []
+        _endpoints = d.pop("endpoints", UNSET)
+        for endpoints_item_data in _endpoints or []:
+            endpoints_item = EndPointConfig.from_dict(endpoints_item_data)
+
+            endpoints.append(endpoints_item)
 
         env = cast(List[str], d.pop("env", UNSET))
 
@@ -218,6 +245,7 @@ class ContainerConfig:
 
         container_config = cls(
             cmd=cmd,
+            endpoints=endpoints,
             env=env,
             image=image,
             jail_param=jail_param,
