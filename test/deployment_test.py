@@ -233,7 +233,7 @@ containers:
         output = run("deploy create")
         assert output[0][:25] == "created container 'test1'"
         container_id = output[0].split(": ")[1]
-        output = run("deploy remove -f")
+        output = run("deploy remove -F")
         assert output[1] == container_id
 
     def test_create_and_remove_two_containers(self, cleanup_all):
@@ -259,7 +259,7 @@ containers:
         assert output[1][:25] == "created container 'test2'"
         container_id1 = output[0].split(": ")[1]
         container_id2 = output[1].split(": ")[1]
-        output = run("deploy remove -f")
+        output = run("deploy remove -F")
         assert output[1] == container_id1
         assert output[2] == container_id2
 
@@ -313,7 +313,7 @@ networks:
         output = run("deploy create")
         assert output[0] == "created network 'testnet'"
         network = inspect("network", "testnet")["network"]["id"]
-        output = run("deploy remove -f")
+        output = run("deploy remove -F")
         assert output[2] == network
 
     def test_creating_networks_is_idempotent(self, cleanup_all):
@@ -342,12 +342,12 @@ volumes:
         assert output[0] == "created volume 'teststorage'"
         volume = inspect("volume", "teststorage")["volume"]["name"]
         # Test that no volumes is removed when '-v' is omitted:
-        assert run("deploy remove -f") == [
+        assert run("deploy remove -F") == [
             "Removing containers...",
             "Removing networks...",
             "",
         ]
-        output = run("deploy remove -f -v")
+        output = run("deploy remove -F -v")
         assert output[3] == volume
 
     def test_creating_volumes_is_idempotent(self, cleanup_all):

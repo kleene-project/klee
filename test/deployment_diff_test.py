@@ -1,5 +1,6 @@
 import os
 import json
+import subprocess
 from testutils import run, inspect, create_dockerfile, create_deployment_file
 
 # pylint: disable=unused-argument
@@ -51,12 +52,12 @@ images:
 
 
 def test_image_created_with_different_method_fetch(cleanup):
-    deployment = """
+    deployment = f"""
 ---
 images:
 - tag: "FreeBSD:latest"
   method: "fetch"
-  url: "file://" + os.environ["KLEENED_MINIMAL_TESTJAIL"]
+  url: "file://{KLEENED_MINIMAL_TESTJAIL}"
 """
     run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
 
@@ -592,7 +593,7 @@ networks:
                 {
                     "property": "nat",
                     "type": "not_equal",
-                    "value_host": "em0",
+                    "value_host": _default_interface(),
                     "value_spec": "",
                 }
             ]
@@ -602,6 +603,17 @@ networks:
 
 
 # def test_diff_existing_container_wrong_image_snapshot():
+
+
+def _default_interface():
+    """The interface the host routes through, i.e. kleened's default `nat`."""
+    result = subprocess.run(
+        ["/sbin/route", "-n", "get", "default"], check=True, capture_output=True
+    )
+    for line in result.stdout.decode().splitlines():
+        if "interface:" in line:
+            return line.split(":", 1)[1].strip()
+    raise RuntimeError("could not determine default interface")
 
 
 def _deploy_diff(deployment):
