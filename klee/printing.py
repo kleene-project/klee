@@ -72,7 +72,7 @@ def echo_bold(msg):
     if config.theme == THEME_FANCY:
         style = "bold"
 
-    console.print(msg, style=style)
+    console.print(msg, style=style, soft_wrap=True)
 
 
 def echo(msg, newline=True):
@@ -81,7 +81,10 @@ def echo(msg, newline=True):
             end = "\n"
         else:
             end = ""
-        console.print(msg, end=end)
+        # soft_wrap: program output (e.g. netstat --libxo json) must stay on one
+        # physical line; rich's default wrapping would split it and break any
+        # consumer that parses lines.
+        console.print(msg, end=end, soft_wrap=True)
     else:
         click.echo(msg, nl=newline)
 

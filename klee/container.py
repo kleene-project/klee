@@ -191,7 +191,7 @@ def container_start(name, hidden=False):
         """Start one or more stopped containers.
         Attach only if a single container is started
         """
-        _start(detach, interactive, tty, containers)
+        start_containers(detach, interactive, tty, containers)
 
     start = exec_options(start)
     start.params.append(click.Argument(["containers"], required=True, nargs=-1))
