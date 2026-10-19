@@ -363,5 +363,60 @@ volumes:
         assert output[0] == ""
 
     def test_create_and_remove_a_container_with_volume_and_network(self, cleanup_all):
-        # FIXME
-        assert True
+        create_deployment_file(
+            """
+---
+images:
+  - tag: "FreeBSD:latest"
+    method: "zfs-clone"
+    zfs_dataset: "zroot/kleene_basejail"
+
+networks:
+  - name: "testnet"
+    type: "bridge"
+    subnet: "10.13.37.0/24"
+
+volumes:
+  - name: "database-storage"
+
+containers:
+ - name: "dbcon"
+   image: "FreeBSD:latest"
+   endpoints:
+     - network: "testnet"
+   mounts:
+     - type: "volume"
+       source: "database-storage"
+       destination: "/mnt/db"
+"""
+        )
+        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
+        output = run("deploy create")
+        assert output[0] == "created network 'testnet'"
+        assert output[1] == "created volume 'database-storage'"
+        assert output[2].startswith("created container 'dbcon'")
+        container_id = output[2].split(": ")[1]
+
+        # The container is connected to the deployment network with an
+        # allocated ip from its subnet:
+        network = inspect("network", "testnet")["network"]
+        assert network["name"] == "testnet"
+        assert network["subnet"] == "10.13.37.0/24"
+        endpoints = inspect("container", container_id)["container_endpoints"]
+        assert len(endpoints) == 1
+        assert endpoints[0]["network_id"] == network["id"]
+        assert endpoints[0]["ip_address"].startswith("10.13.37.")
+
+        # ... and the volume is mounted at the specified destination:
+        mounts = inspect("container", container_id)["container_mountpoints"]
+        assert any(
+            m["type"] == "volume"
+            and m["source"] == "database-storage"
+            and m["destination"] == "/mnt/db"
+            for m in mounts
+        )
+
+        output = run("deploy remove -F")
+        assert container_id in output
+        # The network was removed along with the deployment:
+        assert "testnet" not in run("network ls")

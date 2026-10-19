@@ -72,7 +72,7 @@ def deploy_build(name, hidden=False):
     def build(**kwargs):
         """Build all images defined in the deployment file."""
 
-        deployment_config = _create_deployment(kwargs["file"])
+        deployment_config = _load_deployment_spec(kwargs["file"])
         # Create networks
         response = request_and_print_response(
             deployment_create_networks_endpoint,
@@ -131,7 +131,7 @@ def deploy_create(name, hidden=False):
     )
     def create(**kwargs):
         """Create the networks, volumes and containers defined in a deployment file."""
-        deployment_config = _create_deployment(kwargs["file"])
+        deployment_config = _load_deployment_spec(kwargs["file"])
         # Create networks
         response = request_and_print_response(
             deployment_create_networks_endpoint,
@@ -213,7 +213,7 @@ def deploy_remove(name, hidden=False):
     )
     def remove(**kwargs):
         """Remove the containers, networks and volumes defined in a deployment file."""
-        deployment_config = _create_deployment(kwargs["file"])
+        deployment_config = _load_deployment_spec(kwargs["file"])
         stop = kwargs["stop"]
         force = kwargs["force"]
         remove_volumes = kwargs["volume"]
@@ -257,7 +257,7 @@ def deploy_stop(name, hidden=False):
     )
     def stop(**kwargs):
         """Stop all containers defined in the deployment file."""
-        deployment_config = _create_deployment(kwargs["file"])
+        deployment_config = _load_deployment_spec(kwargs["file"])
         containers = [c.name for c in deployment_config.containers]
         stop_containers(containers)
 
@@ -281,7 +281,7 @@ def deploy_start(name, hidden=False):
     )
     def start(**kwargs):
         """Start all containers defined in the deployment file."""
-        deployment_config = _create_deployment(kwargs["file"])
+        deployment_config = _load_deployment_spec(kwargs["file"])
         containers = [c.name for c in deployment_config.containers]
         detach = True
         interactive = False
@@ -336,7 +336,7 @@ def deploy_diff(name, hidden=False):
     )
     def diff(**kwargs):
         """Show the difference between a deployment file and the state on the host."""
-        deployment_config = _create_deployment(kwargs["file"])
+        deployment_config = _load_deployment_spec(kwargs["file"])
         response = request_and_print_response(
             deployment_diff_endpoint,
             kwargs={"json_body": deployment_config},
@@ -358,7 +358,7 @@ def deploy_diff(name, hidden=False):
     return diff
 
 
-def _create_deployment(deployment_path):
+def _load_deployment_spec(deployment_path):
     with open(deployment_path, encoding="utf8") as deployment_file:
         deployment_yaml = deployment_file.read()
 
