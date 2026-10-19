@@ -31,6 +31,18 @@ def cleanup(host_state):
 
 
 @pytest.fixture()
+def prune_images():
+    yield host_state
+    run("image prune -a -f")
+
+
+@pytest.fixture()
+def cleanup_all(prune_images, cleanup):
+    yield host_state
+    run("image prune -a -f")
+
+
+@pytest.fixture()
 def testimage(create_testimage, host_state):
     yield host_state
 

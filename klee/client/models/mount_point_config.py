@@ -19,64 +19,60 @@ class MountPointConfig:
     - `volume`: Mount a Kleene volume into the container.
 
         Attributes:
+            type (MountPointConfigType): Type of mountpoint to create.
             destination (Union[Unset, str]): Destination path of the mount within the container.
             read_only (Union[Unset, bool]): Whether the mountpoint should be read-only.
             source (Union[Unset, str]): Source used for the mount. Depends on `method`:
 
                 - If `method` is `"volume"` then `source` should be a volume name
                 - If `method`is `"nullfs"` then `source` should be an absolute path on the host
-            type (Union[Unset, MountPointConfigType]): Type of mountpoint to create.
     """
 
+    type: MountPointConfigType
     destination: Union[Unset, str] = UNSET
     read_only: Union[Unset, bool] = False
     source: Union[Unset, str] = UNSET
-    type: Union[Unset, MountPointConfigType] = UNSET
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        type = self.type.value
+
         destination = self.destination
         read_only = self.read_only
         source = self.source
-        type: Union[Unset, str] = UNSET
-        if not isinstance(self.type, Unset):
-            type = self.type.value
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
-        field_dict.update({})
+        field_dict.update(
+            {
+                "type": type,
+            }
+        )
         if destination is not UNSET:
             field_dict["destination"] = destination
         if read_only is not UNSET:
             field_dict["read_only"] = read_only
         if source is not UNSET:
             field_dict["source"] = source
-        if type is not UNSET:
-            field_dict["type"] = type
 
         return field_dict
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
+        type = MountPointConfigType(d.pop("type"))
+
         destination = d.pop("destination", UNSET)
 
         read_only = d.pop("read_only", UNSET)
 
         source = d.pop("source", UNSET)
 
-        _type = d.pop("type", UNSET)
-        type: Union[Unset, MountPointConfigType]
-        if isinstance(_type, Unset):
-            type = UNSET
-        else:
-            type = MountPointConfigType(_type)
-
         mount_point_config = cls(
+            type=type,
             destination=destination,
             read_only=read_only,
             source=source,
-            type=type,
         )
 
         mount_point_config.additional_properties = d

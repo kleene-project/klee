@@ -25,7 +25,7 @@ class MountPoint:
             source (Union[Unset, str]): Source used for the mount. Depends on `method`:
 
                 - If `method` is `"volume"` then `source` should be a volume name
-                - If `method`is `"nullfs"` then `source` should be an absolute path on the host
+                - If `method` is `"nullfs"` then `source` should be an absolute path on the host
             type (Union[Unset, MountPointType]): Mounpoint type.
     """
 
