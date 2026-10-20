@@ -44,7 +44,7 @@ $ klee volume ls
 When the target directory of a mount doesn't exist, Kleened
 will automatically creates it in the container. This example
 caused Kleened to create `/foo/bar` folder before starting the container.
-Similarily, if the specified volume does not exist, Kleened will create
+Similarly, if the specified volume does not exist, Kleened will create
 it for you. In this example the volume `some_storage` was just created.
 
 
