@@ -68,7 +68,7 @@ def container_create_options():
             metavar="list",
             help="""
             Mount a volume/directory/file on the host filesystem into the container.
-            Mounts are specfied by `--mount SOURCE:DESTINATION[:rw|ro]`.
+            Mounts are specified by `--mount SOURCE:DESTINATION[:rw|ro]`.
             """,
         ),
         click.Option(

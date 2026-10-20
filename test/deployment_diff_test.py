@@ -360,12 +360,16 @@ volumes:
     run(
         "container create -m /usr/local/etc:/mnt/test_etc --name testcon FreeBSD:latest"
     )
+    # The container mounts the volume and the deployment defines it, but it
+    # does not exist on the host: the diff reports both the missing mount on
+    # the container and the missing volume object.
     assert _deploy_diff(deployment) == _diff_result(
         containers={
             "testcon": [
                 {"type": "mounted_volume_not_found", "volume_name": "teststorage"}
             ]
-        }
+        },
+        volumes={"teststorage": [{"type": "missing_on_host"}]},
     )
     run("rmc testcon")
 
@@ -602,6 +606,28 @@ networks:
     run("rmn testnet")
 
 
+def test_diff_missing_volume(cleanup):
+    deployment = """
+---
+volumes:
+  - name: "database-storage"
+"""
+    assert _deploy_diff(deployment) == _diff_result(
+        volumes={"database-storage": [{"type": "missing_on_host"}]}
+    )
+
+
+def test_diff_existing_volume(cleanup):
+    deployment = """
+---
+volumes:
+  - name: "database-storage"
+"""
+    run("volume create database-storage")
+    assert _deploy_diff(deployment) == _diff_result()
+    run("rmv database-storage")
+
+
 # def test_diff_existing_container_wrong_image_snapshot():
 
 
@@ -622,7 +648,7 @@ def _deploy_diff(deployment):
     return json.loads(result)
 
 
-def _diff_result(containers=None, images=None, networks=None):
+def _diff_result(containers=None, images=None, networks=None, volumes=None):
     if containers is None:
         containers = {}
 
@@ -632,4 +658,7 @@ def _diff_result(containers=None, images=None, networks=None):
     if networks is None:
         networks = {}
 
-    return {"containers": containers, "images": images, "networks": networks}
+    if volumes is None:
+        volumes = {}
+
+    return {"containers": containers, "images": images, "networks": networks, "volumes": volumes}
