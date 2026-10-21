@@ -9,6 +9,7 @@ import websockets
 
 from .client.models.deployment_config import DeploymentConfig
 from .client.models.container_config import ContainerConfig
+from .client.models.end_point_config import EndPointConfig
 from .client.api.default.deployment_diff import (
     sync_detailed as deployment_diff_endpoint,
 )
@@ -123,7 +124,7 @@ def deploy_create(name, hidden=False):
         # Create containers
         containers_ok = _create_batch(
             container_create_endpoint,
-            [c.to_dict() for c in deployment_config.containers or []],
+            [_to_container_config(c) for c in deployment_config.containers or []],
             print_created_container,
         )
         if not containers_ok:
@@ -265,6 +266,14 @@ def print_created_volume(item):
     echo(f"created volume '{item['name']}'")
 
 
+def _to_container_config(service_config):
+    """Convert a DeploymentServiceConfig model to a ContainerConfig model (drops endpoints)."""
+    config_dict = {
+        k: v for k, v in service_config.to_dict().items() if k != "endpoints"
+    }
+    return ContainerConfig.from_dict(config_dict)
+
+
 def _create_batch(endpoint, items, print_item):
     """POST an array of configs; print per-item results; True when every item succeeded."""
     if not items:
@@ -297,12 +306,14 @@ def _connect_deployment_endpoints(deployment_config):
     for container in deployment_config.containers or []:
         for endpoint in getattr(container, "endpoints", None) or []:
             endpoint_configs.append(
-                {
-                    "container": container.name,
-                    "network": endpoint.network,
-                    "ip_address": endpoint.ip_address or "<auto>",
-                    "ip_address6": endpoint.ip_address6 or "<auto>",
-                }
+                EndPointConfig.from_dict(
+                    {
+                        "container": container.name,
+                        "network": endpoint.network,
+                        "ip_address": endpoint.ip_address or "<auto>",
+                        "ip_address6": endpoint.ip_address6 or "<auto>",
+                    }
+                )
             )
 
     if not endpoint_configs:
@@ -365,7 +376,7 @@ def _create_networks_and_volumes(deployment_config):
     """Create the deployment's networks and volumes; False on failure."""
     networks_ok = _create_batch(
         network_create_endpoint,
-        [n.to_dict() for n in deployment_config.networks or []],
+        deployment_config.networks or [],
         print_created_network,
     )
     if not networks_ok:
@@ -373,7 +384,7 @@ def _create_networks_and_volumes(deployment_config):
 
     return _create_batch(
         volume_create_endpoint,
-        [v.to_dict() for v in deployment_config.volumes or []],
+        deployment_config.volumes or [],
         print_created_volume,
     )
 
@@ -411,7 +422,7 @@ def deploy_up(name, hidden=False):
 
         containers_ok = _create_batch(
             container_create_endpoint,
-            [c.to_dict() for c in deployment_config.containers or []],
+            [_to_container_config(c) for c in deployment_config.containers or []],
             print_created_container,
         )
         if not containers_ok:

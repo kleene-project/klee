@@ -494,7 +494,7 @@ def _create_container_and_connect_to_network(**kwargs):
         container_create_endpoint,
         kwargs={"json_body": [container_config]},
         statuscode2printer={
-            201: print_create_results,
+            201: print_nothing,
             500: print_nothing,
         },
     )
@@ -507,6 +507,7 @@ def _create_container_and_connect_to_network(**kwargs):
         echo_error(f"could not create container: {result['error']}")
         sys.exit(1)
 
+    echo_bold(result["id"])
     container_id = result["id"]
 
     if kwargs["network"] is None:

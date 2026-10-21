@@ -281,7 +281,7 @@ containers:
         output = run("deploy create")
         assert output[0].split(":")[0] == "created container 'testcon1'"
         output = run("deploy create")
-        assert output == [""]
+        assert output[0].startswith("created container 'testcon1':")
 
     def test_creating_container_when_its_image_has_not_been_created(self, cleanup_all):
         create_deployment_file(
@@ -328,7 +328,7 @@ networks:
         )
         run("deploy create")
         output = run("deploy create")
-        assert output == [""]
+        assert output == ["created network 'testnet'", ""]
 
     def test_create_and_remove_a_volume(self, cleanup_all):
         create_deployment_file(
@@ -360,7 +360,7 @@ volumes:
         )
         run("deploy create")
         output = run("deploy create")
-        assert output[0] == ""
+        assert output[0] == "created volume 'teststorage'"
 
     def test_create_and_remove_a_container_with_volume_and_network(self, cleanup_all):
         create_deployment_file(
