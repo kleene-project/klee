@@ -6,7 +6,7 @@ from attrs import field as _attrs_field
 from ..types import UNSET, Unset
 
 if TYPE_CHECKING:
-    from ..models.container_config import ContainerConfig
+    from ..models.deployment_service_config import DeploymentServiceConfig
     from ..models.image_build_config import ImageBuildConfig
     from ..models.image_create_config import ImageCreateConfig
     from ..models.network_config import NetworkConfig
@@ -21,14 +21,14 @@ class DeploymentConfig:
     """
     Attributes:
         build_workers (Union[Unset, int]): Number of concurrent build-workers used when building images. Default: 1.
-        containers (Union[Unset, List['ContainerConfig']]): Deployment containers
+        containers (Union[Unset, List['DeploymentServiceConfig']]): Deployment containers
         images (Union[Unset, List[Union['ImageBuildConfig', 'ImageCreateConfig']]]): Deployment images.
         networks (Union[Unset, List['NetworkConfig']]): Deployment networks
         volumes (Union[Unset, List['VolumeConfig']]): Deployment volumes
     """
 
     build_workers: Union[Unset, int] = 1
-    containers: Union[Unset, List["ContainerConfig"]] = UNSET
+    containers: Union[Unset, List["DeploymentServiceConfig"]] = UNSET
     images: Union[Unset, List[Union["ImageBuildConfig", "ImageCreateConfig"]]] = UNSET
     networks: Union[Unset, List["NetworkConfig"]] = UNSET
     volumes: Union[Unset, List["VolumeConfig"]] = UNSET
@@ -94,7 +94,7 @@ class DeploymentConfig:
 
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
-        from ..models.container_config import ContainerConfig
+        from ..models.deployment_service_config import DeploymentServiceConfig
         from ..models.image_build_config import ImageBuildConfig
         from ..models.image_create_config import ImageCreateConfig
         from ..models.network_config import NetworkConfig
@@ -106,7 +106,7 @@ class DeploymentConfig:
         containers = []
         _containers = d.pop("containers", UNSET)
         for containers_item_data in _containers or []:
-            containers_item = ContainerConfig.from_dict(containers_item_data)
+            containers_item = DeploymentServiceConfig.from_dict(containers_item_data)
 
             containers.append(containers_item)
 

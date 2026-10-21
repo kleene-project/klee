@@ -1,24 +1,31 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.error_object import ErrorObject
 from ...models.error_response import ErrorResponse
-from ...models.id_response import IdResponse
+from ...models.volume import Volume
 from ...models.volume_config import VolumeConfig
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    json_body: VolumeConfig,
+    json_body: List["VolumeConfig"],
 ) -> Dict[str, Any]:
 
     pass
 
-    json_json_body = json_body.to_dict()
+    json_json_body = []
+    for componentsschemas_volume_config_list_item_data in json_body:
+        componentsschemas_volume_config_list_item = (
+            componentsschemas_volume_config_list_item_data.to_dict()
+        )
+
+        json_json_body.append(componentsschemas_volume_config_list_item)
 
     return {
         "method": "post",
@@ -29,9 +36,40 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[ErrorResponse, IdResponse]]:
+) -> Optional[Union[ErrorResponse, List[Union["ErrorObject", "Volume"]]]]:
     if response.status_code == HTTPStatus.CREATED:
-        response_201 = IdResponse.from_dict(response.json())
+        response_201 = []
+        _response_201 = response.json()
+        for componentsschemas_volume_create_result_item_data in _response_201:
+
+            def _parse_componentsschemas_volume_create_result_item(
+                data: object,
+            ) -> Union["ErrorObject", "Volume"]:
+                try:
+                    if not isinstance(data, dict):
+                        raise TypeError()
+                    componentsschemas_volume_create_result_item_type_0 = (
+                        Volume.from_dict(data)
+                    )
+
+                    return componentsschemas_volume_create_result_item_type_0
+                except:  # noqa: E722
+                    pass
+                if not isinstance(data, dict):
+                    raise TypeError()
+                componentsschemas_volume_create_result_item_type_1 = (
+                    ErrorObject.from_dict(data)
+                )
+
+                return componentsschemas_volume_create_result_item_type_1
+
+            componentsschemas_volume_create_result_item = (
+                _parse_componentsschemas_volume_create_result_item(
+                    componentsschemas_volume_create_result_item_data
+                )
+            )
+
+            response_201.append(componentsschemas_volume_create_result_item)
 
         return response_201
     if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
@@ -46,7 +84,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[ErrorResponse, IdResponse]]:
+) -> Response[Union[ErrorResponse, List[Union["ErrorObject", "Volume"]]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -59,22 +97,22 @@ def sync_detailed(
     transport,
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: VolumeConfig,
+    json_body: List["VolumeConfig"],
     **kwargs,
-) -> Response[Union[ErrorResponse, IdResponse]]:
+) -> Response[Union[ErrorResponse, List[Union["ErrorObject", "Volume"]]]]:
     """volume create
 
-     Create a new volume.
+     Create one or more volumes from a list of configurations.
 
     Args:
-        json_body (VolumeConfig): Volume configuration
+        json_body (List['VolumeConfig']): List of volume configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Response[Union[ErrorResponse, List[Union['ErrorObject', 'Volume']]]]
     """
 
     kwargs.update(
@@ -92,21 +130,21 @@ def sync_detailed(
 def sync(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: VolumeConfig,
-) -> Optional[Union[ErrorResponse, IdResponse]]:
+    json_body: List["VolumeConfig"],
+) -> Optional[Union[ErrorResponse, List[Union["ErrorObject", "Volume"]]]]:
     """volume create
 
-     Create a new volume.
+     Create one or more volumes from a list of configurations.
 
     Args:
-        json_body (VolumeConfig): Volume configuration
+        json_body (List['VolumeConfig']): List of volume configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        Union[ErrorResponse, List[Union['ErrorObject', 'Volume']]]
     """
 
     return sync_detailed(
@@ -118,21 +156,21 @@ def sync(
 async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: VolumeConfig,
-) -> Response[Union[ErrorResponse, IdResponse]]:
+    json_body: List["VolumeConfig"],
+) -> Response[Union[ErrorResponse, List[Union["ErrorObject", "Volume"]]]]:
     """volume create
 
-     Create a new volume.
+     Create one or more volumes from a list of configurations.
 
     Args:
-        json_body (VolumeConfig): Volume configuration
+        json_body (List['VolumeConfig']): List of volume configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Response[Union[ErrorResponse, List[Union['ErrorObject', 'Volume']]]]
     """
 
     kwargs = _get_kwargs(
@@ -147,21 +185,21 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: VolumeConfig,
-) -> Optional[Union[ErrorResponse, IdResponse]]:
+    json_body: List["VolumeConfig"],
+) -> Optional[Union[ErrorResponse, List[Union["ErrorObject", "Volume"]]]]:
     """volume create
 
-     Create a new volume.
+     Create one or more volumes from a list of configurations.
 
     Args:
-        json_body (VolumeConfig): Volume configuration
+        json_body (List['VolumeConfig']): List of volume configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        Union[ErrorResponse, List[Union['ErrorObject', 'Volume']]]
     """
 
     return (

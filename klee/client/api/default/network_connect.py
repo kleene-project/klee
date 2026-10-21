@@ -1,23 +1,31 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union, cast
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.end_point import EndPoint
 from ...models.end_point_config import EndPointConfig
+from ...models.error_object import ErrorObject
 from ...models.error_response import ErrorResponse
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    json_body: EndPointConfig,
+    json_body: List["EndPointConfig"],
 ) -> Dict[str, Any]:
 
     pass
 
-    json_json_body = json_body.to_dict()
+    json_json_body = []
+    for componentsschemas_end_point_config_list_item_data in json_body:
+        componentsschemas_end_point_config_list_item = (
+            componentsschemas_end_point_config_list_item_data.to_dict()
+        )
+
+        json_json_body.append(componentsschemas_end_point_config_list_item)
 
     return {
         "method": "post",
@@ -28,18 +36,42 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[Any, ErrorResponse]]:
-    if response.status_code == HTTPStatus.NO_CONTENT:
-        response_204 = cast(Any, None)
-        return response_204
-    if response.status_code == HTTPStatus.NOT_FOUND:
-        response_404 = ErrorResponse.from_dict(response.json())
+) -> Optional[Union[ErrorResponse, List[Union["EndPoint", "ErrorObject"]]]]:
+    if response.status_code == HTTPStatus.CREATED:
+        response_201 = []
+        _response_201 = response.json()
+        for componentsschemas_connect_result_item_data in _response_201:
 
-        return response_404
-    if response.status_code == HTTPStatus.CONFLICT:
-        response_409 = ErrorResponse.from_dict(response.json())
+            def _parse_componentsschemas_connect_result_item(
+                data: object,
+            ) -> Union["EndPoint", "ErrorObject"]:
+                try:
+                    if not isinstance(data, dict):
+                        raise TypeError()
+                    componentsschemas_connect_result_item_type_0 = EndPoint.from_dict(
+                        data
+                    )
 
-        return response_409
+                    return componentsschemas_connect_result_item_type_0
+                except:  # noqa: E722
+                    pass
+                if not isinstance(data, dict):
+                    raise TypeError()
+                componentsschemas_connect_result_item_type_1 = ErrorObject.from_dict(
+                    data
+                )
+
+                return componentsschemas_connect_result_item_type_1
+
+            componentsschemas_connect_result_item = (
+                _parse_componentsschemas_connect_result_item(
+                    componentsschemas_connect_result_item_data
+                )
+            )
+
+            response_201.append(componentsschemas_connect_result_item)
+
+        return response_201
     if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
         response_500 = ErrorResponse.from_dict(response.json())
 
@@ -52,7 +84,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[Any, ErrorResponse]]:
+) -> Response[Union[ErrorResponse, List[Union["EndPoint", "ErrorObject"]]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -65,23 +97,22 @@ def sync_detailed(
     transport,
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: EndPointConfig,
+    json_body: List["EndPointConfig"],
     **kwargs,
-) -> Response[Union[Any, ErrorResponse]]:
+) -> Response[Union[ErrorResponse, List[Union["EndPoint", "ErrorObject"]]]]:
     """network connect
 
-     Connect a container to a network
+     Connect containers to networks from a list of configurations.
 
     Args:
-        json_body (EndPointConfig): Configuration of a connection between a network to a
-            container.
+        json_body (List['EndPointConfig']): List of endpoint configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Response[Union[ErrorResponse, List[Union['EndPoint', 'ErrorObject']]]]
     """
 
     kwargs.update(
@@ -99,22 +130,21 @@ def sync_detailed(
 def sync(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: EndPointConfig,
-) -> Optional[Union[Any, ErrorResponse]]:
+    json_body: List["EndPointConfig"],
+) -> Optional[Union[ErrorResponse, List[Union["EndPoint", "ErrorObject"]]]]:
     """network connect
 
-     Connect a container to a network
+     Connect containers to networks from a list of configurations.
 
     Args:
-        json_body (EndPointConfig): Configuration of a connection between a network to a
-            container.
+        json_body (List['EndPointConfig']): List of endpoint configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Any, ErrorResponse]
+        Union[ErrorResponse, List[Union['EndPoint', 'ErrorObject']]]
     """
 
     return sync_detailed(
@@ -126,22 +156,21 @@ def sync(
 async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: EndPointConfig,
-) -> Response[Union[Any, ErrorResponse]]:
+    json_body: List["EndPointConfig"],
+) -> Response[Union[ErrorResponse, List[Union["EndPoint", "ErrorObject"]]]]:
     """network connect
 
-     Connect a container to a network
+     Connect containers to networks from a list of configurations.
 
     Args:
-        json_body (EndPointConfig): Configuration of a connection between a network to a
-            container.
+        json_body (List['EndPointConfig']): List of endpoint configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[Any, ErrorResponse]]
+        Response[Union[ErrorResponse, List[Union['EndPoint', 'ErrorObject']]]]
     """
 
     kwargs = _get_kwargs(
@@ -156,22 +185,21 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: EndPointConfig,
-) -> Optional[Union[Any, ErrorResponse]]:
+    json_body: List["EndPointConfig"],
+) -> Optional[Union[ErrorResponse, List[Union["EndPoint", "ErrorObject"]]]]:
     """network connect
 
-     Connect a container to a network
+     Connect containers to networks from a list of configurations.
 
     Args:
-        json_body (EndPointConfig): Configuration of a connection between a network to a
-            container.
+        json_body (List['EndPointConfig']): List of endpoint configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[Any, ErrorResponse]
+        Union[ErrorResponse, List[Union['EndPoint', 'ErrorObject']]]
     """
 
     return (

@@ -1,24 +1,31 @@
 from http import HTTPStatus
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import httpx
 
 from ... import errors
 from ...client import AuthenticatedClient, Client
+from ...models.container import Container
 from ...models.container_config import ContainerConfig
+from ...models.error_object import ErrorObject
 from ...models.error_response import ErrorResponse
-from ...models.id_response import IdResponse
 from ...types import Response
 
 
 def _get_kwargs(
     *,
-    json_body: ContainerConfig,
+    json_body: List["ContainerConfig"],
 ) -> Dict[str, Any]:
 
     pass
 
-    json_json_body = json_body.to_dict()
+    json_json_body = []
+    for componentsschemas_container_config_list_item_data in json_body:
+        componentsschemas_container_config_list_item = (
+            componentsschemas_container_config_list_item_data.to_dict()
+        )
+
+        json_json_body.append(componentsschemas_container_config_list_item)
 
     return {
         "method": "post",
@@ -29,15 +36,42 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Optional[Union[ErrorResponse, IdResponse]]:
+) -> Optional[Union[ErrorResponse, List[Union["Container", "ErrorObject"]]]]:
     if response.status_code == HTTPStatus.CREATED:
-        response_201 = IdResponse.from_dict(response.json())
+        response_201 = []
+        _response_201 = response.json()
+        for componentsschemas_container_create_result_item_data in _response_201:
+
+            def _parse_componentsschemas_container_create_result_item(
+                data: object,
+            ) -> Union["Container", "ErrorObject"]:
+                try:
+                    if not isinstance(data, dict):
+                        raise TypeError()
+                    componentsschemas_container_create_result_item_type_0 = (
+                        Container.from_dict(data)
+                    )
+
+                    return componentsschemas_container_create_result_item_type_0
+                except:  # noqa: E722
+                    pass
+                if not isinstance(data, dict):
+                    raise TypeError()
+                componentsschemas_container_create_result_item_type_1 = (
+                    ErrorObject.from_dict(data)
+                )
+
+                return componentsschemas_container_create_result_item_type_1
+
+            componentsschemas_container_create_result_item = (
+                _parse_componentsschemas_container_create_result_item(
+                    componentsschemas_container_create_result_item_data
+                )
+            )
+
+            response_201.append(componentsschemas_container_create_result_item)
 
         return response_201
-    if response.status_code == HTTPStatus.NOT_FOUND:
-        response_404 = ErrorResponse.from_dict(response.json())
-
-        return response_404
     if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
         response_500 = ErrorResponse.from_dict(response.json())
 
@@ -50,7 +84,7 @@ def _parse_response(
 
 def _build_response(
     *, client: Union[AuthenticatedClient, Client], response: httpx.Response
-) -> Response[Union[ErrorResponse, IdResponse]]:
+) -> Response[Union[ErrorResponse, List[Union["Container", "ErrorObject"]]]]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -63,26 +97,27 @@ def sync_detailed(
     transport,
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ContainerConfig,
+    json_body: List["ContainerConfig"],
     **kwargs,
-) -> Response[Union[ErrorResponse, IdResponse]]:
+) -> Response[Union[ErrorResponse, List[Union["Container", "ErrorObject"]]]]:
     """container create
 
-     Create a container.
+     Create one or more containers from a list of configurations.
 
-    Note that it is not possible to set any of the properties in the request body to `null`.
-    This is only possible when updating containers using the
-    [Container.Update](#operation/Container.Update) endpoint.
+    Note that it is not possible to set any of the properties in the
+    request body to `null`. This is only possible when updating
+    containers using the [Container.Update](#operation/Container.Update)
+    endpoint.
 
     Args:
-        json_body (ContainerConfig):
+        json_body (List['ContainerConfig']): List of container configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Response[Union[ErrorResponse, List[Union['Container', 'ErrorObject']]]]
     """
 
     kwargs.update(
@@ -100,25 +135,26 @@ def sync_detailed(
 def sync(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ContainerConfig,
-) -> Optional[Union[ErrorResponse, IdResponse]]:
+    json_body: List["ContainerConfig"],
+) -> Optional[Union[ErrorResponse, List[Union["Container", "ErrorObject"]]]]:
     """container create
 
-     Create a container.
+     Create one or more containers from a list of configurations.
 
-    Note that it is not possible to set any of the properties in the request body to `null`.
-    This is only possible when updating containers using the
-    [Container.Update](#operation/Container.Update) endpoint.
+    Note that it is not possible to set any of the properties in the
+    request body to `null`. This is only possible when updating
+    containers using the [Container.Update](#operation/Container.Update)
+    endpoint.
 
     Args:
-        json_body (ContainerConfig):
+        json_body (List['ContainerConfig']): List of container configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        Union[ErrorResponse, List[Union['Container', 'ErrorObject']]]
     """
 
     return sync_detailed(
@@ -130,25 +166,26 @@ def sync(
 async def asyncio_detailed(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ContainerConfig,
-) -> Response[Union[ErrorResponse, IdResponse]]:
+    json_body: List["ContainerConfig"],
+) -> Response[Union[ErrorResponse, List[Union["Container", "ErrorObject"]]]]:
     """container create
 
-     Create a container.
+     Create one or more containers from a list of configurations.
 
-    Note that it is not possible to set any of the properties in the request body to `null`.
-    This is only possible when updating containers using the
-    [Container.Update](#operation/Container.Update) endpoint.
+    Note that it is not possible to set any of the properties in the
+    request body to `null`. This is only possible when updating
+    containers using the [Container.Update](#operation/Container.Update)
+    endpoint.
 
     Args:
-        json_body (ContainerConfig):
+        json_body (List['ContainerConfig']): List of container configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Union[ErrorResponse, IdResponse]]
+        Response[Union[ErrorResponse, List[Union['Container', 'ErrorObject']]]]
     """
 
     kwargs = _get_kwargs(
@@ -163,25 +200,26 @@ async def asyncio_detailed(
 async def asyncio(
     *,
     client: Union[AuthenticatedClient, Client],
-    json_body: ContainerConfig,
-) -> Optional[Union[ErrorResponse, IdResponse]]:
+    json_body: List["ContainerConfig"],
+) -> Optional[Union[ErrorResponse, List[Union["Container", "ErrorObject"]]]]:
     """container create
 
-     Create a container.
+     Create one or more containers from a list of configurations.
 
-    Note that it is not possible to set any of the properties in the request body to `null`.
-    This is only possible when updating containers using the
-    [Container.Update](#operation/Container.Update) endpoint.
+    Note that it is not possible to set any of the properties in the
+    request body to `null`. This is only possible when updating
+    containers using the [Container.Update](#operation/Container.Update)
+    endpoint.
 
     Args:
-        json_body (ContainerConfig):
+        json_body (List['ContainerConfig']): List of container configurations.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Union[ErrorResponse, IdResponse]
+        Union[ErrorResponse, List[Union['Container', 'ErrorObject']]]
     """
 
     return (

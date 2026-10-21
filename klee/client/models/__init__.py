@@ -9,8 +9,16 @@ from .container_network_driver import ContainerNetworkDriver
 from .container_restart_policy import ContainerRestartPolicy
 from .container_summary import ContainerSummary
 from .deployment_config import DeploymentConfig
+from .deployment_service_config import DeploymentServiceConfig
+from .deployment_service_config_network_driver import (
+    DeploymentServiceConfigNetworkDriver,
+)
+from .deployment_service_config_restart_policy import (
+    DeploymentServiceConfigRestartPolicy,
+)
 from .end_point import EndPoint
 from .end_point_config import EndPointConfig
+from .error_object import ErrorObject
 from .error_response import ErrorResponse
 from .exec_config import ExecConfig
 from .exec_start_config import ExecStartConfig
@@ -49,8 +57,12 @@ __all__ = (
     "ContainerRestartPolicy",
     "ContainerSummary",
     "DeploymentConfig",
+    "DeploymentServiceConfig",
+    "DeploymentServiceConfigNetworkDriver",
+    "DeploymentServiceConfigRestartPolicy",
     "EndPoint",
     "EndPointConfig",
+    "ErrorObject",
     "ErrorResponse",
     "ExecConfig",
     "ExecStartConfig",
