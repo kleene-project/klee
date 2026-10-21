@@ -130,6 +130,18 @@ def print_response_id(response):
     echo_bold(response.parsed.id)
 
 
+def print_create_results(response, id_key="id"):
+    """Print per-item create results: bold id/name per item, errors in red.
+
+    Used by the batch create endpoints that return a result array with either
+    a full object or an {error: ...} object per item."""
+    for item in json.loads(response.content):
+        if "error" in item:
+            echo_error(item["error"])
+        else:
+            echo_bold(item[id_key])
+
+
 def print_response_msg(response):
     echo_bold(response.parsed.message)
 

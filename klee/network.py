@@ -1,4 +1,5 @@
 import click
+import json
 
 from .client.api.default.network_create import sync_detailed as network_create_endpoint
 from .client.api.default.network_connect import (
@@ -25,6 +26,8 @@ from .printing import (
     print_response_msg,
     print_backend_error,
     print_nothing,
+    print_create_results,
+    echo_error,
 )
 from .prune import prune_command
 from .inspect import inspect_command
@@ -135,10 +138,9 @@ def network_create(name, hidden=False):
 
         request_and_print_response(
             network_create_endpoint,
-            kwargs={"json_body": network_config},
+            kwargs={"json_body": [network_config]},
             statuscode2printer={
-                201: print_response_id,
-                409: print_response_msg,
+                201: print_create_results,
                 500: print_backend_error,
             },
         )
@@ -275,14 +277,19 @@ def _connect(ip, ip6, network, container):
 
     return request_and_print_response(
         network_connect_endpoint,
-        kwargs={"json_body": endpoint_config},
+        kwargs={"json_body": [endpoint_config]},
         statuscode2printer={
-            204: print_nothing,
-            404: print_response_msg,
-            409: print_response_msg,
+            201: _print_connect_results,
             500: print_backend_error,
         },
     )
+
+
+def _print_connect_results(response):
+    """Print per-item connect results: errors in red, successes silent (as before)."""
+    for item in json.loads(response.content):
+        if "error" in item:
+            echo_error(item["error"])
 
 
 root.add_command(network_create("create"), name="create")

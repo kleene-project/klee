@@ -12,21 +12,18 @@ from .client.models.container_config import ContainerConfig
 from .client.api.default.deployment_diff import (
     sync_detailed as deployment_diff_endpoint,
 )
-from .client.api.default.deployment_create_containers import (
-    sync_detailed as deployment_create_containers_endpoint,
-)
-from .client.api.default.deployment_create_networks import (
-    sync_detailed as deployment_create_networks_endpoint,
-)
-from .client.api.default.deployment_create_volumes import (
-    sync_detailed as deployment_create_volumes_endpoint,
-)
+from .client.api.default.container_create import sync_detailed as container_create_endpoint
 from .client.api.default.container_list import (
     sync_detailed as container_list_endpoint,
+)
+from .client.api.default.network_create import sync_detailed as network_create_endpoint
+from .client.api.default.network_connect import (
+    sync_detailed as network_connect_endpoint,
 )
 from .client.api.default.network_list import (
     sync_detailed as network_list_endpoint,
 )
+from .client.api.default.volume_create import sync_detailed as volume_create_endpoint
 from .client.api.default.volume_list import (
     sync_detailed as volume_list_endpoint,
 )
@@ -42,6 +39,8 @@ from .printing import (
     unexpected_error,
     print_bulkbuild_messages,
     connection_closed_unexpectedly,
+    print_nothing,
+    print_backend_error,
 )
 from .utils import request_and_print_response, listen_for_messages
 from .container import stop_containers, start_containers, remove_container_list
@@ -122,15 +121,15 @@ def deploy_create(name, hidden=False):
             return
 
         # Create containers
-        request_and_print_response(
-            deployment_create_containers_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_containers,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
+        containers_ok = _create_batch(
+            container_create_endpoint,
+            [c.to_dict() for c in deployment_config.containers or []],
+            print_created_container,
         )
+        if not containers_ok:
+            return
+
+        _connect_deployment_endpoints(deployment_config)
 
     return create
 
@@ -254,26 +253,66 @@ def deploy_start(name, hidden=False):
     return start
 
 
-def print_created_containers(response):
-    containers = json.loads(response.content)
-    for container in containers:
-        name = container["name"]
-        container_id = container["id"]
-        echo(f"created container '{name}': {container_id}")
+def print_created_container(item):
+    echo(f"created container '{item['name']}': {item['id']}")
 
 
-def print_created_networks(response):
-    networks = json.loads(response.content)
-    for network in networks:
-        name = network["name"]
-        echo(f"created network '{name}'")
+def print_created_network(item):
+    echo(f"created network '{item['name']}'")
 
 
-def print_created_volumes(response):
-    volumes = json.loads(response.content)
-    for volume in volumes:
-        name = volume["name"]
-        echo(f"created volume '{name}'")
+def print_created_volume(item):
+    echo(f"created volume '{item['name']}'")
+
+
+def _create_batch(endpoint, items, print_item):
+    """POST an array of configs; print per-item results; True when every item succeeded."""
+    if not items:
+        return True
+
+    response = request_and_print_response(
+        endpoint,
+        kwargs={"json_body": items},
+        statuscode2printer={
+            201: print_nothing,
+            500: print_backend_error,
+        },
+    )
+    if response is None or response.status_code != 201:
+        return False
+
+    all_ok = True
+    for item in json.loads(response.content):
+        if "error" in item:
+            echo_error(item["error"])
+            all_ok = False
+        else:
+            print_item(item)
+    return all_ok
+
+
+def _connect_deployment_endpoints(deployment_config):
+    """Connect the deployment's containers to their networks via /networks/connect."""
+    endpoint_configs = []
+    for container in deployment_config.containers or []:
+        for endpoint in getattr(container, "endpoints", None) or []:
+            endpoint_configs.append(
+                {
+                    "container": container.name,
+                    "network": endpoint.network,
+                    "ip_address": endpoint.ip_address or "<auto>",
+                    "ip_address6": endpoint.ip_address6 or "<auto>",
+                }
+            )
+
+    if not endpoint_configs:
+        return True
+
+    return _create_batch(
+        network_connect_endpoint,
+        endpoint_configs,
+        lambda item: None,
+    )
 
 
 def deploy_diff(name, hidden=False):
@@ -324,28 +363,19 @@ def deploy_diff(name, hidden=False):
 
 def _create_networks_and_volumes(deployment_config):
     """Create the deployment's networks and volumes; False on failure."""
-    response = request_and_print_response(
-        deployment_create_networks_endpoint,
-        kwargs={"json_body": deployment_config},
-        statuscode2printer={
-            201: print_created_networks,
-            409: print_response_msg,
-            404: print_response_msg,
-        },
+    networks_ok = _create_batch(
+        network_create_endpoint,
+        [n.to_dict() for n in deployment_config.networks or []],
+        print_created_network,
     )
-    if response is None or response.status_code != 201:
+    if not networks_ok:
         return False
 
-    response = request_and_print_response(
-        deployment_create_volumes_endpoint,
-        kwargs={"json_body": deployment_config},
-        statuscode2printer={
-            201: print_created_volumes,
-            409: print_response_msg,
-            404: print_response_msg,
-        },
+    return _create_batch(
+        volume_create_endpoint,
+        [v.to_dict() for v in deployment_config.volumes or []],
+        print_created_volume,
     )
-    return response is not None and response.status_code == 201
 
 
 def deploy_up(name, hidden=False):
@@ -379,16 +409,15 @@ def deploy_up(name, hidden=False):
         if kwargs["build"]:
             asyncio.run(_build_images_and_listen_for_messages(deployment_config))
 
-        response = request_and_print_response(
-            deployment_create_containers_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_containers,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
+        containers_ok = _create_batch(
+            container_create_endpoint,
+            [c.to_dict() for c in deployment_config.containers or []],
+            print_created_container,
         )
-        if response is None or response.status_code != 201:
+        if not containers_ok:
+            return
+
+        if not _connect_deployment_endpoints(deployment_config):
             return
 
         containers = [c.name for c in deployment_config.containers or []]

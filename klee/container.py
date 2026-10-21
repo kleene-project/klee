@@ -40,6 +40,7 @@ from .printing import (
     print_response_msg,
     print_backend_error,
     print_nothing,
+    print_create_results,
     print_websocket_closing,
     print_image_column,
     is_running_str,
@@ -491,20 +492,22 @@ def _create_container_and_connect_to_network(**kwargs):
     # Create container
     response = request_and_print_response(
         container_create_endpoint,
-        kwargs={"json_body": container_config},
+        kwargs={"json_body": [container_config]},
         statuscode2printer={
-            201: print_response_id,
-            404: print_nothing,
+            201: print_create_results,
             500: print_nothing,
         },
     )
 
     if response is None or response.status_code != 201:
-        if response is not None:
-            echo_error(f"could not create container: {response.parsed.message}")
-            sys.exit(1)
+        sys.exit(1)
 
-    container_id = response.parsed.id
+    result = json.loads(response.content)[0]
+    if "error" in result:
+        echo_error(f"could not create container: {result['error']}")
+        sys.exit(1)
+
+    container_id = result["id"]
 
     if kwargs["network"] is None:
         return container_id
@@ -517,8 +520,13 @@ def _create_container_and_connect_to_network(**kwargs):
         "container": container_id,
     }
     response = _connect(**kwargs_connect)
-    if response is None or response.status_code != 204:
-        echo_error(f"could not connect container: {response.parsed.message}")
+    if response is None or response.status_code != 201:
+        echo_error("could not connect container")
+        sys.exit(1)
+
+    connect_result = json.loads(response.content)[0]
+    if "error" in connect_result:
+        echo_error(f"could not connect container: {connect_result['error']}")
         sys.exit(1)
 
     return container_id

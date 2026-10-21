@@ -14,6 +14,7 @@ from .printing import (
     print_response_id,
     print_response_msg,
     print_backend_error,
+    print_create_results,
 )
 from .prune import prune_command
 from .inspect import inspect_command
@@ -38,8 +39,11 @@ def volume_create(name, hidden=False):
         config = VolumeConfig.from_dict({"name": volume_name})
         request_and_print_response(
             volume_create_endpoint,
-            kwargs={"json_body": config},
-            statuscode2printer={201: print_response_id, 500: print_backend_error},
+            kwargs={"json_body": [config]},
+            statuscode2printer={
+                201: lambda response: print_create_results(response, id_key="name"),
+                500: print_backend_error,
+            },
         )
 
     return create
