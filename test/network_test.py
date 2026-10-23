@@ -88,6 +88,14 @@ class TestNetworkSubcommand:
         run("network rm testnet")
         assert network["network"]["internal"]
 
+    def test_create_network_with_invalid_subnet(self, testimage):
+        output = run(
+            "network create --type bridge --subnet 172.18.0.0-16 test_bad_subnet",
+        )
+        assert output[0] == (
+            'invalid subnet: could not parse cidr block: "172.18.0.0-16"'
+        )
+
     def test_create_container_using_nonexisting_network(self, testimage):
         output = run(
             "container create --name invalid_network --network nonexisting FreeBSD /bin/ls",

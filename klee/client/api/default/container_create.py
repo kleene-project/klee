@@ -38,6 +38,10 @@ def _parse_response(
         response_404 = ErrorResponse.from_dict(response.json())
 
         return response_404
+    if response.status_code == HTTPStatus.CONFLICT:
+        response_409 = ErrorResponse.from_dict(response.json())
+
+        return response_409
     if response.status_code == HTTPStatus.INTERNAL_SERVER_ERROR:
         response_500 = ErrorResponse.from_dict(response.json())
 
@@ -91,8 +95,8 @@ def sync_detailed(
         )
     )
 
-    client = httpx.Client(base_url=client._base_url, transport=transport)
-    response = client.request(**kwargs)
+    httpx_client = httpx.Client(base_url=client._base_url, transport=transport)
+    response = httpx_client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

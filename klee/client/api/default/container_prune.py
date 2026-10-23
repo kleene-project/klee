@@ -64,8 +64,8 @@ def sync_detailed(
 
     kwargs.update(_get_kwargs())
 
-    client = httpx.Client(base_url=client._base_url, transport=transport)
-    response = client.request(**kwargs)
+    httpx_client = httpx.Client(base_url=client._base_url, transport=transport)
+    response = httpx_client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

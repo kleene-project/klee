@@ -34,6 +34,10 @@ def _parse_response(
         response_201 = IdResponse.from_dict(response.json())
 
         return response_201
+    if response.status_code == HTTPStatus.BAD_REQUEST:
+        response_400 = ErrorResponse.from_dict(response.json())
+
+        return response_400
     if response.status_code == HTTPStatus.CONFLICT:
         response_409 = ErrorResponse.from_dict(response.json())
 
@@ -87,8 +91,8 @@ def sync_detailed(
         )
     )
 
-    client = httpx.Client(base_url=client._base_url, transport=transport)
-    response = client.request(**kwargs)
+    httpx_client = httpx.Client(base_url=client._base_url, transport=transport)
+    response = httpx_client.request(**kwargs)
 
     return _build_response(client=client, response=response)
 

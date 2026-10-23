@@ -495,6 +495,7 @@ def _create_container_and_connect_to_network(**kwargs):
         statuscode2printer={
             201: print_response_id,
             404: print_nothing,
+            409: print_nothing,
             500: print_nothing,
         },
     )
