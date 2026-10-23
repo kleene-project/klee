@@ -138,6 +138,7 @@ def network_create(name, hidden=False):
             kwargs={"json_body": network_config},
             statuscode2printer={
                 201: print_response_id,
+                400: print_response_msg,
                 409: print_response_msg,
                 500: print_backend_error,
             },

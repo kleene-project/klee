@@ -219,6 +219,11 @@ class TestContainerCore:
     def test_create_container_from_non_existing_image(self, testimage_and_cleanup):
         run("container create --name willfail FreeLOL", exit_code=1)
 
+    def test_create_container_with_taken_name(self, testimage_and_cleanup):
+        create_container(name="dup_name")
+        output = run("container create --name dup_name FreeBSD", exit_code=1)
+        assert output[0] == "could not create container: container name is already taken"
+
 
 class TestContainerRunning:
 
