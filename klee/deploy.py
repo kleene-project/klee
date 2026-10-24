@@ -12,14 +12,17 @@ from .client.models.container_config import ContainerConfig
 from .client.api.default.deployment_diff import (
     sync_detailed as deployment_diff_endpoint,
 )
-from .client.api.default.deployment_create_containers import (
-    sync_detailed as deployment_create_containers_endpoint,
+from .client.api.default.container_create import (
+    sync_detailed as container_create_endpoint,
 )
-from .client.api.default.deployment_create_networks import (
-    sync_detailed as deployment_create_networks_endpoint,
+from .client.api.default.network_connect import (
+    sync_detailed as network_connect_endpoint,
 )
-from .client.api.default.deployment_create_volumes import (
-    sync_detailed as deployment_create_volumes_endpoint,
+from .client.api.default.network_create import (
+    sync_detailed as network_create_endpoint,
+)
+from .client.api.default.volume_create import (
+    sync_detailed as volume_create_endpoint,
 )
 from .client.api.default.container_list import (
     sync_detailed as container_list_endpoint,
@@ -39,6 +42,8 @@ from .printing import (
     command_cls,
     print_response_msg,
     print_json_raw,
+    print_nothing,
+    print_backend_error,
     unexpected_error,
     print_bulkbuild_messages,
     connection_closed_unexpectedly,
@@ -82,7 +87,9 @@ def deploy_build(name, hidden=False):
         """Build all images defined in the deployment file."""
 
         deployment_config = _load_deployment_spec(kwargs["file"])
-        if not _create_networks_and_volumes(deployment_config):
+        if not _create_deployment_networks(deployment_config):
+            return
+        if not _create_deployment_volumes(deployment_config):
             return
 
         asyncio.run(_build_images_and_listen_for_messages(deployment_config))
@@ -118,19 +125,12 @@ def deploy_create(name, hidden=False):
     def create(**kwargs):
         """Create the networks, volumes and containers defined in a deployment file."""
         deployment_config = _load_deployment_spec(kwargs["file"])
-        if not _create_networks_and_volumes(deployment_config):
+        if not _create_deployment_networks(deployment_config):
+            return
+        if not _create_deployment_volumes(deployment_config):
             return
 
-        # Create containers
-        request_and_print_response(
-            deployment_create_containers_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_containers,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
-        )
+        _create_deployment_containers(deployment_config)
 
     return create
 
@@ -254,28 +254,6 @@ def deploy_start(name, hidden=False):
     return start
 
 
-def print_created_containers(response):
-    containers = json.loads(response.content)
-    for container in containers:
-        name = container["name"]
-        container_id = container["id"]
-        echo(f"created container '{name}': {container_id}")
-
-
-def print_created_networks(response):
-    networks = json.loads(response.content)
-    for network in networks:
-        name = network["name"]
-        echo(f"created network '{name}'")
-
-
-def print_created_volumes(response):
-    volumes = json.loads(response.content)
-    for volume in volumes:
-        name = volume["name"]
-        echo(f"created volume '{name}'")
-
-
 def deploy_diff(name, hidden=False):
 
     @click.command(
@@ -322,30 +300,117 @@ def deploy_diff(name, hidden=False):
     return diff
 
 
-def _create_networks_and_volumes(deployment_config):
-    """Create the deployment's networks and volumes; False on failure."""
-    response = request_and_print_response(
-        deployment_create_networks_endpoint,
-        kwargs={"json_body": deployment_config},
-        statuscode2printer={
-            201: print_created_networks,
-            409: print_response_msg,
-            404: print_response_msg,
-        },
-    )
-    if response is None or response.status_code != 201:
-        return False
+def _create_deployment_networks(deployment_config):
+    """Create each deployment network via /networks/create.
 
-    response = request_and_print_response(
-        deployment_create_volumes_endpoint,
-        kwargs={"json_body": deployment_config},
-        statuscode2printer={
-            201: print_created_volumes,
-            409: print_response_msg,
-            404: print_response_msg,
-        },
-    )
-    return response is not None and response.status_code == 201
+    A 409 means the name is taken (the network exists from an earlier
+    deployment run) and is skipped; any other status fails the deployment.
+    """
+    for network in deployment_config.networks or []:
+        response = request_and_print_response(
+            network_create_endpoint,
+            kwargs={"json_body": network},
+            statuscode2printer={
+                201: print_nothing,
+                400: print_response_msg,
+                409: print_nothing,
+                500: print_backend_error,
+            },
+        )
+        if response is None or response.status_code not in (201, 409):
+            return False
+
+        if response.status_code == 201:
+            echo(f"created network '{network.name}'")
+
+    return True
+
+
+def _create_deployment_volumes(deployment_config):
+    """Create each deployment volume via /volumes/create.
+
+    The endpoint returns the existing volume for a taken name, but the
+    deployment flow must stay silent for already-present volumes, so
+    existing names are skipped client-side.
+    """
+    existing = {volume.name for volume in list_volumes()}
+
+    for volume in deployment_config.volumes or []:
+        if volume.name in existing:
+            continue
+
+        response = request_and_print_response(
+            volume_create_endpoint,
+            kwargs={"json_body": volume},
+            statuscode2printer={201: print_nothing, 500: print_backend_error},
+        )
+        if response is None or response.status_code != 201:
+            return False
+
+        echo(f"created volume '{volume.name}'")
+
+    return True
+
+
+def _create_deployment_containers(deployment_config):
+    """Create each deployment container via /containers/create and connect
+    its endpoints via /networks/connect; False on failure.
+
+    A 409 means the container name is taken (the container exists from an
+    earlier deployment run) and is skipped without connecting it again.
+    """
+    for container in deployment_config.containers or []:
+        response = request_and_print_response(
+            container_create_endpoint,
+            kwargs={"json_body": container},
+            statuscode2printer={
+                201: print_nothing,
+                404: print_nothing,
+                409: print_nothing,
+                500: print_nothing,
+            },
+        )
+        if response is None or response.status_code not in (201, 409):
+            if response is not None:
+                echo_error(
+                    f"could not create container '{container.name}': {response.parsed.message}"
+                )
+            return False
+
+        if response.status_code == 409:
+            continue
+
+        container_id = response.parsed.id
+        echo(f"created container '{container.name}': {container_id}")
+
+        if not _connect_container_endpoints(container):
+            return False
+
+    return True
+
+
+def _connect_container_endpoints(container):
+    """Connect a deployment container to the networks in its endpoints."""
+    for endpoint in container.endpoints or []:
+        response = request_and_print_response(
+            network_connect_endpoint,
+            kwargs={"json_body": endpoint},
+            statuscode2printer={
+                204: print_nothing,
+                404: print_response_msg,
+                409: print_response_msg,
+                500: print_backend_error,
+            },
+        )
+        if response is None or response.status_code != 204:
+            if response is not None:
+                echo_error(
+                    f"could not connect container '{container.name}' "
+                    f"to network '{endpoint.network}': {response.parsed.message}"
+                )
+            return False
+
+    return True
 
 
 def deploy_up(name, hidden=False):
@@ -373,22 +438,15 @@ def deploy_up(name, hidden=False):
     def up(**kwargs):
         """Create all objects in the deployment file and start its containers."""
         deployment_config = _load_deployment_spec(kwargs["file"])
-        if not _create_networks_and_volumes(deployment_config):
+        if not _create_deployment_networks(deployment_config):
+            return
+        if not _create_deployment_volumes(deployment_config):
             return
 
         if kwargs["build"]:
             asyncio.run(_build_images_and_listen_for_messages(deployment_config))
 
-        response = request_and_print_response(
-            deployment_create_containers_endpoint,
-            kwargs={"json_body": deployment_config},
-            statuscode2printer={
-                201: print_created_containers,
-                409: print_response_msg,
-                404: print_response_msg,
-            },
-        )
-        if response is None or response.status_code != 201:
+        if not _create_deployment_containers(deployment_config):
             return
 
         containers = [c.name for c in deployment_config.containers or []]

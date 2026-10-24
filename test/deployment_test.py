@@ -298,7 +298,10 @@ containers:
 """
         )
         output = run("deploy create")
-        assert output[0] == "no such image 'FreeBSD:latest'"
+        assert (
+            output[0]
+            == "could not create container 'testcon1': no such image 'FreeBSD:latest'"
+        )
 
     def test_create_and_remove_a_network(self, cleanup_all):
         create_deployment_file(
