@@ -474,8 +474,7 @@ def deploy_up(name, hidden=False):
             asyncio.run(_build_images_and_listen_for_messages(deployment_config))
 
         if kwargs["force_recreate"]:
-            if not _recreate_deployment_containers(deployment_config):
-                return
+            _recreate_deployment_containers(deployment_config)
 
         if not _create_deployment_containers(deployment_config):
             return
