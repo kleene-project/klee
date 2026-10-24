@@ -463,6 +463,64 @@ containers:
         run("deploy down")
         assert listing_ids(run("container ls -a")) == []
 
+    def test_deploy_up_force_recreate(self, cleanup_all):
+        create_deployment_file(
+            """
+---
+images:
+  - tag: "FreeBSD:latest"
+    method: "zfs-clone"
+    zfs_dataset: "zroot/kleene_basejail"
+
+containers:
+ - name: "recreate-me"
+   image: "FreeBSD:latest"
+   cmd: ["/bin/sleep", "100"]
+"""
+        )
+        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
+        output = run("deploy up")
+        assert output[0].startswith("created container 'recreate-me'")
+        old_id = output[0].split(": ")[1]
+        assert _is_running(old_id)
+
+        # force-recreate replaces the running container with a new one
+        output = run("deploy up --force-recreate")
+        assert any(
+            line.startswith("recreating container 'recreate-me'") for line in output
+        )
+        assert any(line.startswith("created container 'recreate-me'") for line in output)
+        new_id = [l for l in output if l.startswith("created container")][0].split(": ")[1]
+        assert new_id != old_id
+        # The old container is gone (assert via the API; jls lags teardown):
+        assert all(old_id not in l for l in run("container ls -a"))
+        assert _is_running(new_id)
+
+        # Leave nothing running behind (matches the other lifecycle tests):
+        run("deploy down")
+        assert listing_ids(run("container ls -a")) == []
+
+    def test_deploy_up_recreate_flags_are_mutually_exclusive(self, cleanup_all):
+        create_deployment_file(
+            """
+---
+images:
+  - tag: "FreeBSD:latest"
+    method: "zfs-clone"
+    zfs_dataset: "zroot/kleene_basejail"
+
+containers:
+ - name: "bothflags"
+   image: "FreeBSD:latest"
+   cmd: ["/bin/sleep", "100"]
+"""
+        )
+        run("image create -t FreeBSD:latest zfs-clone zroot/kleene_basejail")
+        output = run("deploy up --force-recreate --no-recreate", exit_code=2)
+        assert any("cannot be used together" in line for line in output)
+        # Nothing was created:
+        assert listing_ids(run("container ls -a")) == []
+
     def test_deploy_prune_removes_objects_outside_the_deployment(self, cleanup_all):
         create_deployment_file(
             """
