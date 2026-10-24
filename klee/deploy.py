@@ -352,6 +352,19 @@ def _create_deployment_volumes(deployment_config):
     return True
 
 
+def _recreate_deployment_containers(deployment_config):
+    """Stop and remove every container named in the deployment file so the
+    subsequent create rebuilds them from scratch; False on failure.
+
+    Containers that do not exist are tolerated (they are simply created by
+    the create step afterwards).
+    """
+    for container in deployment_config.containers or []:
+        echo(f"recreating container '{container.name}'")
+        remove_container_list([container.name], force=True, exit_on_failure=False)
+    return True
+
+
 def _create_deployment_containers(deployment_config):
     """Create each deployment container via /containers/create and connect
     its endpoints via /networks/connect; False on failure.
@@ -435,9 +448,23 @@ def deploy_up(name, hidden=False):
         show_default=True,
         help="Build images before starting containers",
     )
+    @click.option(
+        "--force-recreate",
+        default=False,
+        is_flag=True,
+        help="Recreate all containers in the deployment file, even if they already exist",
+    )
+    @click.option(
+        "--no-recreate",
+        default=False,
+        is_flag=True,
+        help="Never recreate existing containers, even if their configuration has changed",
+    )
     def up(**kwargs):
         """Create all objects in the deployment file and start its containers."""
         deployment_config = _load_deployment_spec(kwargs["file"])
+        if kwargs["force_recreate"] and kwargs["no_recreate"]:
+            raise click.UsageError("--force-recreate and --no-recreate cannot be used together")
         if not _create_deployment_networks(deployment_config):
             return
         if not _create_deployment_volumes(deployment_config):
@@ -445,6 +472,9 @@ def deploy_up(name, hidden=False):
 
         if kwargs["build"]:
             asyncio.run(_build_images_and_listen_for_messages(deployment_config))
+
+        if kwargs["force_recreate"]:
+            _recreate_deployment_containers(deployment_config)
 
         if not _create_deployment_containers(deployment_config):
             return
