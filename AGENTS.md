@@ -1,6 +1,6 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for AI coding agents (Claude Code, Codex, OpenCode, Crush, Hermes, …) working in this repository.
 
 ## What this is
 
@@ -8,7 +8,7 @@ Klee is the Python CLI for **Kleene**, a FreeBSD container manager. It is a Clic
 `kleened` daemon over HTTP (Unix socket by default: `http:///var/run/kleened.sock`) and WebSockets.
 
 This repo is normally checked out as a subdirectory of the `kleene_dev` environment repo and shared into a
-FreeBSD VM at `/vagrant/klee` (see the parent `CLAUDE.md`). Anything that touches jails, ZFS or a running
+FreeBSD VM at `/vagrant/klee` (see the parent `AGENTS.md`). Anything that touches jails, ZFS or a running
 kleened must run inside that VM; editing, linting and the unit tier work fine on the host.
 
 ## Commands
