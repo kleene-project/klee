@@ -87,7 +87,9 @@ def deploy_build(name, hidden=False):
         """Build all images defined in the deployment file."""
 
         deployment_config = _load_deployment_spec(kwargs["file"])
-        if not _create_networks_and_volumes(deployment_config):
+        if not _create_deployment_networks(deployment_config):
+            return
+        if not _create_deployment_volumes(deployment_config):
             return
 
         asyncio.run(_build_images_and_listen_for_messages(deployment_config))
@@ -123,7 +125,9 @@ def deploy_create(name, hidden=False):
     def create(**kwargs):
         """Create the networks, volumes and containers defined in a deployment file."""
         deployment_config = _load_deployment_spec(kwargs["file"])
-        if not _create_networks_and_volumes(deployment_config):
+        if not _create_deployment_networks(deployment_config):
+            return
+        if not _create_deployment_volumes(deployment_config):
             return
 
         _create_deployment_containers(deployment_config)
@@ -296,13 +300,6 @@ def deploy_diff(name, hidden=False):
     return diff
 
 
-def _create_networks_and_volumes(deployment_config):
-    """Create the deployment's networks and volumes; False on failure."""
-    return _create_deployment_networks(deployment_config) and _create_deployment_volumes(
-        deployment_config
-    )
-
-
 def _create_deployment_networks(deployment_config):
     """Create each deployment network via /networks/create.
 
@@ -441,7 +438,9 @@ def deploy_up(name, hidden=False):
     def up(**kwargs):
         """Create all objects in the deployment file and start its containers."""
         deployment_config = _load_deployment_spec(kwargs["file"])
-        if not _create_networks_and_volumes(deployment_config):
+        if not _create_deployment_networks(deployment_config):
+            return
+        if not _create_deployment_volumes(deployment_config):
             return
 
         if kwargs["build"]:
