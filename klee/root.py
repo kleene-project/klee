@@ -47,6 +47,7 @@ def create_cli():
         root as image_root,
         image_list,
         image_build,
+        image_import,
         image_remove,
         image_inspect,
     )

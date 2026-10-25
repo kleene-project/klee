@@ -20,6 +20,8 @@ from .image_build_config import ImageBuildConfig
 from .image_build_config_buildargs import ImageBuildConfigBuildargs
 from .image_create_config import ImageCreateConfig
 from .image_create_config_method import ImageCreateConfigMethod
+from .image_import_config import ImageImportConfig
+from .image_labels import ImageLabels
 from .mount_point import MountPoint
 from .mount_point_config import MountPointConfig
 from .mount_point_config_type import MountPointConfigType
@@ -60,6 +62,8 @@ __all__ = (
     "ImageBuildConfigBuildargs",
     "ImageCreateConfig",
     "ImageCreateConfigMethod",
+    "ImageImportConfig",
+    "ImageLabels",
     "MountPoint",
     "MountPointConfig",
     "MountPointConfigType",

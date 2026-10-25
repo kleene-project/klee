@@ -1,5 +1,5 @@
 # Provenance of klee/client/, which is generated code -- do not edit it by hand.
 # Written by 'make update-klee-openapi'; checked by 'tools/ws.sh check-client'.
-kleened_commit=ffbba5fab0898fafc1b866b36f10f8499b862003
-spec_sha256=ca76fdab8a44cb2634a438f5d9ccc1bc01bc03c83731994e48f773147eeace62
+kleened_commit=125e77b0bc602ab01bb1c54ea7dcf2d5cd68da50
+spec_sha256=5c5e4697c12ae1d3eb6b4c787912b6667a672d4e1dfd2da23c83f9d331e2e5b3
 generator=openapi-python-client version: 0.15.2
