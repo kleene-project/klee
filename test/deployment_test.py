@@ -365,6 +365,41 @@ volumes:
         output = run("deploy create")
         assert output[0] == ""
 
+    def test_deploy_create_with_build(self, cleanup_all):
+        create_deployment_file(
+            """
+---
+images:
+  - tag: "bsdtest"
+    method: "zfs-clone"
+    zfs_dataset: "zroot/kleene_basejail"
+
+  - tag: "bsdtest2"
+    context: "bsdtest2"
+
+containers:
+ - name: "buildcon"
+   image: "bsdtest2"
+   cmd: ["/bin/sleep", "100"]
+"""
+        )
+        create_dockerfile(
+            ["RUN echo lol > /root/test.txt", "CMD /bin/sleep 100"],
+            parent="bsdtest",
+            path="bsdtest2",
+        )
+
+        output = run("deploy create --build")
+        assert output[0] == "Start building images.."
+        assert "Succesfully built images." in output
+        assert any(line.startswith("created container 'buildcon'") for line in output)
+
+        # Without --build the images are not built, so the create step fails:
+        run("deploy down")
+        run("rmi bsdtest2")
+        output = run("deploy create")
+        assert any("could not create container 'buildcon'" in line for line in output)
+
     def test_create_and_remove_a_container_with_volume_and_network(self, cleanup_all):
         create_deployment_file(
             """

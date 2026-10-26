@@ -122,6 +122,13 @@ def deploy_create(name, hidden=False):
         show_default=True,
         help="Specify the deployment file to use.",
     )
+    @click.option(
+        "--build",
+        default=False,
+        is_flag=True,
+        show_default=True,
+        help="Build images before creating containers",
+    )
     def create(**kwargs):
         """Create the networks, volumes and containers defined in a deployment file."""
         deployment_config = _load_deployment_spec(kwargs["file"])
@@ -129,6 +136,9 @@ def deploy_create(name, hidden=False):
             return
         if not _create_deployment_volumes(deployment_config):
             return
+
+        if kwargs["build"]:
+            asyncio.run(_build_images_and_listen_for_messages(deployment_config))
 
         _create_deployment_containers(deployment_config)
 
