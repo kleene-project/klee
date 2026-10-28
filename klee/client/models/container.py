@@ -47,6 +47,8 @@ class Container:
              Default: ContainerRestartPolicy.NO. Example: on-startup.
         running (Union[Unset, bool]): whether or not the container is running
         user (Union[Unset, str]): Default user used when creating execution instances in the container.
+        workdir (Union[Unset, None, str]): Working directory used when executing the command. Inherited from the image
+            when unset. Default: ''.
     """
 
     cmd: Union[Unset, List[str]] = UNSET
@@ -65,6 +67,7 @@ class Container:
     )
     running: Union[Unset, bool] = UNSET
     user: Union[Unset, str] = UNSET
+    workdir: Union[Unset, None, str] = ""
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -104,6 +107,7 @@ class Container:
 
         running = self.running
         user = self.user
+        workdir = self.workdir
 
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -136,6 +140,8 @@ class Container:
             field_dict["running"] = running
         if user is not UNSET:
             field_dict["user"] = user
+        if workdir is not UNSET:
+            field_dict["workdir"] = workdir
 
         return field_dict
 
@@ -189,6 +195,8 @@ class Container:
 
         user = d.pop("user", UNSET)
 
+        workdir = d.pop("workdir", UNSET)
+
         container = cls(
             cmd=cmd,
             created=created,
@@ -204,6 +212,7 @@ class Container:
             restart_policy=restart_policy,
             running=running,
             user=user,
+            workdir=workdir,
         )
 
         container.additional_properties = d

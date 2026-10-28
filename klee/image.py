@@ -40,6 +40,7 @@ from .options import container_create_options
 
 WS_IMAGE_BUILD_ENDPOINT = "/images/build"
 WS_IMAGE_CREATE_ENDPOINT = "/images/create"
+WS_IMAGE_IMPORT_ENDPOINT = "/images/import"
 
 IMAGE_LIST_COLUMNS = [
     ("ID", {"style": "cyan"}),
@@ -122,6 +123,42 @@ def image_create(name, hidden=False):
         _create(tag, dns, localtime, update, autotag, method, source)
 
     return create
+
+
+def image_import(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        no_args_is_help=True,
+        short_help="Import an OCI image layout archive",
+    )
+    @click.option(
+        "--tag",
+        "-t",
+        default="",
+        help="Name and optionally a tag in the 'name:tag' format",
+    )
+    @click.option(
+        "--platform",
+        "-p",
+        default=None,
+        help="'os/architecture' selector for multi-platform archives (e.g. freebsd/amd64)",
+    )
+    @click.argument("archive", nargs=1)
+    def image_import(tag, platform, archive):
+        """
+        Import an image from an OCI image layout ARCHIVE.
+
+        ARCHIVE is a URL or a local path to a `.txz`/`.tar` file containing an
+        OCI image layout (`oci-layout`, `index.json`, `blobs/`) — for example
+        the container images published on download.freebsd.org.
+        """
+        config = {"url": archive, "tag": tag, "platform": platform}
+        asyncio.run(_import_image_and_listen_for_messages(json.dumps(config)))
+
+    return image_import
 
 
 def image_build(name, hidden=False):
@@ -304,6 +341,7 @@ def image_inspect(name, hidden=False):
 
 
 root.add_command(image_create("create"), name="create")
+root.add_command(image_import("import"), name="import")
 root.add_command(image_build("build"), name="build")
 root.add_command(image_list("ls"), name="ls")
 root.add_command(image_inspect("inspect"), name="inspect")
@@ -350,6 +388,34 @@ def _create(tag, dns, localtime, update, autotag, method, source):
     }
     config_json = json.dumps(config)
     asyncio.run(_create_image_and_listen_for_messages(config_json))
+
+
+async def _import_image_and_listen_for_messages(config_json):
+    try:
+        async with create_websocket(WS_IMAGE_IMPORT_ENDPOINT) as websocket:
+            await websocket.send(config_json)
+            starting_frame = await websocket.recv()
+            start_msg = json.loads(starting_frame)
+            if start_msg["msg_type"] == "starting":
+                try:
+                    closing_message = await listen_for_messages(websocket)
+                except json.decoder.JSONDecodeError:
+                    echo_error("Kleened returned an unknown error")
+                    return
+
+                if closing_message["data"] == "":
+                    print_websocket_closing(closing_message, ["message"])
+                else:
+                    print_websocket_closing(closing_message, ["message", "data"])
+
+            elif start_msg["msg_type"] == "error":
+                print_websocket_closing(start_msg, ["message"])
+
+            else:
+                unexpected_error()
+
+    except websockets.exceptions.ConnectionClosedError:
+        connection_closed_unexpectedly()
 
 
 async def _create_image_and_listen_for_messages(config_json):

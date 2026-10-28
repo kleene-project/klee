@@ -1,3 +1,5 @@
+import io
+import json
 import os
 import subprocess
 
@@ -394,6 +396,20 @@ class TestImageCreate:
             "",
         ]
 
+    def test_import_oci_layout(self, testimage):
+        archive = build_oci_layout_archive()
+        try:
+            result = run(f"image import -t Create:OCI {archive}")
+            assert "image imported" in result
+            image_id = result[-2]
+            image = inspect("image", image_id)
+            assert image["name"] == "Create"
+            assert image["source"] == "oci"
+            assert image["digest"].startswith("sha256:")
+            run(f"rmi {image_id}")
+        finally:
+            os.remove(archive)
+
 
 class TestImagePruning:
 
@@ -440,6 +456,90 @@ def verify_build_output(expected_log, build_log):
 def image_id_from_list(index):
     images = list_images()
     return images[index].id
+
+
+def build_oci_layout_archive(directory=None):
+    """Build a minimal OCI image-layout archive and return its path.
+
+    Mirrors Kleened.Test.OCIFixtures on the Elixir side: a single-layer
+    image with a digest-correct layout (oci-layout, index.json, blobs/).
+    """
+    import hashlib
+    import tarfile
+    import tempfile
+
+    directory = directory or tempfile.mkdtemp(prefix="klee-oci-test-")
+
+    def blob(content):
+        digest = hashlib.sha256(content).hexdigest()
+        path = os.path.join(directory, "blobs", "sha256", digest)
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "wb") as f:
+            f.write(content)
+        return {
+            "mediaType": "application/vnd.oci.image.layer.v1.tar",
+            "digest": f"sha256:{digest}",
+            "size": len(content),
+        }
+
+    # layer tar with a single file
+    layer_file = os.path.join(directory, "layer.tar")
+
+    with tarfile.open(layer_file, "w") as tar:
+        info = tarfile.TarInfo("etc/hello")
+        content = b"world"
+        info.size = len(content)
+        tar.addfile(info, io.BytesIO(content))
+
+    with open(layer_file, "rb") as f:
+        layer = blob(f.read())
+    os.remove(layer_file)
+
+    config = json.dumps(
+        {
+            "created": "2026-10-24T12:00:00Z",
+            "architecture": "amd64",
+            "os": "freebsd",
+            "config": {"Cmd": ["/bin/sh"], "Env": ["PATH=/bin:/usr/bin"]},
+            "rootfs": {"type": "layers", "diff_ids": []},
+            "history": [{"created": "2026-10-24T12:00:00Z"}],
+        }
+    ).encode()
+    config_desc = blob(config)
+    config_desc["mediaType"] = "application/vnd.oci.image.config.v1+json"
+
+    manifest = json.dumps(
+        {
+            "schemaVersion": 2,
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "config": config_desc,
+            "layers": [layer],
+        }
+    ).encode()
+    manifest_desc = blob(manifest)
+    manifest_desc["mediaType"] = "application/vnd.oci.image.manifest.v1+json"
+
+    with open(os.path.join(directory, "index.json"), "w") as f:
+        json.dump(
+            {
+                "schemaVersion": 2,
+                "manifests": [
+                    dict(
+                        manifest_desc,
+                        annotations={"org.opencontainers.image.ref.name": "test/minimal:latest"},
+                    )
+                ],
+            },
+            f,
+        )
+
+    with open(os.path.join(directory, "oci-layout"), "w") as f:
+        json.dump({"imageLayoutVersion": "1.0.0"}, f)
+
+    archive = os.path.join(tempfile.gettempdir(), f"klee-oci-test-{os.getpid()}.txz")
+    with tarfile.open(archive, "w") as tar:
+        tar.add(directory, arcname=".")
+    return archive
 
 
 def assert_only_test_image():

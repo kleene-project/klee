@@ -3,6 +3,7 @@ SHORTCUTS = {
     "build": "image build",
     "create": "container create",
     "exec": "container exec",
+    "import": "image import",
     "start": "container start",
     "stop": "container stop",
     "restart": "container restart",

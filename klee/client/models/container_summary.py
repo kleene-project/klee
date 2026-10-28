@@ -47,6 +47,8 @@ class ContainerSummary:
              Default: ContainerRestartPolicy.NO. Example: on-startup.
         running (Union[Unset, bool]): whether or not the container is running
         user (Union[Unset, str]): Default user used when creating execution instances in the container.
+        workdir (Union[Unset, None, str]): Working directory used when executing the command. Inherited from the image
+            when unset. Default: ''.
         image_name (Union[Unset, str]): Name of the image that this container was created from
         image_tag (Union[Unset, str]): Tag of the image that this container was created from
         jid (Union[Unset, None, int]): Jail ID if it is a running container
@@ -68,6 +70,7 @@ class ContainerSummary:
     )
     running: Union[Unset, bool] = UNSET
     user: Union[Unset, str] = UNSET
+    workdir: Union[Unset, None, str] = ""
     image_name: Union[Unset, str] = UNSET
     image_tag: Union[Unset, str] = UNSET
     jid: Union[Unset, None, int] = UNSET
@@ -110,6 +113,7 @@ class ContainerSummary:
 
         running = self.running
         user = self.user
+        workdir = self.workdir
         image_name = self.image_name
         image_tag = self.image_tag
         jid = self.jid
@@ -145,6 +149,8 @@ class ContainerSummary:
             field_dict["running"] = running
         if user is not UNSET:
             field_dict["user"] = user
+        if workdir is not UNSET:
+            field_dict["workdir"] = workdir
         if image_name is not UNSET:
             field_dict["image_name"] = image_name
         if image_tag is not UNSET:
@@ -204,6 +210,8 @@ class ContainerSummary:
 
         user = d.pop("user", UNSET)
 
+        workdir = d.pop("workdir", UNSET)
+
         image_name = d.pop("image_name", UNSET)
 
         image_tag = d.pop("image_tag", UNSET)
@@ -225,6 +233,7 @@ class ContainerSummary:
             restart_policy=restart_policy,
             running=running,
             user=user,
+            workdir=workdir,
             image_name=image_name,
             image_tag=image_tag,
             jid=jid,
