@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/kleene-project/docs/main/docs/assets/images/kleene-logo.svg" alt="Kleene logo" width="180">
+</p>
+
 # Klee
 
 Klee is the CLI tool for Kleene, a container management tool
