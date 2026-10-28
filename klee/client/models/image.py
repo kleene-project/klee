@@ -22,8 +22,8 @@ class Image:
         created (Union[Unset, str]): When the image was created
         dataset (Union[Unset, str]): ZFS dataset of the image
         digest (Union[Unset, None, str]): Digest of the image manifest (OCI images). Default: ''.
-        entrypoint (Union[Unset, None, List[str]]): Entrypoint of the image (OCI images). Prepended to `cmd` when
-            starting a container.
+        entrypoint (Union[Unset, None, List[str]]): Entrypoint of the image. Prepended to `cmd` when starting a
+            container. Currently only set by OCI image imports; Dockerfile builds do not produce an entrypoint yet.
         env (Union[Unset, List[str]]): Environment variables and their values to set before running command. Example:
             ['PWD=/roo/', 'JAIL_MGMT_ENGINE=kleene'].
         id (Union[Unset, str]): The id of the image
@@ -33,12 +33,14 @@ class Image:
             containing one instruction and possibly its snapshot.
             The latter is only be present with `RUN` or `COPY` instructions that ran succesfully.
             Otherwise `<snapshot>` is empty.
-        labels (Union[Unset, None, ImageLabels]): Labels of the image (OCI images).
+        labels (Union[Unset, None, ImageLabels]): Labels of the image. Currently only set by OCI image imports;
+            Dockerfile builds do not produce labels yet.
         name (Union[Unset, str]): Name of the image
         source (Union[Unset, str]): Where the image came from: `"build"` or `"oci"`. Default: 'build'.
         tag (Union[Unset, str]): Tag of the image
         user (Union[Unset, str]): User used for running `cmd`
-        workdir (Union[Unset, None, str]): Working directory of the image (OCI images). Default: ''.
+        workdir (Union[Unset, None, str]): Working directory of the image. Currently only set by OCI image imports;
+            Dockerfile builds do not produce a working directory yet. Default: ''.
     """
 
     cmd: Union[Unset, List[str]] = UNSET

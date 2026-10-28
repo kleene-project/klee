@@ -19,7 +19,9 @@ the tag is omitted, `latest` is assumed.
 If the archive's index contains more than one manifest, for instance an image
 published for several architectures, `-p`, `--platform`, selects which one to
 import by `os/architecture` (e.g. `freebsd/amd64`). If the option is not used,
-the first manifest in the index is imported.
+the manifest matching the host's own `os/architecture` (from `uname(1)`) is
+imported when the index carries platform information, and the first manifest
+otherwise.
 
 Importing the same archive content under the same `name:tag` more than once is
 idempotent: instead of storing a duplicate, the already imported image is

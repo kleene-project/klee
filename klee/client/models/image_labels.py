@@ -8,7 +8,7 @@ T = TypeVar("T", bound="ImageLabels")
 
 @_attrs_define
 class ImageLabels:
-    """Labels of the image (OCI images)."""
+    """Labels of the image. Currently only set by OCI image imports; Dockerfile builds do not produce labels yet."""
 
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 

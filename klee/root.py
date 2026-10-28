@@ -67,6 +67,7 @@ def create_cli():
         "build": image_build("build", hidden=True),
         "create": container_create("create", hidden=True),
         "exec": container_exec("exec", hidden=True),
+        "import": image_import("import", hidden=True),
         "restart": container_restart("restart", hidden=True),
         "start": container_start("start", hidden=True),
         "stop": container_stop("stop", hidden=True),

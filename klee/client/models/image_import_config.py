@@ -17,7 +17,9 @@ class ImageImportConfig:
             containing `oci-layout`, `index.json` and `blobs/`, like the container
             images published on download.freebsd.org).
         platform (Union[Unset, None, str]): `os/architecture` selector when the archive is a multi-platform index
-            (e.g. `freebsd/amd64`). Defaults to the first manifest in the index.
+            (e.g. `freebsd/amd64`). Defaults to the host's own os/architecture
+            (from `uname(1)`) when the index carries platform information, and to
+            the first manifest otherwise.
         tag (Union[Unset, str]): Name and optionally a tag in the `name:tag` format for the imported image.
             If `tag` is omitted, the default value `latest` is used.
              Default: ''.
