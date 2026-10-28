@@ -32,6 +32,31 @@ async def listen_for_messages(websocket, newline=False, message_processor=None):
             message_processor(message)
 
 
+def resolve_image_id(image_id_or_name):
+    """Resolve an image reference to its image ID.
+
+    Registry-style references (`repo/name:tag`) contain slashes and cannot be
+    used as the `image_id` path parameter of the ID-based endpoints (the slash
+    breaks the route); resolving to the plain ID sidesteps the routing. Plain
+    IDs and slash-free `name:tag` references are returned unchanged so the
+    daemon keeps resolving them (and errors stay the daemon's).
+    """
+    if "/" not in image_id_or_name:
+        return image_id_or_name
+
+    from .client.api.default.image_list import sync_detailed as image_list_endpoint
+
+    response = request(image_list_endpoint, {})
+    if response is None or response.status_code != 200:
+        return image_id_or_name
+
+    for image in response.parsed or []:
+        if image_id_or_name in (image.id, f"{image.name}:{image.tag}"):
+            return image.id
+
+    return image_id_or_name
+
+
 def request_and_print_response(endpoint, kwargs, statuscode2printer):
     try:
         response = request(endpoint, kwargs)
