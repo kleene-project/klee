@@ -35,12 +35,14 @@ from .utils import (
     listen_for_messages,
     request_and_print_response,
     decode_mount,
+    resolve_image_id,
 )
 from .options import container_create_options
 
 WS_IMAGE_BUILD_ENDPOINT = "/images/build"
 WS_IMAGE_CREATE_ENDPOINT = "/images/create"
 WS_IMAGE_IMPORT_ENDPOINT = "/images/import"
+WS_IMAGE_PULL_ENDPOINT = "/images/pull"
 
 IMAGE_LIST_COLUMNS = [
     ("ID", {"style": "cyan"}),
@@ -161,6 +163,37 @@ def image_import(name, hidden=False):
     return image_import
 
 
+def image_pull(name, hidden=False):
+
+    @click.command(
+        cls=command_cls(),
+        name=name,
+        hidden=hidden,
+        no_args_is_help=True,
+        short_help="Pull an image from an OCI registry",
+    )
+    @click.option(
+        "--platform",
+        "-p",
+        default=None,
+        help="'os/architecture' selector for multi-platform indexes (e.g. freebsd/amd64)",
+    )
+    @click.argument("ref", nargs=1)
+    def image_pull(platform, ref):
+        """
+        Pull an image from an OCI distribution registry.
+
+        REF is an image reference `[registry/]repository[:tag][@digest]`.
+        Unqualified names resolve against the default registry (`nginx` ->
+        docker.io/library/nginx). The pulled image is tagged
+        `repository:tag` from the reference.
+        """
+        config = {"ref": ref, "platform": platform}
+        asyncio.run(_pull_image_and_listen_for_messages(json.dumps(config)))
+
+    return image_pull
+
+
 def image_build(name, hidden=False):
 
     @click.command(
@@ -255,7 +288,7 @@ def image_remove(name, hidden=False):
         for image_id in images:
             response = request_and_print_response(
                 image_remove_endpoint,
-                kwargs={"image_id": image_id},
+                kwargs={"image_id": resolve_image_id(image_id)},
                 statuscode2printer={
                     200: print_response_id,
                     404: print_response_msg,
@@ -318,7 +351,7 @@ def image_tag(name, hidden=False):
         """
         request_and_print_response(
             image_tag_endpoint,
-            kwargs={"image_id": source_image, "nametag": nametag},
+            kwargs={"image_id": resolve_image_id(source_image), "nametag": nametag},
             statuscode2printer={
                 200: print_response_id,
                 404: print_response_msg,
@@ -337,11 +370,13 @@ def image_inspect(name, hidden=False):
         id_var="image_id",
         docs="Display detailed information on an image",
         endpoint=image_inspect_endpoint,
+        resolve_id=resolve_image_id,
     )
 
 
 root.add_command(image_create("create"), name="create")
 root.add_command(image_import("import"), name="import")
+root.add_command(image_pull("pull"), name="pull")
 root.add_command(image_build("build"), name="build")
 root.add_command(image_list("ls"), name="ls")
 root.add_command(image_inspect("inspect"), name="inspect")
@@ -393,6 +428,34 @@ def _create(tag, dns, localtime, update, autotag, method, source):
 async def _import_image_and_listen_for_messages(config_json):
     try:
         async with create_websocket(WS_IMAGE_IMPORT_ENDPOINT) as websocket:
+            await websocket.send(config_json)
+            starting_frame = await websocket.recv()
+            start_msg = json.loads(starting_frame)
+            if start_msg["msg_type"] == "starting":
+                try:
+                    closing_message = await listen_for_messages(websocket)
+                except json.decoder.JSONDecodeError:
+                    echo_error("Kleened returned an unknown error")
+                    return
+
+                if closing_message["data"] == "":
+                    print_websocket_closing(closing_message, ["message"])
+                else:
+                    print_websocket_closing(closing_message, ["message", "data"])
+
+            elif start_msg["msg_type"] == "error":
+                print_websocket_closing(start_msg, ["message"])
+
+            else:
+                unexpected_error()
+
+    except websockets.exceptions.ConnectionClosedError:
+        connection_closed_unexpectedly()
+
+
+async def _pull_image_and_listen_for_messages(config_json):
+    try:
+        async with create_websocket(WS_IMAGE_PULL_ENDPOINT) as websocket:
             await websocket.send(config_json)
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
