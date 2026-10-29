@@ -7,9 +7,9 @@ Guidance for AI coding agents (Claude Code, Codex, OpenCode, Crush, Hermes, …)
 Klee is the Python CLI for **Kleene**, a FreeBSD container manager. It is a Click app that talks to the
 `kleened` daemon over HTTP (Unix socket by default: `http:///var/run/kleened.sock`) and WebSockets.
 
-This repo is normally checked out as a subdirectory of the `kleene_dev` environment repo and shared into a
-FreeBSD VM at `/vagrant/klee` (see the parent `AGENTS.md`). Anything that touches jails, ZFS or a running
-kleened must run inside that VM; editing, linting and the unit tier work fine on the host.
+This repo is normally checked out as a subdirectory of the `kleene_dev` environment repo and developed inside
+the FreeBSD dev VM, where it lives at `~/kleene_dev/klee` (see the parent `AGENTS.md`). Anything that touches
+jails, ZFS or a running kleened must run inside that VM; editing, linting and the unit tier work fine on the host.
 
 ## Commands
 
@@ -29,7 +29,7 @@ sudo env KLEENED_MINIMAL_TESTJAIL="$KLEENED_MINIMAL_TESTJAIL" \
 # Regenerate the reference docs YAML consumed by kleene-docs
 make docs
 
-# Regenerate klee/client from kleened's OpenAPI spec (target lives in the parent repo's Makefile.vagrant)
+# Regenerate klee/client from kleened's OpenAPI spec (target lives in the parent repo's Makefile.vm)
 make update-klee-openapi
 ```
 
@@ -113,7 +113,8 @@ typos in the env-var table: `KLEE_TLS_CERT` maps to `tlscacert`, and `KLEE_TLS_K
 ### Reference docs
 
 `make docs` runs every command with `--help` under the `docs-generator` theme and dumps one YAML file per
-command into `kleene-docs/_data/klee-reference` (the target hardcodes `/vagrant/kleene-docs`). The YAML merges
+command into `kleene-docs/data/klee-reference` (the output directory is set with `KLEENE_DOCS`; the parent
+`Makefile.vm` wires it to `kleene-docs`). The YAML merges
 Click metadata with `docs/klee_<command>.md`, where a `## Description` section overrides the docstring and an
 `## Examples` section is appended. Adding a command means adding the matching `docs/` file if it needs examples.
 
