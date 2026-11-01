@@ -425,9 +425,11 @@ def _create(tag, dns, localtime, update, autotag, method, source):
     asyncio.run(_create_image_and_listen_for_messages(config_json))
 
 
-async def _import_image_and_listen_for_messages(config_json):
+async def _config_first_frame_websocket(endpoint, config_json):
+    """Send `config_json` as the first frame on a kleened config websocket,
+    relay the streamed messages, and print the closing result."""
     try:
-        async with create_websocket(WS_IMAGE_IMPORT_ENDPOINT) as websocket:
+        async with create_websocket(endpoint) as websocket:
             await websocket.send(config_json)
             starting_frame = await websocket.recv()
             start_msg = json.loads(starting_frame)
@@ -451,63 +453,18 @@ async def _import_image_and_listen_for_messages(config_json):
 
     except websockets.exceptions.ConnectionClosedError:
         connection_closed_unexpectedly()
+
+
+async def _import_image_and_listen_for_messages(config_json):
+    await _config_first_frame_websocket(WS_IMAGE_IMPORT_ENDPOINT, config_json)
 
 
 async def _pull_image_and_listen_for_messages(config_json):
-    try:
-        async with create_websocket(WS_IMAGE_PULL_ENDPOINT) as websocket:
-            await websocket.send(config_json)
-            starting_frame = await websocket.recv()
-            start_msg = json.loads(starting_frame)
-            if start_msg["msg_type"] == "starting":
-                try:
-                    closing_message = await listen_for_messages(websocket)
-                except json.decoder.JSONDecodeError:
-                    echo_error("Kleened returned an unknown error")
-                    return
-
-                if closing_message["data"] == "":
-                    print_websocket_closing(closing_message, ["message"])
-                else:
-                    print_websocket_closing(closing_message, ["message", "data"])
-
-            elif start_msg["msg_type"] == "error":
-                print_websocket_closing(start_msg, ["message"])
-
-            else:
-                unexpected_error()
-
-    except websockets.exceptions.ConnectionClosedError:
-        connection_closed_unexpectedly()
+    await _config_first_frame_websocket(WS_IMAGE_PULL_ENDPOINT, config_json)
 
 
 async def _create_image_and_listen_for_messages(config_json):
-    try:
-        async with create_websocket(WS_IMAGE_CREATE_ENDPOINT) as websocket:
-            await websocket.send(config_json)
-            starting_frame = await websocket.recv()
-            start_msg = json.loads(starting_frame)
-            if start_msg["msg_type"] == "starting":
-                try:
-                    closing_message = await listen_for_messages(websocket)
-                except json.decoder.JSONDecodeError:
-                    echo_error("Kleened returned an unknown error")
-                    return
-
-                if closing_message["data"] == "":
-                    print_websocket_closing(closing_message, ["message"])
-
-                else:
-                    print_websocket_closing(closing_message, ["message", "data"])
-
-            elif start_msg["msg_type"] == "error":
-                print_websocket_closing(closing_message, ["message"])
-
-            else:
-                unexpected_error()
-
-    except websockets.exceptions.ConnectionClosedError:
-        connection_closed_unexpectedly()
+    await _config_first_frame_websocket(WS_IMAGE_CREATE_ENDPOINT, config_json)
 
 
 async def _build_image_and_listen_for_messages(**kwargs):

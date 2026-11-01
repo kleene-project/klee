@@ -35,11 +35,15 @@ async def listen_for_messages(websocket, newline=False, message_processor=None):
 def resolve_image_id(image_id_or_name):
     """Resolve an image reference to its image ID.
 
-    Registry-style references (`repo/name:tag`) contain slashes and cannot be
-    used as the `image_id` path parameter of the ID-based endpoints (the slash
-    breaks the route); resolving to the plain ID sidesteps the routing. Plain
-    IDs and slash-free `name:tag` references are returned unchanged so the
-    daemon keeps resolving them (and errors stay the daemon's).
+    WORKAROUND (tracked in the OCI plan's parking lot): registry-style
+    references (`repo/name:tag`) contain slashes and cannot be used as the
+    `image_id` path parameter of the ID-based endpoints (the slash breaks the
+    route); resolving to the plain ID client-side sidesteps the routing. The
+    permanent fix is daemon-side: an `images/{image_id}` route that matches
+    slashed names, or name resolution in the API layer. Until then, this
+    resolves via `image list` — plain IDs and slash-free `name:tag`
+    references are returned unchanged so the daemon keeps resolving them (and
+    errors stay the daemon's).
     """
     if "/" not in image_id_or_name:
         return image_id_or_name
