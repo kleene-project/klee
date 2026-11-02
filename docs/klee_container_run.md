@@ -96,6 +96,15 @@ VAR1=value1
 VAR2=value2
 ```
 
+The container's environment is constructed by kleened: `PATH`, `HOME`,
+`USER` and `SHELL` default to the configured user's values, with variables
+from the image configuration and `-e`/`--env` added on top (an explicit
+`PATH` overrides the default). This holds for the default `root` user; when
+the container runs as a **non-root user**, FreeBSD's `setusercontext(3)`
+re-builds `PATH` from that user's login class, so the process can end up
+with a different `PATH` than the injected one (see the note in
+[klee container exec](klee_container_exec.md)).
+
 ### <a name="network"></a> Connect a container to a network (--network)
 
 When you start a container use the `--network` flag to connect it to a network.

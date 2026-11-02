@@ -75,15 +75,22 @@ $ klee exec -e VAR_A=1 -e VAR_B=2 mycontainer env
 created execution instance 84effca72ec8
 VAR_B=2
 VAR_A=1
-SHELL=/bin/csh
+SHELL=/bin/sh
 HOME=/root
 USER=root
-BLOCKSIZE=K
-MAIL=/var/mail/root
-MM_CHARSET=UTF-8
-LANG=C.UTF-8
-PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/sbin:/usr/local/bin:/root/bin
-TERM=screen
+PATH=/sbin:/bin:/usr/sbin:/usr/bin:/usr/local/bin
 
 84effca72ec8 has exited with exit-code 0
 ```
+
+**Note on PATH and non-root users:** kleened constructs the environment
+itself: `PATH`, `HOME`, `USER` and `SHELL` default to the configured user's
+values, and variables from the image configuration or `--env` are added on
+top (an explicit `PATH` overrides the default). For `root` (the default)
+the injected variables are exactly what the process sees. When the container
+or exec runs as a **non-root user**, the process is selected through
+FreeBSD's `setusercontext(3)`, which re-builds `PATH` from the target
+user's login class — so a non-root process can end up with a different
+`PATH` than the one injected, and other variables still pass through. If a
+specific `PATH` matters for a non-root user, verify with `env` what the
+process actually sees.
