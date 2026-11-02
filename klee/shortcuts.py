@@ -15,6 +15,7 @@ SHORTCUTS = {
     "lsi": "image ls",
     "lsn": "network ls",
     "lsv": "volume ls",
+    "pull": "image pull",
     "rmc": "container rm",
     "rmi": "image rm",
     "rmn": "network rm",

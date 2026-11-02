@@ -48,6 +48,7 @@ def create_cli():
         image_list,
         image_build,
         image_import,
+        image_pull,
         image_remove,
         image_inspect,
     )
@@ -68,6 +69,7 @@ def create_cli():
         "create": container_create("create", hidden=True),
         "exec": container_exec("exec", hidden=True),
         "import": image_import("import", hidden=True),
+        "pull": image_pull("pull", hidden=True),
         "restart": container_restart("restart", hidden=True),
         "start": container_start("start", hidden=True),
         "stop": container_stop("stop", hidden=True),
