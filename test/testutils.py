@@ -39,9 +39,17 @@ def jail_by_name(name):
     Kleened names a container's jail after the container name (the container
     id when the name is not a legal jail name), so tests that need "the jail
     of container X" look it up by name rather than by id or position.
+
+    The plain jls listing does not include the jail name, so it is requested
+    explicitly.
     """
-    jails = jail_info()["jail-information"]["jail"]
-    return next((j for j in jails if j["name"] == name), None)
+    result = subprocess.run(
+        args=["/usr/sbin/jls", "--libxo", "json", "jid", "name"],
+        check=True,
+        capture_output=True,
+    )
+    jails = json.loads(result.stdout)["jail-information"]["jail"]
+    return next((j for j in jails if j.get("name") == name), None)
 
 
 def shell(command):

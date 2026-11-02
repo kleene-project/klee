@@ -255,11 +255,12 @@ class TestContainerRunning:
         run(f"container start -d {container_id}")
         time.sleep(0.5)
         # The jail is named after the container, so look it up by name rather
-        # than assuming it is the first jail in the list.
-        first_jid = jail_by_name("test_restart")["jid"]
+        # than assuming it is the first jail in the list. (jls reports the jid
+        # as a string.)
+        first_jid = int(jail_by_name("test_restart")["jid"])
         result = run(f"container restart {container_id}")
         assert result[0] == container_id
-        after_jid = jail_by_name("test_restart")["jid"]
+        after_jid = int(jail_by_name("test_restart")["jid"])
         assert first_jid + 1 == after_jid
         run(f"container stop {container_id}")
 
@@ -572,10 +573,23 @@ def await_shutdown(container_id):
 
 
 def is_running(container_id):
+    # The jail is named after the container (its name when legal, its id
+    # otherwise), so a failed id lookup falls back to the name.
     result = subprocess.run(
         ["/usr/sbin/jls", "--libxo=json", "-j", container_id], check=False
     )
-    return result.returncode == 0
+    if result.returncode == 0:
+        return True
+
+    container = inspect("container", container_id)
+    name = container["container"]["name"] if isinstance(container, dict) else None
+    if name and name != container_id:
+        result = subprocess.run(
+            ["/usr/sbin/jls", "--libxo=json", "-j", name], check=False
+        )
+        return result.returncode == 0
+
+    return False
 
 
 def is_devfs_mounted(dataset):
