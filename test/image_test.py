@@ -217,7 +217,7 @@ class TestImageCommand:
             "--> Snapshot created: @",
             "Step 3/3 : RUN ls notexist",
             "ls: notexist: No such file or directory",
-            "jail: /usr/bin/env /bin/sh -c ls notexist: failed",
+            "jail: /bin/sh -c ls notexist: failed",
             "The command '/bin/sh -c ls notexist' returned a non-zero code: 1",
         ]
 
@@ -244,7 +244,7 @@ class TestImageCommand:
             "--> Snapshot created: @",
             "Step 3/3 : RUN ls notexist",
             "ls: notexist: No such file or directory",
-            "jail: /usr/bin/env /bin/sh -c ls notexist: failed",
+            "jail: /bin/sh -c ls notexist: failed",
             "The command '/bin/sh -c ls notexist' returned a non-zero code: 1",
         ]
 
