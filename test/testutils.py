@@ -33,6 +33,17 @@ def jail_info():
     return json.loads(result.stdout)
 
 
+def jail_by_name(name):
+    """The jls entry of a running jail by its jail name, or None.
+
+    Kleened names a container's jail after the container name (the container
+    id when the name is not a legal jail name), so tests that need "the jail
+    of container X" look it up by name rather than by id or position.
+    """
+    jails = jail_info()["jail-information"]["jail"]
+    return next((j for j in jails if j["name"] == name), None)
+
+
 def shell(command):
     return shell_raw(command).stdout.decode("utf8")
 

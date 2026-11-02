@@ -461,9 +461,21 @@ containers:
 
 
 def _is_running(container_id):
-    """Whether the container is running, per jls."""
+    """Whether the container's jail is running, per jls.
+
+    The jail is named after the container name (or the id when the name is
+    not a legal jail name), so resolve the jail name through jls by trying
+    both rather than assuming the id names the jail.
+    """
     output = shell("jls -j " + container_id)
-    return "no such jail" not in output
+    if "no such jail" in output:
+        # Not running under its id: it may be running under its name.
+        container = inspect("container", container_id)
+        name = container["container"]["name"]
+        if name and name != container_id:
+            return "no such jail" not in shell("jls -j " + name)
+        return False
+    return True
 
 
 class TestDeployLifecycle:

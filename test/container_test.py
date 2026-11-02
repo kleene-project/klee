@@ -13,6 +13,7 @@ from testutils import (
     shell,
     shell_raw,
     jail_info,
+    jail_by_name,
     create_container,
     list_containers,
     listing_ids,
@@ -253,12 +254,12 @@ class TestContainerRunning:
         container_id = create_container(name="test_restart", command="/bin/sleep 5")
         run(f"container start -d {container_id}")
         time.sleep(0.5)
-        jails = jail_info()
-        first_jid = jails["jail-information"]["jail"][0]["jid"]
+        # The jail is named after the container, so look it up by name rather
+        # than assuming it is the first jail in the list.
+        first_jid = jail_by_name("test_restart")["jid"]
         result = run(f"container restart {container_id}")
         assert result[0] == container_id
-        jails = jail_info()
-        after_jid = jails["jail-information"]["jail"][0]["jid"]
+        after_jid = jail_by_name("test_restart")["jid"]
         assert first_jid + 1 == after_jid
         run(f"container stop {container_id}")
 
