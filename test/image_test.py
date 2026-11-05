@@ -301,7 +301,8 @@ class TestImageBuildContainerConfig:
         output = "\n".join(run("build -t testmount -n jailnet ."))
         run("rmi testmount")
         assert "kleene0: " in output
-        assert "inet 10.13.37.1 netmask 0xffffffff" in output
+        # The DNS resolver holds 10.13.37.1; the build container gets .2
+        assert "inet 10.13.37.2 netmask 0xffffffff" in output
 
 
 class TestImageCreate:

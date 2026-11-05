@@ -300,7 +300,8 @@ networks:
                 {
                     "property": "ip_address",
                     "type": "not_equal",
-                    "value_host": "10.13.37.1",
+                    # The DNS resolver holds 10.13.37.1; the container gets .2
+                    "value_host": "10.13.37.2",
                     "value_spec": "10.13.37.137",
                 },
             ],
