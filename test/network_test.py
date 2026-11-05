@@ -4,6 +4,7 @@ import re
 from testutils import (
     assert_empty_listing,
     container_interfaces,
+    container_ip,
     extract_exec_id,
     inspect,
     listing_ids,
@@ -173,11 +174,12 @@ class TestNetworkSubcommand:
         run("network create -t loopback --subnet 10.13.37.0/24 test-ipnet")
         run("run --name disconn_ipnet -d -l ipnet FreeBSD sleep 10")
 
-        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
+        # The DNS resolver holds 10.13.37.1; the container gets .2
+        assert not ip_in_container("disconn_ipnet", "10.13.37.2")
         assert [""] == run("network connect test-ipnet disconn_ipnet")
-        assert ip_in_container("disconn_ipnet", "10.13.37.1")
+        assert ip_in_container("disconn_ipnet", "10.13.37.2")
         assert [""] == run("network disconnect test-ipnet disconn_ipnet")
-        assert not ip_in_container("disconn_ipnet", "10.13.37.1")
+        assert not ip_in_container("disconn_ipnet", "10.13.37.2")
         remove_container("rmc -f disconn_ipnet")
         run("network rm test-ipnet")
 
@@ -187,11 +189,14 @@ class TestNetworkSubcommand:
         # Takes time to add the IP, default gw etc. inside the jail
         time.sleep(1)
 
-        # 10.13.37.2 since 10.13.37.1 is taken by the default gw
-        assert ip_in_container("disconn_vnet", "10.13.37.2")
+        # The resolver holds 10.13.37.1; the container gets the next free IP
+        # (which one depends on what else the run allocated before it).
+        ip_addr = container_ip("disconn_vnet")
+        assert ip_addr != "10.13.37.1"
+        assert ip_in_container("disconn_vnet", ip_addr)
         assert interface_in_container("disconn_vnet", "epair0b")
         assert [""] == run("network disconnect test-vnet disconn_vnet")
-        assert not ip_in_container("disconn_vnet", "10.13.37.2")
+        assert not ip_in_container("disconn_vnet", ip_addr)
         assert not interface_in_container("disconn_vnet", "epair0b")
         remove_container("rmc -f disconn_vnet")
         run("network rm test-vnet")
@@ -215,12 +220,17 @@ class TestNetworkSubcommand:
         run("network create -t bridge --subnet 10.20.30.0/24 testnet")
         run("run --name con_vnet1 -n testnet -l vnet FreeBSD sleep 10")
         run("run --name con_vnet2 -n testnet -d -l vnet FreeBSD /bin/ls")
-        assert ip_in_container("con_vnet1", "10.20.30.2")
-        assert ip_in_container("con_vnet2", "10.20.30.3")
+        # The resolver holds .1; each container gets the next free IP
+        # (which ones depend on what else the run allocated before them).
+        ip1 = container_ip("con_vnet1")
+        ip2 = container_ip("con_vnet2")
+        assert ip1 != "10.20.30.1" and ip2 != "10.20.30.1"
+        assert ip_in_container("con_vnet1", ip1)
+        assert ip_in_container("con_vnet2", ip2)
         assert interface_in_container("con_vnet1", "epair0b")
         run("network rm testnet")
-        assert not ip_in_container("con_vnet1", "10.20.30.2")
-        assert not ip_in_container("con_vnet2", "10.20.30.3")
+        assert not ip_in_container("con_vnet1", ip1)
+        assert not ip_in_container("con_vnet2", ip2)
         assert not interface_in_container("con_vnet1", "epair0b")
         run("stop con_vnet1")
 
