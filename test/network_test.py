@@ -10,6 +10,7 @@ from testutils import (
     prune,
     remove_container,
     run,
+    run_container,
     container_stopped_msg,
 )
 
@@ -87,6 +88,18 @@ class TestNetworkSubcommand:
         network = inspect("network", "testnet")
         run("network rm testnet")
         assert network["network"]["internal"]
+
+    def test_create_network_with_dns_disabled(self, testimage):
+        run("network create --no-dns --type loopback --subnet=10.13.39.0/24 testnet")
+        network = inspect("network", "testnet")
+        run("network rm testnet")
+        assert network["network"]["dns"] is False
+
+    def test_create_network_with_dns_enabled_by_default(self, testimage):
+        run("network create --type loopback --subnet=10.13.40.0/24 testnet")
+        network = inspect("network", "testnet")
+        run("network rm testnet")
+        assert network["network"]["dns"] is True
 
     def test_create_network_with_invalid_subnet(self, testimage):
         output = run(
@@ -266,6 +279,23 @@ class TestNetworkSubcommand:
         container_is_connected(container_id, driver="vnet")
         assert [""] == run(f"network disconnect {network_name} {container_id}")
         container_is_disconnected(container_id)
+
+    def test_container_name_resolution_between_containers(self, testimage_and_cleanup):
+        network_name = "test_nw_dns"
+        run(f"network create --subnet 10.13.41.0/24 {network_name}")
+
+        # A server container named 'dnsworld'...
+        run(f"run -d --name dnsworld -n {network_name} -l ipnet FreeBSD sleep 60")
+
+        # ...resolves by name from another container on the same network.
+        _, _, output = run_container(
+            f"run --network {network_name} -l ipnet FreeBSD host -W 2 dnsworld"
+        )
+        joined = "".join(output)
+        assert "dnsworld has address 10.13.41.2" in joined
+
+        run("container stop dnsworld")
+        remove_container("rmc dnsworld")
 
 
 def container_is_connected(container_id, driver="loopback"):

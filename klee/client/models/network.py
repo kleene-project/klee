@@ -14,6 +14,7 @@ class Network:
     """Kleene network
 
     Attributes:
+        dns (Union[Unset, bool]): Whether the built-in DNS resolver runs on this network. Default: True.
         gateway (Union[Unset, str]): The default IPv4 router that is added to `vnet` containers connecting to the
             network.
             If `""` no gateway is used.
@@ -39,6 +40,7 @@ class Network:
         type (Union[Unset, NetworkType]): Network type. Example: bridge.
     """
 
+    dns: Union[Unset, bool] = True
     gateway: Union[Unset, str] = ""
     gateway6: Union[Unset, str] = ""
     icc: Union[Unset, bool] = True
@@ -53,6 +55,7 @@ class Network:
     additional_properties: Dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
+        dns = self.dns
         gateway = self.gateway
         gateway6 = self.gateway6
         icc = self.icc
@@ -70,6 +73,8 @@ class Network:
         field_dict: Dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
+        if dns is not UNSET:
+            field_dict["dns"] = dns
         if gateway is not UNSET:
             field_dict["gateway"] = gateway
         if gateway6 is not UNSET:
@@ -98,6 +103,8 @@ class Network:
     @classmethod
     def from_dict(cls: Type[T], src_dict: Dict[str, Any]) -> T:
         d = src_dict.copy()
+        dns = d.pop("dns", UNSET)
+
         gateway = d.pop("gateway", UNSET)
 
         gateway6 = d.pop("gateway6", UNSET)
@@ -126,6 +133,7 @@ class Network:
             type = NetworkType(_type)
 
         network = cls(
+            dns=dns,
             gateway=gateway,
             gateway6=gateway6,
             icc=icc,
