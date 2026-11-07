@@ -197,6 +197,16 @@ def list_containers(all_=True):
     return response.parsed
 
 
+def container_ip(container_id):
+    """The container's first IPv4 endpoint address, via 'container inspect'."""
+    inspected = inspect("container", container_id)
+    endpoints = inspected["container_endpoints"]
+    for endpoint in endpoints:
+        if endpoint.get("ip_address"):
+            return endpoint["ip_address"]
+    return None
+
+
 def container_interfaces(container_id, ipv4_only=False):
     """
     The 'statistics.interface' list that netstat(1) reports inside a container.
@@ -209,7 +219,7 @@ def container_interfaces(container_id, ipv4_only=False):
     klee interleaves its own status lines with the container's output, so the
     JSON document is found by skipping the lines klee is known to emit.
     """
-    netstat = "netstat --libxo json -i"
+    netstat = "netstat --libxo json -n -i"
     if ipv4_only:
         netstat = f"{netstat} -4"
 

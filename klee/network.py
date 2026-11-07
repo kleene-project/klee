@@ -113,6 +113,12 @@ def network_create(name, hidden=False):
         metavar="flag",
         help="Whether or not the network is internal, i.e., not allowing outgoing upstream traffic",
     )
+    @click.option(
+        "--no-dns",
+        default=False,
+        is_flag=True,
+        help="Disable Kleene's built-in DNS resolver on the network (container-name resolution).",
+    )
     @click.argument("name", nargs=1)
     def create(**config):
         """Create a new network."""
@@ -123,6 +129,9 @@ def network_create(name, hidden=False):
                 config[gw] = "<auto>" if config[gw] == "auto" else config[gw]
             else:
                 config[gw] = ""
+
+        no_dns = config.pop("no_dns")
+        config["dns"] = not no_dns
 
         nat = config.pop("nat")
         nat_interface = config.pop("nat_if")

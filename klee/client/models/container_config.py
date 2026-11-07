@@ -43,11 +43,15 @@ class ContainerConfig:
             See the [jails manual page](https://man.freebsd.org/cgi/man.cgi?query=jail) for an explanation of what jail
             parameters is,
             and the [Kleene documentation](/run/jail-parameters/) for an explanation of how they are used by Kleene.
+
+            When `host.hostname` is not set, Kleene defaults it to the container name,
+            or to the container id when the container has no name.
              Example: ['allow.raw_sockets=true', 'osrelease=kleenejail'].
         mounts (Union[Unset, None, List['MountPointConfig']]): List of files/directories/volumes on the host filesystem
             that should be mounted into the container. Example: [{'destination': '/mnt/db', 'source': 'database', 'type':
             'volume'}, {'destination': '/webapp', 'source': '/home/me/develop/webapp', 'type': 'nullfs'}].
-        name (Union[Unset, None, str]): Name of the container. Must match `/?[a-zA-Z0-9][a-zA-Z0-9_.-]+`.
+        name (Union[Unset, None, str]): Name of the container. Must match `/?[a-zA-Z0-9][a-zA-Z0-9_.-]+`. When set, it
+            becomes the default hostname of the container.
         network_driver (Union[Unset, ContainerConfigNetworkDriver]): What kind of network driver should the container
             use.
             Possible values are `ipnet`, `host`, `vnet`, `disabled`.

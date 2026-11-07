@@ -16,6 +16,10 @@ class NetworkConfig:
     Attributes:
         name (str): Name of the network. Example: westnet.
         type (NetworkConfigType): What kind of network should be created. Example: bridge.
+        dns (Union[Unset, bool]): Whether Kleene runs its built-in DNS resolver on the network, making
+            container names resolvable as hostnames within it. When disabled, no
+            resolver IP is reserved and containers fall back to host DNS.
+             Default: True.
         gateway (Union[Unset, str]): **`bridge` networks only**
 
             The default (IPv4) router that is added to `vnet` containers connecting to bridged networks.
@@ -47,6 +51,7 @@ class NetworkConfig:
 
     name: str
     type: NetworkConfigType
+    dns: Union[Unset, bool] = True
     gateway: Union[Unset, str] = ""
     gateway6: Union[Unset, str] = ""
     icc: Union[Unset, bool] = True
@@ -61,6 +66,7 @@ class NetworkConfig:
         name = self.name
         type = self.type.value
 
+        dns = self.dns
         gateway = self.gateway
         gateway6 = self.gateway6
         icc = self.icc
@@ -78,6 +84,8 @@ class NetworkConfig:
                 "type": type,
             }
         )
+        if dns is not UNSET:
+            field_dict["dns"] = dns
         if gateway is not UNSET:
             field_dict["gateway"] = gateway
         if gateway6 is not UNSET:
@@ -104,6 +112,8 @@ class NetworkConfig:
 
         type = NetworkConfigType(d.pop("type"))
 
+        dns = d.pop("dns", UNSET)
+
         gateway = d.pop("gateway", UNSET)
 
         gateway6 = d.pop("gateway6", UNSET)
@@ -123,6 +133,7 @@ class NetworkConfig:
         network_config = cls(
             name=name,
             type=type,
+            dns=dns,
             gateway=gateway,
             gateway6=gateway6,
             icc=icc,
