@@ -103,7 +103,7 @@ from the image configuration and `-e`/`--env` added on top (an explicit
 the container runs as a **non-root user**, FreeBSD's `setusercontext(3)`
 re-builds `PATH` from that user's login class, so the process can end up
 with a different `PATH` than the injected one (see the note in
-[klee container exec](klee_container_exec.md)).
+[klee container exec](/reference/klee/container_exec/)).
 
 ### <a name="network"></a> Connect a container to a network (--network)
 
