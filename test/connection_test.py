@@ -1,9 +1,6 @@
-import pytest
-
 from testutils import (
     listing_rows,
     run,
-    shell,
     CERTIFICATE_REQUIRED_ERROR,
     SELF_SIGNED_ERROR,
 )
@@ -11,16 +8,6 @@ from testutils import (
 # flake8: noqa: F401
 # pylint: disable=no-self-use, unused-argument, unused-import
 # from fixtures import host_state, create_testimage
-
-
-@pytest.fixture()
-def testimage_and_cleanup(create_testimage, host_state):
-    yield host_state
-
-    run("container prune -f")
-
-    zfs_now = set(shell("zfs list -H -o name -r zroot/kleene").split("\n"))
-    assert host_state["zfs"] == zfs_now
 
 
 class TestHTTPConnections:
