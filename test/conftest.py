@@ -56,3 +56,12 @@ def testimage(create_testimage, host_state):
 @pytest.fixture()
 def testimage_and_cleanup(create_testimage, host_state, cleanup):
     yield host_state
+
+
+def pytest_sessionfinish(session, exitstatus):
+    # the last test of a run has no next-test cleanup to rely on: leave
+    # the host clean regardless of how the run ended
+    try:
+        sweep_host_state()
+    except Exception as exc:  # noqa: BLE001 - never mask test results
+        print(f"final sweep failed: {exc}")
