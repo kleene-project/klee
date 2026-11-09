@@ -11,6 +11,8 @@ from klee.client.api.default.image_list import sync_detailed as image_list_endpo
 from klee.client.api.default.container_list import (
     sync_detailed as container_list_endpoint,
 )
+from klee.client.api.default.volume_list import sync_detailed as volume_list_endpoint
+from klee.client.api.default.network_list import sync_detailed as network_list_endpoint
 from klee.client.client import Client
 from klee.root import create_cli
 from klee.image import BUILD_START_MESSAGE
@@ -19,6 +21,10 @@ from klee.deploy import DEFAULT_DEPLOYMENT_FILE
 SELF_SIGNED_ERROR = "[SSL: CERTIFICATE_VERIFY_FAILED] certificate verify failed: self-signed certificate in certificate chain"
 
 CERTIFICATE_REQUIRED_ERROR = "unable to connect to kleened: [SSL: TLSV13_ALERT_CERTIFICATE_REQUIRED] tlsv13 alert certificate required"
+
+KLEENE_ROOT = "zroot/kleene"
+BASEJAIL = "zroot/kleene_basejail"
+TEST_IMAGE = "FreeBSD:latest"
 
 
 def create_deployment_file(content, path=DEFAULT_DEPLOYMENT_FILE):
@@ -190,6 +196,26 @@ def list_images():
 def list_containers(all_=True):
     kwargs = {"all_": all_}
     response = container_list_endpoint(
+        httpx.HTTPTransport(uds="/var/run/kleened.sock"),
+        client=Client(base_url="http://localhost"),
+        **kwargs,
+    )
+    return response.parsed
+
+
+def list_volumes():
+    kwargs = {}
+    response = volume_list_endpoint(
+        httpx.HTTPTransport(uds="/var/run/kleened.sock"),
+        client=Client(base_url="http://localhost"),
+        **kwargs,
+    )
+    return response.parsed
+
+
+def list_networks():
+    kwargs = {}
+    response = network_list_endpoint(
         httpx.HTTPTransport(uds="/var/run/kleened.sock"),
         client=Client(base_url="http://localhost"),
         **kwargs,
@@ -371,3 +397,144 @@ def _extract_id(result):
     if result_line[:n] == prefix:
         id_ = result_line[n:]
     return id_
+
+
+def get_host_state():
+    """The host state a clean run must return to: datasets, basejail
+    snapshots, interfaces, and devfs/nullfs mounts under the kleene root."""
+    return {
+        "zfs": _shell_lines("zfs list -H -o name -r zroot/kleene"),
+        "snapshots": _shell_lines(
+            "zfs list -t snapshot -H -o name,clones -d 1 zroot/kleene_basejail"
+        ),
+        "interfaces": set(shell("ifconfig -l").split()),
+        "mounts": [
+            line
+            for line in shell("mount").split("\n")
+            if ("devfs" in line or "nullfs" in line) and "zroot/kleene" in line
+        ],
+    }
+
+
+def assert_clean_host_state(baseline):
+    """Assert the host is back to the captured baseline. Run after
+    sweep_host_state(), so what this catches is residue the sweep cannot
+    remove: a leaked jail, an interface never destroyed, a mount left
+    behind."""
+    now = get_host_state()
+    assert baseline["zfs"] == now["zfs"], (
+        f"dataset diff: {baseline['zfs'] ^ now['zfs']}"
+    )
+    assert baseline["snapshots"] == now["snapshots"], (
+        f"basejail snapshot diff: {baseline['snapshots'] ^ now['snapshots']}"
+    )
+    assert baseline["interfaces"] == now["interfaces"], (
+        f"interface diff: {baseline['interfaces'] ^ now['interfaces']}"
+    )
+    assert baseline["mounts"] == now["mounts"], f"mount diff: {now['mounts']}"
+
+
+def sweep_host_state():
+    """Convergent sweep of all kleene-owned host state except the
+    FreeBSD:latest test image. Idempotent: a second call is a no-op.
+
+    Removal order matters: containers first (jails hold mounts and
+    interfaces), then orphan datasets (they pin image datasets as clone
+    origins), then metadata-driven removal of volumes / networks /
+    images, then host-side sweeps for what metadata no longer knows.
+    """
+    _sweep_containers()
+    _sweep_orphan_datasets()
+    _sweep_volumes()
+    _sweep_networks()
+    _sweep_interfaces()
+    _sweep_mounts()
+    _sweep_basejail_snapshots()
+    _sweep_images()
+
+
+def _shell_lines(command):
+    return set(shell(command).strip().split("\n")) - {""}
+
+
+def _sweep_containers():
+    for container in list_containers():
+        run(f"container rm -f {container.id}")
+    # jail teardown lags the API response; poll actual liveness
+    for _ in range(50):
+        if shell("jls -n name").strip() == "":
+            return
+        shell("sleep 0.1")
+
+
+def _known_datasets():
+    known = []
+    for container in list_containers():
+        known.append(container.dataset)
+    for image in list_images():
+        known.append(image.dataset)
+    for volume in list_volumes():
+        known.append(volume.dataset)
+    return set(known)
+
+
+def _sweep_orphan_datasets():
+    known = _known_datasets()
+    for sub in ("container", "image", "volumes"):
+        root = f"{KLEENE_ROOT}/{sub}"
+        actual = _shell_lines(f"zfs list -H -o name -r {root}")
+        for orphan in actual - known - {root}:
+            shell(f"zfs destroy -f -r {orphan}")
+
+
+def _sweep_volumes():
+    for volume in list_volumes():
+        run(f"volume rm {volume.name}")
+
+
+def _sweep_networks():
+    for network in list_networks():
+        run(f"network rm {network.id}")
+
+
+def _sweep_interfaces():
+    # kleene interfaces are all named 'kleene<id>'; with networks removed,
+    # any survivor is residue from a crashed network removal.
+    for interface in shell("ifconfig -l").split():
+        if interface.startswith("kleene"):
+            shell(f"ifconfig {interface} destroy")
+
+
+def _sweep_mounts():
+    # devfs/nullfs mounts under the kleene root are left behind when a
+    # jail dies without 'jail -r' teardown.
+    for line in shell("mount").split("\n"):
+        if ("devfs" in line or "nullfs" in line) and "zroot/kleene" in line:
+            mountpoint = line.split(" on ")[1].split(" (")[0]
+            shell(f"umount -f {mountpoint}")
+
+
+def _sweep_basejail_snapshots():
+    # snapshots on the basejail with no live clone are garbage; the only
+    # legitimate clone is a known image dataset, e.g. FreeBSD:latest's
+    # origin. '-d' keeps the destroy safe should a clone appear between
+    # listing and destroying.
+    output = shell("zfs list -t snapshot -H -o name,clones -d 1 zroot/kleene_basejail")
+    snapshots = []
+    for line in output.strip().split("\n"):
+        if not line:
+            continue
+        name, clones = line.split("\t")
+        if clones == "-":
+            snapshots.append(name.split("@")[-1])
+    for i in range(0, len(snapshots), 500):
+        chunk = ",".join(snapshots[i : i + 500])
+        shell(f"zfs destroy -d {BASEJAIL}@{chunk}")
+
+
+def _sweep_images():
+    # everything except the class-scoped test image, whose lifecycle
+    # create_testimage owns
+    for image in list_images():
+        if f"{image.name}:{image.tag}" != TEST_IMAGE:
+            run(f"image rm {image.id}")
