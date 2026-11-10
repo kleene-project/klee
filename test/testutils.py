@@ -529,8 +529,6 @@ def _sweep_basejail_snapshots():
 
 
 def _sweep_images():
-    # everything except the class-scoped test image, whose lifecycle
-    # create_testimage owns
     for image in list_images():
         if f"{image.name}:{image.tag}" != TEST_IMAGE:
             run(f"image rm {image.id}")
