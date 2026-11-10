@@ -417,10 +417,6 @@ def get_host_state():
 
 
 def assert_clean_host_state(baseline):
-    """Assert the host is back to the captured baseline. Run after
-    sweep_host_state(), so what this catches is residue the sweep cannot
-    remove: a leaked jail, an interface never destroyed, a mount left
-    behind."""
     now = get_host_state()
     assert baseline["zfs"] == now["zfs"], (
         f"dataset diff: {baseline['zfs'] ^ now['zfs']}"

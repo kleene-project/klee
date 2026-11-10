@@ -19,9 +19,7 @@ def create_testimage():
 
 @pytest.fixture()
 def host_state():
-    # sweep BEFORE snapshotting: against a dirty host, the first test of
-    # a run otherwise fails on residue it did not create -- and a dirty
-    # baseline passively absorbs later leaks (kleened #33 made the same fix)
+    # sweep BEFORE snapshotting state to avoid  a dirty host state
     sweep_host_state()
     baseline = get_host_state()
 

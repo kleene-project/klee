@@ -19,15 +19,7 @@ def _basejail_snapshots():
 
 class TestSweep:
     def test_sweep_removes_every_leftover_class(self, create_testimage):
-        # Residue a crashed or foreign-suite run would leave behind,
-        # one instance per class the sweep must converge:
-        #  - a running container (jail + metadata row)
-        #  - a network (interface + metadata row)
-        #  - a volume (dataset + metadata row)
-        #  - an image no klee command can remove: cross-suite residue
-        #  - an orphan container dataset (no metadata row at all)
-        #  - a leaked kleene-named interface (no network row)
-        #  - a clone-less basejail snapshot
+        # Residue a crashed or foreign-suite run would leave behind:
         cid = run("container create --name sweepleak FreeBSD:latest /bin/sleep 100")[0]
         run(f"container start {cid}")
         run("network create --subnet 10.250.7.0/24 sweepnet")
@@ -62,6 +54,12 @@ class TestSweep:
         assert interfaces == []
 
         # no clone-less basejail snapshots remain
-        output = shell("zfs list -t snapshot -H -o name,clones -d 1 zroot/kleene_basejail")
-        cloneless = [line for line in output.strip().split("\n") if line and line.split("\t")[1] == "-"]
+        output = shell(
+            "zfs list -t snapshot -H -o name,clones -d 1 zroot/kleene_basejail"
+        )
+        cloneless = [
+            line
+            for line in output.strip().split("\n")
+            if line and line.split("\t")[1] == "-"
+        ]
         assert cloneless == []
